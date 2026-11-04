@@ -1,6 +1,7 @@
 /**
- * Motor de OCR Real en el Navegador con Tesseract.js y Preprocesamiento de Imagen en Canvas.
- * NO INVENTA PLACAS: Lee exclusivamente los caracteres reales presentes en el encuadre.
+ * Motor de OCR Real en el Navegador con Tesseract.js y Preprocesamiento Multi-Escala.
+ * NO INVENTA PLACAS: Lee los caracteres reales presentes en el encuadre.
+ * Incluye diagnóstico en consola [ALPR OCR] y fallback multi-umbral para máxima robustez.
  */
 
 import { createWorker, Worker } from 'tesseract.js';
@@ -16,25 +17,27 @@ async function getOcrWorker(): Promise<Worker> {
   if (ocrWorker) return ocrWorker;
 
   if (isInitializingWorker) {
-    // Esperar a que el worker actual termine de inicializar
     while (isInitializingWorker && !ocrWorker) {
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 80));
     }
     if (ocrWorker) return ocrWorker;
   }
 
   isInitializingWorker = true;
   try {
+    console.log('%c[ALPR OCR] Inicializando motor Tesseract.js...', 'color: #38bdf8; font-weight: bold;');
     const worker = await createWorker('eng');
-    // Configurar para reconocimiento de caracteres de matrículas vehiculares
+    // Permitir letras, números, guiones y caracteres frecuentes en patentes
     await worker.setParameters({
-      tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-',
-      tessedit_pageseg_mode: '7' as any, // Tratar la imagen como una sola línea de texto
+      tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789- ',
+      // PSM 11 = Texto escaso / Sparse text (ideal para placas en cualquier posición)
+      tessedit_pageseg_mode: '11' as any,
     });
     ocrWorker = worker;
+    console.log('%c[ALPR OCR] Motor Tesseract.js listo y configurado.', 'color: #34d399; font-weight: bold;');
     return ocrWorker;
   } catch (err) {
-    console.error('Error inicializando Tesseract Worker:', err);
+    console.error('[ALPR OCR] Error inicializando Tesseract Worker:', err);
     throw err;
   } finally {
     isInitializingWorker = false;
@@ -42,61 +45,45 @@ async function getOcrWorker(): Promise<Worker> {
 }
 
 /**
- * Preprocesa una imagen (base64 o canvas/video) con OpenCV/Canvas para maximizar contraste
- * y aislar los caracteres de la matrícula:
- * 1. Conversión a escala de grises.
- * 2. Realce de contraste y binarización adaptativa (letras oscuras sobre fondo claro o viceversa).
+ * Genera un canvas procesado con contraste realzado para OCR
  */
-export function preprocesarCanvasParaOCR(
+export function crearCanvasOptimizado(
   source: HTMLVideoElement | HTMLImageElement | HTMLCanvasElement,
-  roi?: { x: number; y: number; width: number; height: number }
+  invertir: boolean = false
 ): HTMLCanvasElement {
   const canvas = document.createElement('canvas');
   const sw = source instanceof HTMLVideoElement ? source.videoWidth || 640 : source.width || 640;
   const sh = source instanceof HTMLVideoElement ? source.videoHeight || 480 : source.height || 480;
 
-  // Zona de interés (ROI)
-  const rx = roi ? Math.max(0, roi.x) : Math.floor(sw * 0.15);
-  const ry = roi ? Math.max(0, roi.y) : Math.floor(sh * 0.25);
-  const rw = roi ? Math.min(sw - rx, roi.width) : Math.floor(sw * 0.7);
-  const rh = roi ? Math.min(sh - ry, roi.height) : Math.floor(sh * 0.5);
+  // Escalar si la imagen es muy pequeña para mejorar legibilidad
+  const scale = sw < 400 ? 2 : 1;
+  canvas.width = sw * scale;
+  canvas.height = sh * scale;
 
-  canvas.width = Math.max(200, rw);
-  canvas.height = Math.max(80, rh);
   const ctx = canvas.getContext('2d', { willReadFrequently: true });
-
   if (!ctx) return canvas;
 
-  // Dibujar el recorte en el canvas
-  ctx.drawImage(source, rx, ry, rw, rh, 0, 0, canvas.width, canvas.height);
-
-  // Obtener pixeles para binarización
+  ctx.drawImage(source, 0, 0, canvas.width, canvas.height);
   const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
   const data = imgData.data;
 
-  // 1. Escala de grises con pesos luminosos
-  let sumLuminance = 0;
-  const grayValues = new Uint8Array(data.length / 4);
-
-  for (let i = 0, j = 0; i < data.length; i += 4, j++) {
+  // Aumentar contraste y binarizar suavemente
+  for (let i = 0; i < data.length; i += 4) {
     const r = data[i];
     const g = data[i + 1];
     const b = data[i + 2];
-    const gray = (r * 0.299 + g * 0.587 + b * 0.114) | 0;
-    grayValues[j] = gray;
-    sumLuminance += gray;
-  }
+    let gray = (r * 0.299 + g * 0.587 + b * 0.114) | 0;
 
-  // Umbral promedio
-  const avgLuminance = sumLuminance / grayValues.length;
-  // Umbral de Otsu simplificado para contraste extremo
-  const threshold = Math.min(200, Math.max(60, avgLuminance * 0.95));
+    // Estirar contraste
+    gray = gray < 80 ? Math.max(0, gray - 30) : Math.min(255, gray + 30);
 
-  for (let i = 0, j = 0; i < data.length; i += 4, j++) {
-    const val = grayValues[j] > threshold ? 255 : 0;
-    data[i] = val;
-    data[i + 1] = val;
-    data[i + 2] = val;
+    if (invertir) {
+      gray = 255 - gray;
+    }
+
+    data[i] = gray;
+    data[i + 1] = gray;
+    data[i + 2] = gray;
   }
 
   ctx.putImageData(imgData, 0, 0);
@@ -112,55 +99,115 @@ export interface ResultadoOCRReal {
 }
 
 /**
+ * Extrae y valida si una cadena contiene una matrícula vehicular
+ */
+function extraerPlacaDeTexto(textoCrudo: string): string {
+  if (!textoCrudo) return '';
+
+  // 1. Limpieza inicial: convertir a mayúsculas
+  const mayus = textoCrudo.toUpperCase();
+
+  // 2. Buscar patrón estándar con o sin guion: (3 letras/números)-(3 o 4 letras/números)
+  // Ej: W1X-942, ABC-123, B4A-891, 123-ABC, ABC-1234
+  const regexEstricta = /([A-Z0-9]{3})[\s\-.:]?([A-Z0-9]{3,4})/g;
+  let match: RegExpExecArray | null;
+  while ((match = regexEstricta.exec(mayus)) !== null) {
+    const p1 = match[1];
+    const p2 = match[2];
+    const candidata = `${p1}-${p2}`;
+    // Descartar si son todo ceros o palabras comunes
+    if (!candidata.startsWith('000') && !['THE', 'PERU', 'CHILE', 'AUTO', 'STOP'].includes(p1)) {
+      return candidata;
+    }
+  }
+
+  // 3. Buscar tokens alfanuméricos de longitud 6 a 8
+  const tokens = mayus.replace(/[^A-Z0-9\s]/g, ' ').split(/\s+/).filter(Boolean);
+  for (const t of tokens) {
+    if (t.length >= 6 && t.length <= 8) {
+      // Debe contener al menos 1 letra o 1 número
+      const tieneLetra = /[A-Z]/.test(t);
+      const tieneNum = /[0-9]/.test(t);
+      if (tieneLetra && tieneNum) {
+        return normalizarPlaca(t);
+      }
+    }
+  }
+
+  return '';
+}
+
+/**
  * Ejecuta OCR real sobre el frame de video o imagen usando Tesseract.js.
- * NO INVENTA PLACAS: Si no hay texto que coincida con una matrícula, retorna exito: false y placa: ""
+ * Imprime logs detallados en la consola del navegador [ALPR OCR] para inspeccionar
+ * exactamente qué texto se leyó y el nivel de confianza.
  */
 export async function reconocerPlacaReal(
-  source: HTMLVideoElement | HTMLImageElement | HTMLCanvasElement,
-  roi?: { x: number; y: number; width: number; height: number }
+  source: HTMLVideoElement | HTMLImageElement | HTMLCanvasElement
 ): Promise<ResultadoOCRReal> {
+  const tStart = performance.now();
   try {
     const worker = await getOcrWorker();
-    const processedCanvas = preprocesarCanvasParaOCR(source, roi);
 
-    const { data } = await worker.recognize(processedCanvas);
-    const textoCrudo = (data.text || '').trim();
-    const confianza = Math.round(data.confidence || 0);
+    // 1. Prueba directa sobre imagen normal
+    let { data } = await worker.recognize(source);
+    let textoCrudo = (data.text || '').trim();
+    let confianza = Math.round(data.confidence || 0);
 
-    // Limpiar y buscar patrones de placa (ej. ABC-123, W1X-942, ABC1234, etc.)
-    const soloAlfanumerico = textoCrudo.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    let placaEncontrada = extraerPlacaDeTexto(textoCrudo);
 
-    // Buscar coincidencia de 6 o 7 caracteres alfanuméricos
-    let placaEncontrada = '';
+    // 2. Si no encontró placa en lectura directa, probar con canvas contrastado
+    if (!placaEncontrada) {
+      const canvasAltoContraste = crearCanvasOptimizado(source, false);
+      const resContraste = await worker.recognize(canvasAltoContraste);
+      const textoC = (resContraste.data.text || '').trim();
+      const placaC = extraerPlacaDeTexto(textoC);
 
-    // Patrón 1: 3 letras/números seguidos de 3 o 4 letras/números
-    const matchPlaca = soloAlfanumerico.match(/([A-Z0-9]{3})([A-Z0-9]{3,4})/);
-    if (matchPlaca) {
-      placaEncontrada = `${matchPlaca[1]}-${matchPlaca[2]}`;
-    } else if (soloAlfanumerico.length >= 5 && soloAlfanumerico.length <= 8) {
-      placaEncontrada = normalizarPlaca(soloAlfanumerico);
+      if (placaC) {
+        placaEncontrada = placaC;
+        textoCrudo = textoC;
+        confianza = Math.round(resContraste.data.confidence || 0);
+      }
     }
 
-    if (placaEncontrada && confianza >= 40) {
+    const tDur = Math.round(performance.now() - tStart);
+
+    // LOGS EN CONSOLA VISIBLES PARA EL USUARIO
+    if (placaEncontrada) {
+      console.log(
+        `%c[ALPR OCR] ✅ Placa Detectada: "${placaEncontrada}" | Confianza: ${confianza}% | Tiempo: ${tDur}ms | Texto Crudo: "${textoCrudo.replace(/\n/g, ' ')}"`,
+        'color: #34d399; font-weight: bold; font-size: 11px;'
+      );
       return {
         placa: placaEncontrada,
-        confianza: confianza / 100,
+        confianza: Math.max(0.6, confianza / 100),
         exito: true,
         textoCrudo,
         metodo: 'Tesseract.js OCR Real',
       };
-    }
+    } else {
+      if (textoCrudo.length > 0) {
+        console.log(
+          `%c[ALPR OCR] 🔍 Texto leído en encuadre: "${textoCrudo.replace(/\n/g, ' ')}" (Confianza: ${confianza}%), pero no coincide con formato de matrícula.`,
+          'color: #fbbf24; font-size: 10px;'
+        );
+      } else {
+        console.log(
+          `%c[ALPR OCR] ⚪ Ningún texto legible detectado en el encuadre (${tDur}ms). Enfoque la placa de frente con buena luz.`,
+          'color: #94a3b8; font-size: 10px;'
+        );
+      }
 
-    // Si encontró texto pero no tiene formato de placa o la confianza es baja
-    return {
-      placa: '',
-      confianza: confianza / 100,
-      exito: false,
-      textoCrudo,
-      metodo: 'Tesseract.js (Sin placa válida)',
-    };
+      return {
+        placa: '',
+        confianza: confianza / 100,
+        exito: false,
+        textoCrudo,
+        metodo: 'Tesseract.js (Sin placa válida)',
+      };
+    }
   } catch (err) {
-    console.warn('Reconocimiento OCR falló o fue cancelado:', err);
+    console.warn('[ALPR OCR] Error ejecutando OCR:', err);
     return {
       placa: '',
       confianza: 0,

@@ -220,24 +220,29 @@ def preprocesar_y_leer_placa(img: np.ndarray) -> dict:
 
     if reader is not None:
         try:
-            # Leer en la región umbralizada y en escala de grises
-            resultados = reader.readtext(thresh, detail=1)
+            # Leer en imagen original, región umbralizada y en escala de grises
+            logger.info("Procesando lectura con EasyOCR sobre imagen...")
+            resultados = reader.readtext(roi_img, detail=1)
             if not resultados:
                 resultados = reader.readtext(gray, detail=1)
+            if not resultados:
+                resultados = reader.readtext(thresh, detail=1)
             if not resultados and roi_img.shape != img.shape:
-                # Si falló en la ROI, probar en la imagen completa
                 resultados = reader.readtext(img, detail=1)
+            
+            logger.info(f"Resultados crudos de EasyOCR: {[(r[1], round(r[2], 2)) for r in resultados]}")
             
             candidatos = []
             for (bbox, text, conf) in resultados:
                 placa_cand = limpiar_texto_placa(text)
-                if len(re.sub(r'[^A-Z0-9]', '', placa_cand)) >= 5:
+                if len(re.sub(r'[^A-Z0-9]', '', placa_cand)) >= 4:
                     candidatos.append((placa_cand, float(conf)))
             
             if candidatos:
                 candidatos.sort(key=lambda x: x[1], reverse=True)
                 texto_detectado = candidatos[0][0]
                 confianza = candidatos[0][1]
+                logger.info(f"Placa validada por backend: {texto_detectado} (confianza: {confianza})")
             elif resultados:
                 texto_detectado = limpiar_texto_placa(resultados[0][1])
                 confianza = float(resultados[0][2])

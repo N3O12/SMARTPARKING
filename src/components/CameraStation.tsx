@@ -108,6 +108,7 @@ export const CameraStation: React.FC<CameraStationProps> = ({
 
   // Presets de vehículos realistas para simulación
   const sampleVehicles = [
+    { placa: 'X71-962', tipo: 'Placa Perú Oficial', color: '#f59e0b' },
     { placa: 'W1X-942', tipo: 'Sedán Gris', color: '#64748b' },
     { placa: 'ABC-123', tipo: 'SUV Rojo', color: '#e11d48' },
     { placa: 'KLP-482', tipo: 'Pick-Up Azul', color: '#2563eb' },

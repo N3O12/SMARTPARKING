@@ -1,0 +1,3268 @@
+react-dom_client.js?v=5b18d862:15803 Download the React DevTools for a better development experience: https://react.dev/link/react-devtools
+realOcr.ts:28 [ALPR OCR] Inicializando motor Tesseract.js...
+realOcr.ts:37 [ALPR OCR] Motor Tesseract.js listo y configurado.
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixReadStream: Unknown format: no pix returned
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixRead: pix not read
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Image file /input cannot be read!
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract__js.js?v=5b18d862:950 Uncaught Error: Error: Error attempting to read image.
+    at tesseract__js.js?v=5b18d862:950:16
+    at worker.onmessage (tesseract__js.js?v=5b18d862:709:4)
+realOcr.ts:210 [ALPR OCR] Error ejecutando OCR: Error: Error attempting to read image.
+(anonymous) @ realOcr.ts:210
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixReadStream: Unknown format: no pix returned
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixRead: pix not read
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Image file /input cannot be read!
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract__js.js?v=5b18d862:950 Uncaught Error: Error: Error attempting to read image.
+    at tesseract__js.js?v=5b18d862:950:16
+    at worker.onmessage (tesseract__js.js?v=5b18d862:709:4)
+realOcr.ts:210 [ALPR OCR] Error ejecutando OCR: Error: Error attempting to read image.
+(anonymous) @ realOcr.ts:210
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixReadStream: Unknown format: no pix returned
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixRead: pix not read
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Image file /input cannot be read!
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract__js.js?v=5b18d862:950 Uncaught Error: Error: Error attempting to read image.
+    at tesseract__js.js?v=5b18d862:950:16
+    at worker.onmessage (tesseract__js.js?v=5b18d862:709:4)
+realOcr.ts:210 [ALPR OCR] Error ejecutando OCR: Error: Error attempting to read image.
+(anonymous) @ realOcr.ts:210
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixReadStream: Unknown format: no pix returned
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixRead: pix not read
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Image file /input cannot be read!
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract__js.js?v=5b18d862:950 Uncaught Error: Error: Error attempting to read image.
+    at tesseract__js.js?v=5b18d862:950:16
+    at worker.onmessage (tesseract__js.js?v=5b18d862:709:4)
+realOcr.ts:210 [ALPR OCR] Error ejecutando OCR: Error: Error attempting to read image.
+(anonymous) @ realOcr.ts:210
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixReadStream: Unknown format: no pix returned
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixRead: pix not read
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Image file /input cannot be read!
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract__js.js?v=5b18d862:950 Uncaught Error: Error: Error attempting to read image.
+    at tesseract__js.js?v=5b18d862:950:16
+    at worker.onmessage (tesseract__js.js?v=5b18d862:709:4)
+realOcr.ts:210 [ALPR OCR] Error ejecutando OCR: Error: Error attempting to read image.
+(anonymous) @ realOcr.ts:210
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixReadStream: Unknown format: no pix returned
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixRead: pix not read
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Image file /input cannot be read!
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract__js.js?v=5b18d862:950 Uncaught Error: Error: Error attempting to read image.
+    at tesseract__js.js?v=5b18d862:950:16
+    at worker.onmessage (tesseract__js.js?v=5b18d862:709:4)
+realOcr.ts:210 [ALPR OCR] Error ejecutando OCR: Error: Error attempting to read image.
+(anonymous) @ realOcr.ts:210
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixReadStream: Unknown format: no pix returned
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixRead: pix not read
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Image file /input cannot be read!
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract__js.js?v=5b18d862:950 Uncaught Error: Error: Error attempting to read image.
+    at tesseract__js.js?v=5b18d862:950:16
+    at worker.onmessage (tesseract__js.js?v=5b18d862:709:4)
+realOcr.ts:210 [ALPR OCR] Error ejecutando OCR: Error: Error attempting to read image.
+(anonymous) @ realOcr.ts:210
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixReadStream: Unknown format: no pix returned
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixRead: pix not read
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Image file /input cannot be read!
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract__js.js?v=5b18d862:950 Uncaught Error: Error: Error attempting to read image.
+    at tesseract__js.js?v=5b18d862:950:16
+    at worker.onmessage (tesseract__js.js?v=5b18d862:709:4)
+realOcr.ts:210 [ALPR OCR] Error ejecutando OCR: Error: Error attempting to read image.
+(anonymous) @ realOcr.ts:210
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixReadStream: Unknown format: no pix returned
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixRead: pix not read
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Image file /input cannot be read!
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract__js.js?v=5b18d862:950 Uncaught Error: Error: Error attempting to read image.
+    at tesseract__js.js?v=5b18d862:950:16
+    at worker.onmessage (tesseract__js.js?v=5b18d862:709:4)
+realOcr.ts:210 [ALPR OCR] Error ejecutando OCR: Error: Error attempting to read image.
+(anonymous) @ realOcr.ts:210
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixReadStream: Unknown format: no pix returned
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixRead: pix not read
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Image file /input cannot be read!
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract__js.js?v=5b18d862:950 Uncaught Error: Error: Error attempting to read image.
+    at tesseract__js.js?v=5b18d862:950:16
+    at worker.onmessage (tesseract__js.js?v=5b18d862:709:4)
+realOcr.ts:210 [ALPR OCR] Error ejecutando OCR: Error: Error attempting to read image.
+(anonymous) @ realOcr.ts:210
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixReadStream: Unknown format: no pix returned
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixRead: pix not read
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Image file /input cannot be read!
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract__js.js?v=5b18d862:950 Uncaught Error: Error: Error attempting to read image.
+    at tesseract__js.js?v=5b18d862:950:16
+    at worker.onmessage (tesseract__js.js?v=5b18d862:709:4)
+realOcr.ts:210 [ALPR OCR] Error ejecutando OCR: Error: Error attempting to read image.
+(anonymous) @ realOcr.ts:210
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixReadStream: Unknown format: no pix returned
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixRead: pix not read
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Image file /input cannot be read!
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract__js.js?v=5b18d862:950 Uncaught Error: Error: Error attempting to read image.
+    at tesseract__js.js?v=5b18d862:950:16
+    at worker.onmessage (tesseract__js.js?v=5b18d862:709:4)
+realOcr.ts:210 [ALPR OCR] Error ejecutando OCR: Error: Error attempting to read image.
+(anonymous) @ realOcr.ts:210
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixReadStream: Unknown format: no pix returned
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixRead: pix not read
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Image file /input cannot be read!
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract__js.js?v=5b18d862:950 Uncaught Error: Error: Error attempting to read image.
+    at tesseract__js.js?v=5b18d862:950:16
+    at worker.onmessage (tesseract__js.js?v=5b18d862:709:4)
+realOcr.ts:210 [ALPR OCR] Error ejecutando OCR: Error: Error attempting to read image.
+(anonymous) @ realOcr.ts:210
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixReadStream: Unknown format: no pix returned
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixRead: pix not read
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Image file /input cannot be read!
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract__js.js?v=5b18d862:950 Uncaught Error: Error: Error attempting to read image.
+    at tesseract__js.js?v=5b18d862:950:16
+    at worker.onmessage (tesseract__js.js?v=5b18d862:709:4)
+realOcr.ts:210 [ALPR OCR] Error ejecutando OCR: Error: Error attempting to read image.
+(anonymous) @ realOcr.ts:210
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixReadStream: Unknown format: no pix returned
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixRead: pix not read
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Image file /input cannot be read!
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract__js.js?v=5b18d862:950 Uncaught Error: Error: Error attempting to read image.
+    at tesseract__js.js?v=5b18d862:950:16
+    at worker.onmessage (tesseract__js.js?v=5b18d862:709:4)
+realOcr.ts:210 [ALPR OCR] Error ejecutando OCR: Error: Error attempting to read image.
+(anonymous) @ realOcr.ts:210
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixReadStream: Unknown format: no pix returned
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixRead: pix not read
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Image file /input cannot be read!
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract__js.js?v=5b18d862:950 Uncaught Error: Error: Error attempting to read image.
+    at tesseract__js.js?v=5b18d862:950:16
+    at worker.onmessage (tesseract__js.js?v=5b18d862:709:4)
+realOcr.ts:210 [ALPR OCR] Error ejecutando OCR: Error: Error attempting to read image.
+(anonymous) @ realOcr.ts:210
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixReadStream: Unknown format: no pix returned
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixRead: pix not read
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Image file /input cannot be read!
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract__js.js?v=5b18d862:950 Uncaught Error: Error: Error attempting to read image.
+    at tesseract__js.js?v=5b18d862:950:16
+    at worker.onmessage (tesseract__js.js?v=5b18d862:709:4)
+realOcr.ts:210 [ALPR OCR] Error ejecutando OCR: Error: Error attempting to read image.
+(anonymous) @ realOcr.ts:210
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixReadStream: Unknown format: no pix returned
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixRead: pix not read
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Image file /input cannot be read!
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract__js.js?v=5b18d862:950 Uncaught Error: Error: Error attempting to read image.
+    at tesseract__js.js?v=5b18d862:950:16
+    at worker.onmessage (tesseract__js.js?v=5b18d862:709:4)
+realOcr.ts:210 [ALPR OCR] Error ejecutando OCR: Error: Error attempting to read image.
+(anonymous) @ realOcr.ts:210
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixReadStream: Unknown format: no pix returned
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixRead: pix not read
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Image file /input cannot be read!
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract__js.js?v=5b18d862:950 Uncaught Error: Error: Error attempting to read image.
+    at tesseract__js.js?v=5b18d862:950:16
+    at worker.onmessage (tesseract__js.js?v=5b18d862:709:4)
+realOcr.ts:210 [ALPR OCR] Error ejecutando OCR: Error: Error attempting to read image.
+(anonymous) @ realOcr.ts:210
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixReadStream: Unknown format: no pix returned
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixRead: pix not read
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Image file /input cannot be read!
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract__js.js?v=5b18d862:950 Uncaught Error: Error: Error attempting to read image.
+    at tesseract__js.js?v=5b18d862:950:16
+    at worker.onmessage (tesseract__js.js?v=5b18d862:709:4)
+realOcr.ts:210 [ALPR OCR] Error ejecutando OCR: Error: Error attempting to read image.
+(anonymous) @ realOcr.ts:210
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixReadStream: Unknown format: no pix returned
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixRead: pix not read
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Image file /input cannot be read!
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract__js.js?v=5b18d862:950 Uncaught Error: Error: Error attempting to read image.
+    at tesseract__js.js?v=5b18d862:950:16
+    at worker.onmessage (tesseract__js.js?v=5b18d862:709:4)
+realOcr.ts:210 [ALPR OCR] Error ejecutando OCR: Error: Error attempting to read image.
+(anonymous) @ realOcr.ts:210
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixReadStream: Unknown format: no pix returned
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixRead: pix not read
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Image file /input cannot be read!
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract__js.js?v=5b18d862:950 Uncaught Error: Error: Error attempting to read image.
+    at tesseract__js.js?v=5b18d862:950:16
+    at worker.onmessage (tesseract__js.js?v=5b18d862:709:4)
+realOcr.ts:210 [ALPR OCR] Error ejecutando OCR: Error: Error attempting to read image.
+(anonymous) @ realOcr.ts:210
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixReadStream: Unknown format: no pix returned
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixRead: pix not read
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Image file /input cannot be read!
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract__js.js?v=5b18d862:950 Uncaught Error: Error: Error attempting to read image.
+    at tesseract__js.js?v=5b18d862:950:16
+    at worker.onmessage (tesseract__js.js?v=5b18d862:709:4)
+realOcr.ts:210 [ALPR OCR] Error ejecutando OCR: Error: Error attempting to read image.
+(anonymous) @ realOcr.ts:210
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixReadStream: Unknown format: no pix returned
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixRead: pix not read
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Image file /input cannot be read!
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract__js.js?v=5b18d862:950 Uncaught Error: Error: Error attempting to read image.
+    at tesseract__js.js?v=5b18d862:950:16
+    at worker.onmessage (tesseract__js.js?v=5b18d862:709:4)
+realOcr.ts:210 [ALPR OCR] Error ejecutando OCR: Error: Error attempting to read image.
+(anonymous) @ realOcr.ts:210
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixReadStream: Unknown format: no pix returned
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixRead: pix not read
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Image file /input cannot be read!
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract__js.js?v=5b18d862:950 Uncaught Error: Error: Error attempting to read image.
+    at tesseract__js.js?v=5b18d862:950:16
+    at worker.onmessage (tesseract__js.js?v=5b18d862:709:4)
+realOcr.ts:210 [ALPR OCR] Error ejecutando OCR: Error: Error attempting to read image.
+(anonymous) @ realOcr.ts:210
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixReadStream: Unknown format: no pix returned
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixRead: pix not read
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Image file /input cannot be read!
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract__js.js?v=5b18d862:950 Uncaught Error: Error: Error attempting to read image.
+    at tesseract__js.js?v=5b18d862:950:16
+    at worker.onmessage (tesseract__js.js?v=5b18d862:709:4)
+realOcr.ts:210 [ALPR OCR] Error ejecutando OCR: Error: Error attempting to read image.
+(anonymous) @ realOcr.ts:210
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixReadStream: Unknown format: no pix returned
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixRead: pix not read
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Image file /input cannot be read!
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract__js.js?v=5b18d862:950 Uncaught Error: Error: Error attempting to read image.
+    at tesseract__js.js?v=5b18d862:950:16
+    at worker.onmessage (tesseract__js.js?v=5b18d862:709:4)
+realOcr.ts:210 [ALPR OCR] Error ejecutando OCR: Error: Error attempting to read image.
+(anonymous) @ realOcr.ts:210
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixReadStream: Unknown format: no pix returned
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixRead: pix not read
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Image file /input cannot be read!
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract__js.js?v=5b18d862:950 Uncaught Error: Error: Error attempting to read image.
+    at tesseract__js.js?v=5b18d862:950:16
+    at worker.onmessage (tesseract__js.js?v=5b18d862:709:4)
+realOcr.ts:210 [ALPR OCR] Error ejecutando OCR: Error: Error attempting to read image.
+(anonymous) @ realOcr.ts:210
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixReadStream: Unknown format: no pix returned
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixRead: pix not read
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Image file /input cannot be read!
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract__js.js?v=5b18d862:950 Uncaught Error: Error: Error attempting to read image.
+    at tesseract__js.js?v=5b18d862:950:16
+    at worker.onmessage (tesseract__js.js?v=5b18d862:709:4)
+realOcr.ts:210 [ALPR OCR] Error ejecutando OCR: Error: Error attempting to read image.
+(anonymous) @ realOcr.ts:210
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixReadStream: Unknown format: no pix returned
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixRead: pix not read
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Image file /input cannot be read!
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract__js.js?v=5b18d862:950 Uncaught Error: Error: Error attempting to read image.
+    at tesseract__js.js?v=5b18d862:950:16
+    at worker.onmessage (tesseract__js.js?v=5b18d862:709:4)
+realOcr.ts:210 [ALPR OCR] Error ejecutando OCR: Error: Error attempting to read image.
+(anonymous) @ realOcr.ts:210
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixReadStream: Unknown format: no pix returned
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixRead: pix not read
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Image file /input cannot be read!
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract__js.js?v=5b18d862:950 Uncaught Error: Error: Error attempting to read image.
+    at tesseract__js.js?v=5b18d862:950:16
+    at worker.onmessage (tesseract__js.js?v=5b18d862:709:4)
+realOcr.ts:210 [ALPR OCR] Error ejecutando OCR: Error: Error attempting to read image.
+(anonymous) @ realOcr.ts:210
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixReadStream: Unknown format: no pix returned
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixRead: pix not read
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Image file /input cannot be read!
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract__js.js?v=5b18d862:950 Uncaught Error: Error: Error attempting to read image.
+    at tesseract__js.js?v=5b18d862:950:16
+    at worker.onmessage (tesseract__js.js?v=5b18d862:709:4)
+realOcr.ts:210 [ALPR OCR] Error ejecutando OCR: Error: Error attempting to read image.
+(anonymous) @ realOcr.ts:210
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixReadStream: Unknown format: no pix returned
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixRead: pix not read
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Image file /input cannot be read!
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract__js.js?v=5b18d862:950 Uncaught Error: Error: Error attempting to read image.
+    at tesseract__js.js?v=5b18d862:950:16
+    at worker.onmessage (tesseract__js.js?v=5b18d862:709:4)
+realOcr.ts:210 [ALPR OCR] Error ejecutando OCR: Error: Error attempting to read image.
+(anonymous) @ realOcr.ts:210
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixReadStream: Unknown format: no pix returned
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixRead: pix not read
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Image file /input cannot be read!
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract__js.js?v=5b18d862:950 Uncaught Error: Error: Error attempting to read image.
+    at tesseract__js.js?v=5b18d862:950:16
+    at worker.onmessage (tesseract__js.js?v=5b18d862:709:4)
+realOcr.ts:210 [ALPR OCR] Error ejecutando OCR: Error: Error attempting to read image.
+(anonymous) @ realOcr.ts:210
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixReadStream: Unknown format: no pix returned
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixRead: pix not read
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Image file /input cannot be read!
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+tesseract__js.js?v=5b18d862:950 Uncaught Error: Error: Error attempting to read image.
+    at tesseract__js.js?v=5b18d862:950:16
+    at worker.onmessage (tesseract__js.js?v=5b18d862:709:4)
+realOcr.ts:210 [ALPR OCR] Error ejecutando OCR: Error: Error attempting to read image.
+(anonymous) @ realOcr.ts:210
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixReadStream: Unknown format: no pix returned
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:16
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:53
+l @ tesseract-core-relaxedsimd-lstm.wasm.js:80
+$func2679 @ 00aeb2ea:0x1ad772
+$func850 @ 00aeb2ea:0x6ecbe
+$func89 @ 00aeb2ea:0x417b
+$func1101 @ 00aeb2ea:0x9e4ca
+$func3335 @ 00aeb2ea:0x218510
+$func56 @ 00aeb2ea:0x3332
+$func47 @ 00aeb2ea:0x2e2c
+$func638 @ 00aeb2ea:0x4de3f
+$nd @ 00aeb2ea:0x2503a1
+S.SetImageFile @ tesseract-core-relaxedsimd-lstm.wasm.js:169
+(anonymous) @ setImage.js:32
+(anonymous) @ index.js:413
+tryCatch @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+asyncGeneratorStep @ index.js:2
+_next @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:343
+(anonymous) @ index.js:529
+(anonymous) @ index.js:22
+Worker.postMessage
+module.exports @ tesseract__js.js?v=5b18d862:723
+(anonymous) @ tesseract__js.js?v=5b18d862:823
+startJob @ tesseract__js.js?v=5b18d862:816
+recognize @ tesseract__js.js?v=5b18d862:912
+await in recognize
+(anonymous) @ realOcr.ts:153
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixRead: pix not read
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:16
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:53
+l @ tesseract-core-relaxedsimd-lstm.wasm.js:80
+$func2679 @ 00aeb2ea:0x1ad772
+$func850 @ 00aeb2ea:0x6ecbe
+$func89 @ 00aeb2ea:0x417b
+$func1101 @ 00aeb2ea:0x9e4ca
+$func3335 @ 00aeb2ea:0x218510
+$func56 @ 00aeb2ea:0x3332
+$func47 @ 00aeb2ea:0x2e2c
+$func638 @ 00aeb2ea:0x4dec1
+$nd @ 00aeb2ea:0x2503a1
+S.SetImageFile @ tesseract-core-relaxedsimd-lstm.wasm.js:169
+(anonymous) @ setImage.js:32
+(anonymous) @ index.js:413
+tryCatch @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+asyncGeneratorStep @ index.js:2
+_next @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:343
+(anonymous) @ index.js:529
+(anonymous) @ index.js:22
+Worker.postMessage
+module.exports @ tesseract__js.js?v=5b18d862:723
+(anonymous) @ tesseract__js.js?v=5b18d862:823
+startJob @ tesseract__js.js?v=5b18d862:816
+recognize @ tesseract__js.js?v=5b18d862:912
+await in recognize
+(anonymous) @ realOcr.ts:153
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Image file /input cannot be read!
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:16
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:53
+l @ tesseract-core-relaxedsimd-lstm.wasm.js:80
+$func2679 @ 00aeb2ea:0x1ad772
+$func516 @ 00aeb2ea:0x383de
+$func48 @ 00aeb2ea:0x2ea9
+$nd @ 00aeb2ea:0x2503bd
+S.SetImageFile @ tesseract-core-relaxedsimd-lstm.wasm.js:169
+(anonymous) @ setImage.js:32
+(anonymous) @ index.js:413
+tryCatch @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+asyncGeneratorStep @ index.js:2
+_next @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:343
+(anonymous) @ index.js:529
+(anonymous) @ index.js:22
+Worker.postMessage
+module.exports @ tesseract__js.js?v=5b18d862:723
+(anonymous) @ tesseract__js.js?v=5b18d862:823
+startJob @ tesseract__js.js?v=5b18d862:816
+recognize @ tesseract__js.js?v=5b18d862:912
+await in recognize
+(anonymous) @ realOcr.ts:153
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+tesseract__js.js?v=5b18d862:950 Uncaught Error: Error: Error attempting to read image.
+    at tesseract__js.js?v=5b18d862:950:16
+    at worker.onmessage (tesseract__js.js?v=5b18d862:709:4)
+(anonymous) @ tesseract__js.js?v=5b18d862:950
+worker.onmessage @ tesseract__js.js?v=5b18d862:709
+postMessage
+(anonymous) @ index.js:22
+(anonymous) @ index.js:508
+(anonymous) @ index.js:442
+tryCatch @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+asyncGeneratorStep @ index.js:2
+_next @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:343
+(anonymous) @ index.js:529
+(anonymous) @ index.js:22
+Worker.postMessage
+module.exports @ tesseract__js.js?v=5b18d862:723
+(anonymous) @ tesseract__js.js?v=5b18d862:823
+startJob @ tesseract__js.js?v=5b18d862:816
+recognize @ tesseract__js.js?v=5b18d862:912
+await in recognize
+(anonymous) @ realOcr.ts:153
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+realOcr.ts:210 [ALPR OCR] Error ejecutando OCR: Error: Error attempting to read image.
+(anonymous) @ realOcr.ts:210
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixReadStream: Unknown format: no pix returned
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:16
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:53
+l @ tesseract-core-relaxedsimd-lstm.wasm.js:80
+$func2679 @ 00aeb2ea:0x1ad772
+$func850 @ 00aeb2ea:0x6ecbe
+$func89 @ 00aeb2ea:0x417b
+$func1101 @ 00aeb2ea:0x9e4ca
+$func3335 @ 00aeb2ea:0x218510
+$func56 @ 00aeb2ea:0x3332
+$func47 @ 00aeb2ea:0x2e2c
+$func638 @ 00aeb2ea:0x4de3f
+$nd @ 00aeb2ea:0x2503a1
+S.SetImageFile @ tesseract-core-relaxedsimd-lstm.wasm.js:169
+(anonymous) @ setImage.js:32
+(anonymous) @ index.js:413
+tryCatch @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+asyncGeneratorStep @ index.js:2
+_next @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:343
+(anonymous) @ index.js:529
+(anonymous) @ index.js:22
+Worker.postMessage
+module.exports @ tesseract__js.js?v=5b18d862:723
+(anonymous) @ tesseract__js.js?v=5b18d862:823
+startJob @ tesseract__js.js?v=5b18d862:816
+recognize @ tesseract__js.js?v=5b18d862:912
+await in recognize
+(anonymous) @ realOcr.ts:153
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixRead: pix not read
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:16
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:53
+l @ tesseract-core-relaxedsimd-lstm.wasm.js:80
+$func2679 @ 00aeb2ea:0x1ad772
+$func850 @ 00aeb2ea:0x6ecbe
+$func89 @ 00aeb2ea:0x417b
+$func1101 @ 00aeb2ea:0x9e4ca
+$func3335 @ 00aeb2ea:0x218510
+$func56 @ 00aeb2ea:0x3332
+$func47 @ 00aeb2ea:0x2e2c
+$func638 @ 00aeb2ea:0x4dec1
+$nd @ 00aeb2ea:0x2503a1
+S.SetImageFile @ tesseract-core-relaxedsimd-lstm.wasm.js:169
+(anonymous) @ setImage.js:32
+(anonymous) @ index.js:413
+tryCatch @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+asyncGeneratorStep @ index.js:2
+_next @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:343
+(anonymous) @ index.js:529
+(anonymous) @ index.js:22
+Worker.postMessage
+module.exports @ tesseract__js.js?v=5b18d862:723
+(anonymous) @ tesseract__js.js?v=5b18d862:823
+startJob @ tesseract__js.js?v=5b18d862:816
+recognize @ tesseract__js.js?v=5b18d862:912
+await in recognize
+(anonymous) @ realOcr.ts:153
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Image file /input cannot be read!
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:16
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:53
+l @ tesseract-core-relaxedsimd-lstm.wasm.js:80
+$func2679 @ 00aeb2ea:0x1ad772
+$func516 @ 00aeb2ea:0x383de
+$func48 @ 00aeb2ea:0x2ea9
+$nd @ 00aeb2ea:0x2503bd
+S.SetImageFile @ tesseract-core-relaxedsimd-lstm.wasm.js:169
+(anonymous) @ setImage.js:32
+(anonymous) @ index.js:413
+tryCatch @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+asyncGeneratorStep @ index.js:2
+_next @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:343
+(anonymous) @ index.js:529
+(anonymous) @ index.js:22
+Worker.postMessage
+module.exports @ tesseract__js.js?v=5b18d862:723
+(anonymous) @ tesseract__js.js?v=5b18d862:823
+startJob @ tesseract__js.js?v=5b18d862:816
+recognize @ tesseract__js.js?v=5b18d862:912
+await in recognize
+(anonymous) @ realOcr.ts:153
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+tesseract__js.js?v=5b18d862:950 Uncaught Error: Error: Error attempting to read image.
+    at tesseract__js.js?v=5b18d862:950:16
+    at worker.onmessage (tesseract__js.js?v=5b18d862:709:4)
+(anonymous) @ tesseract__js.js?v=5b18d862:950
+worker.onmessage @ tesseract__js.js?v=5b18d862:709
+postMessage
+(anonymous) @ index.js:22
+(anonymous) @ index.js:508
+(anonymous) @ index.js:442
+tryCatch @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+asyncGeneratorStep @ index.js:2
+_next @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:343
+(anonymous) @ index.js:529
+(anonymous) @ index.js:22
+Worker.postMessage
+module.exports @ tesseract__js.js?v=5b18d862:723
+(anonymous) @ tesseract__js.js?v=5b18d862:823
+startJob @ tesseract__js.js?v=5b18d862:816
+recognize @ tesseract__js.js?v=5b18d862:912
+await in recognize
+(anonymous) @ realOcr.ts:153
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+realOcr.ts:210 [ALPR OCR] Error ejecutando OCR: Error: Error attempting to read image.
+(anonymous) @ realOcr.ts:210
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixReadStream: Unknown format: no pix returned
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:16
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:53
+l @ tesseract-core-relaxedsimd-lstm.wasm.js:80
+$func2679 @ 00aeb2ea:0x1ad772
+$func850 @ 00aeb2ea:0x6ecbe
+$func89 @ 00aeb2ea:0x417b
+$func1101 @ 00aeb2ea:0x9e4ca
+$func3335 @ 00aeb2ea:0x218510
+$func56 @ 00aeb2ea:0x3332
+$func47 @ 00aeb2ea:0x2e2c
+$func638 @ 00aeb2ea:0x4de3f
+$nd @ 00aeb2ea:0x2503a1
+S.SetImageFile @ tesseract-core-relaxedsimd-lstm.wasm.js:169
+(anonymous) @ setImage.js:32
+(anonymous) @ index.js:413
+tryCatch @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+asyncGeneratorStep @ index.js:2
+_next @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:343
+(anonymous) @ index.js:529
+(anonymous) @ index.js:22
+Worker.postMessage
+module.exports @ tesseract__js.js?v=5b18d862:723
+(anonymous) @ tesseract__js.js?v=5b18d862:823
+startJob @ tesseract__js.js?v=5b18d862:816
+recognize @ tesseract__js.js?v=5b18d862:912
+await in recognize
+(anonymous) @ realOcr.ts:153
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixRead: pix not read
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:16
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:53
+l @ tesseract-core-relaxedsimd-lstm.wasm.js:80
+$func2679 @ 00aeb2ea:0x1ad772
+$func850 @ 00aeb2ea:0x6ecbe
+$func89 @ 00aeb2ea:0x417b
+$func1101 @ 00aeb2ea:0x9e4ca
+$func3335 @ 00aeb2ea:0x218510
+$func56 @ 00aeb2ea:0x3332
+$func47 @ 00aeb2ea:0x2e2c
+$func638 @ 00aeb2ea:0x4dec1
+$nd @ 00aeb2ea:0x2503a1
+S.SetImageFile @ tesseract-core-relaxedsimd-lstm.wasm.js:169
+(anonymous) @ setImage.js:32
+(anonymous) @ index.js:413
+tryCatch @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+asyncGeneratorStep @ index.js:2
+_next @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:343
+(anonymous) @ index.js:529
+(anonymous) @ index.js:22
+Worker.postMessage
+module.exports @ tesseract__js.js?v=5b18d862:723
+(anonymous) @ tesseract__js.js?v=5b18d862:823
+startJob @ tesseract__js.js?v=5b18d862:816
+recognize @ tesseract__js.js?v=5b18d862:912
+await in recognize
+(anonymous) @ realOcr.ts:153
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Image file /input cannot be read!
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:16
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:53
+l @ tesseract-core-relaxedsimd-lstm.wasm.js:80
+$func2679 @ 00aeb2ea:0x1ad772
+$func516 @ 00aeb2ea:0x383de
+$func48 @ 00aeb2ea:0x2ea9
+$nd @ 00aeb2ea:0x2503bd
+S.SetImageFile @ tesseract-core-relaxedsimd-lstm.wasm.js:169
+(anonymous) @ setImage.js:32
+(anonymous) @ index.js:413
+tryCatch @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+asyncGeneratorStep @ index.js:2
+_next @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:343
+(anonymous) @ index.js:529
+(anonymous) @ index.js:22
+Worker.postMessage
+module.exports @ tesseract__js.js?v=5b18d862:723
+(anonymous) @ tesseract__js.js?v=5b18d862:823
+startJob @ tesseract__js.js?v=5b18d862:816
+recognize @ tesseract__js.js?v=5b18d862:912
+await in recognize
+(anonymous) @ realOcr.ts:153
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+tesseract__js.js?v=5b18d862:950 Uncaught Error: Error: Error attempting to read image.
+    at tesseract__js.js?v=5b18d862:950:16
+    at worker.onmessage (tesseract__js.js?v=5b18d862:709:4)
+(anonymous) @ tesseract__js.js?v=5b18d862:950
+worker.onmessage @ tesseract__js.js?v=5b18d862:709
+postMessage
+(anonymous) @ index.js:22
+(anonymous) @ index.js:508
+(anonymous) @ index.js:442
+tryCatch @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+asyncGeneratorStep @ index.js:2
+_next @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:343
+(anonymous) @ index.js:529
+(anonymous) @ index.js:22
+Worker.postMessage
+module.exports @ tesseract__js.js?v=5b18d862:723
+(anonymous) @ tesseract__js.js?v=5b18d862:823
+startJob @ tesseract__js.js?v=5b18d862:816
+recognize @ tesseract__js.js?v=5b18d862:912
+await in recognize
+(anonymous) @ realOcr.ts:153
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+realOcr.ts:210 [ALPR OCR] Error ejecutando OCR: Error: Error attempting to read image.
+(anonymous) @ realOcr.ts:210
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixReadStream: Unknown format: no pix returned
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:16
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:53
+l @ tesseract-core-relaxedsimd-lstm.wasm.js:80
+$func2679 @ 00aeb2ea:0x1ad772
+$func850 @ 00aeb2ea:0x6ecbe
+$func89 @ 00aeb2ea:0x417b
+$func1101 @ 00aeb2ea:0x9e4ca
+$func3335 @ 00aeb2ea:0x218510
+$func56 @ 00aeb2ea:0x3332
+$func47 @ 00aeb2ea:0x2e2c
+$func638 @ 00aeb2ea:0x4de3f
+$nd @ 00aeb2ea:0x2503a1
+S.SetImageFile @ tesseract-core-relaxedsimd-lstm.wasm.js:169
+(anonymous) @ setImage.js:32
+(anonymous) @ index.js:413
+tryCatch @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+asyncGeneratorStep @ index.js:2
+_next @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:343
+(anonymous) @ index.js:529
+(anonymous) @ index.js:22
+Worker.postMessage
+module.exports @ tesseract__js.js?v=5b18d862:723
+(anonymous) @ tesseract__js.js?v=5b18d862:823
+startJob @ tesseract__js.js?v=5b18d862:816
+recognize @ tesseract__js.js?v=5b18d862:912
+await in recognize
+(anonymous) @ realOcr.ts:153
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixRead: pix not read
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:16
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:53
+l @ tesseract-core-relaxedsimd-lstm.wasm.js:80
+$func2679 @ 00aeb2ea:0x1ad772
+$func850 @ 00aeb2ea:0x6ecbe
+$func89 @ 00aeb2ea:0x417b
+$func1101 @ 00aeb2ea:0x9e4ca
+$func3335 @ 00aeb2ea:0x218510
+$func56 @ 00aeb2ea:0x3332
+$func47 @ 00aeb2ea:0x2e2c
+$func638 @ 00aeb2ea:0x4dec1
+$nd @ 00aeb2ea:0x2503a1
+S.SetImageFile @ tesseract-core-relaxedsimd-lstm.wasm.js:169
+(anonymous) @ setImage.js:32
+(anonymous) @ index.js:413
+tryCatch @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+asyncGeneratorStep @ index.js:2
+_next @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:343
+(anonymous) @ index.js:529
+(anonymous) @ index.js:22
+Worker.postMessage
+module.exports @ tesseract__js.js?v=5b18d862:723
+(anonymous) @ tesseract__js.js?v=5b18d862:823
+startJob @ tesseract__js.js?v=5b18d862:816
+recognize @ tesseract__js.js?v=5b18d862:912
+await in recognize
+(anonymous) @ realOcr.ts:153
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Image file /input cannot be read!
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:16
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:53
+l @ tesseract-core-relaxedsimd-lstm.wasm.js:80
+$func2679 @ 00aeb2ea:0x1ad772
+$func516 @ 00aeb2ea:0x383de
+$func48 @ 00aeb2ea:0x2ea9
+$nd @ 00aeb2ea:0x2503bd
+S.SetImageFile @ tesseract-core-relaxedsimd-lstm.wasm.js:169
+(anonymous) @ setImage.js:32
+(anonymous) @ index.js:413
+tryCatch @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+asyncGeneratorStep @ index.js:2
+_next @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:343
+(anonymous) @ index.js:529
+(anonymous) @ index.js:22
+Worker.postMessage
+module.exports @ tesseract__js.js?v=5b18d862:723
+(anonymous) @ tesseract__js.js?v=5b18d862:823
+startJob @ tesseract__js.js?v=5b18d862:816
+recognize @ tesseract__js.js?v=5b18d862:912
+await in recognize
+(anonymous) @ realOcr.ts:153
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+tesseract__js.js?v=5b18d862:950 Uncaught Error: Error: Error attempting to read image.
+    at tesseract__js.js?v=5b18d862:950:16
+    at worker.onmessage (tesseract__js.js?v=5b18d862:709:4)
+(anonymous) @ tesseract__js.js?v=5b18d862:950
+worker.onmessage @ tesseract__js.js?v=5b18d862:709
+postMessage
+(anonymous) @ index.js:22
+(anonymous) @ index.js:508
+(anonymous) @ index.js:442
+tryCatch @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+asyncGeneratorStep @ index.js:2
+_next @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:343
+(anonymous) @ index.js:529
+(anonymous) @ index.js:22
+Worker.postMessage
+module.exports @ tesseract__js.js?v=5b18d862:723
+(anonymous) @ tesseract__js.js?v=5b18d862:823
+startJob @ tesseract__js.js?v=5b18d862:816
+recognize @ tesseract__js.js?v=5b18d862:912
+await in recognize
+(anonymous) @ realOcr.ts:153
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+realOcr.ts:210 [ALPR OCR] Error ejecutando OCR: Error: Error attempting to read image.
+(anonymous) @ realOcr.ts:210
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixReadStream: Unknown format: no pix returned
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:16
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:53
+l @ tesseract-core-relaxedsimd-lstm.wasm.js:80
+$func2679 @ 00aeb2ea:0x1ad772
+$func850 @ 00aeb2ea:0x6ecbe
+$func89 @ 00aeb2ea:0x417b
+$func1101 @ 00aeb2ea:0x9e4ca
+$func3335 @ 00aeb2ea:0x218510
+$func56 @ 00aeb2ea:0x3332
+$func47 @ 00aeb2ea:0x2e2c
+$func638 @ 00aeb2ea:0x4de3f
+$nd @ 00aeb2ea:0x2503a1
+S.SetImageFile @ tesseract-core-relaxedsimd-lstm.wasm.js:169
+(anonymous) @ setImage.js:32
+(anonymous) @ index.js:413
+tryCatch @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+asyncGeneratorStep @ index.js:2
+_next @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:343
+(anonymous) @ index.js:529
+(anonymous) @ index.js:22
+Worker.postMessage
+module.exports @ tesseract__js.js?v=5b18d862:723
+(anonymous) @ tesseract__js.js?v=5b18d862:823
+startJob @ tesseract__js.js?v=5b18d862:816
+recognize @ tesseract__js.js?v=5b18d862:912
+await in recognize
+(anonymous) @ realOcr.ts:153
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixRead: pix not read
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:16
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:53
+l @ tesseract-core-relaxedsimd-lstm.wasm.js:80
+$func2679 @ 00aeb2ea:0x1ad772
+$func850 @ 00aeb2ea:0x6ecbe
+$func89 @ 00aeb2ea:0x417b
+$func1101 @ 00aeb2ea:0x9e4ca
+$func3335 @ 00aeb2ea:0x218510
+$func56 @ 00aeb2ea:0x3332
+$func47 @ 00aeb2ea:0x2e2c
+$func638 @ 00aeb2ea:0x4dec1
+$nd @ 00aeb2ea:0x2503a1
+S.SetImageFile @ tesseract-core-relaxedsimd-lstm.wasm.js:169
+(anonymous) @ setImage.js:32
+(anonymous) @ index.js:413
+tryCatch @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+asyncGeneratorStep @ index.js:2
+_next @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:343
+(anonymous) @ index.js:529
+(anonymous) @ index.js:22
+Worker.postMessage
+module.exports @ tesseract__js.js?v=5b18d862:723
+(anonymous) @ tesseract__js.js?v=5b18d862:823
+startJob @ tesseract__js.js?v=5b18d862:816
+recognize @ tesseract__js.js?v=5b18d862:912
+await in recognize
+(anonymous) @ realOcr.ts:153
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Image file /input cannot be read!
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:16
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:53
+l @ tesseract-core-relaxedsimd-lstm.wasm.js:80
+$func2679 @ 00aeb2ea:0x1ad772
+$func516 @ 00aeb2ea:0x383de
+$func48 @ 00aeb2ea:0x2ea9
+$nd @ 00aeb2ea:0x2503bd
+S.SetImageFile @ tesseract-core-relaxedsimd-lstm.wasm.js:169
+(anonymous) @ setImage.js:32
+(anonymous) @ index.js:413
+tryCatch @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+asyncGeneratorStep @ index.js:2
+_next @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:343
+(anonymous) @ index.js:529
+(anonymous) @ index.js:22
+Worker.postMessage
+module.exports @ tesseract__js.js?v=5b18d862:723
+(anonymous) @ tesseract__js.js?v=5b18d862:823
+startJob @ tesseract__js.js?v=5b18d862:816
+recognize @ tesseract__js.js?v=5b18d862:912
+await in recognize
+(anonymous) @ realOcr.ts:153
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+tesseract__js.js?v=5b18d862:950 Uncaught Error: Error: Error attempting to read image.
+    at tesseract__js.js?v=5b18d862:950:16
+    at worker.onmessage (tesseract__js.js?v=5b18d862:709:4)
+(anonymous) @ tesseract__js.js?v=5b18d862:950
+worker.onmessage @ tesseract__js.js?v=5b18d862:709
+postMessage
+(anonymous) @ index.js:22
+(anonymous) @ index.js:508
+(anonymous) @ index.js:442
+tryCatch @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+asyncGeneratorStep @ index.js:2
+_next @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:343
+(anonymous) @ index.js:529
+(anonymous) @ index.js:22
+Worker.postMessage
+module.exports @ tesseract__js.js?v=5b18d862:723
+(anonymous) @ tesseract__js.js?v=5b18d862:823
+startJob @ tesseract__js.js?v=5b18d862:816
+recognize @ tesseract__js.js?v=5b18d862:912
+await in recognize
+(anonymous) @ realOcr.ts:153
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+realOcr.ts:210 [ALPR OCR] Error ejecutando OCR: Error: Error attempting to read image.
+(anonymous) @ realOcr.ts:210
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixReadStream: Unknown format: no pix returned
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:16
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:53
+l @ tesseract-core-relaxedsimd-lstm.wasm.js:80
+$func2679 @ 00aeb2ea:0x1ad772
+$func850 @ 00aeb2ea:0x6ecbe
+$func89 @ 00aeb2ea:0x417b
+$func1101 @ 00aeb2ea:0x9e4ca
+$func3335 @ 00aeb2ea:0x218510
+$func56 @ 00aeb2ea:0x3332
+$func47 @ 00aeb2ea:0x2e2c
+$func638 @ 00aeb2ea:0x4de3f
+$nd @ 00aeb2ea:0x2503a1
+S.SetImageFile @ tesseract-core-relaxedsimd-lstm.wasm.js:169
+(anonymous) @ setImage.js:32
+(anonymous) @ index.js:413
+tryCatch @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+asyncGeneratorStep @ index.js:2
+_next @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:343
+(anonymous) @ index.js:529
+(anonymous) @ index.js:22
+Worker.postMessage
+module.exports @ tesseract__js.js?v=5b18d862:723
+(anonymous) @ tesseract__js.js?v=5b18d862:823
+startJob @ tesseract__js.js?v=5b18d862:816
+recognize @ tesseract__js.js?v=5b18d862:912
+await in recognize
+(anonymous) @ realOcr.ts:153
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixRead: pix not read
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:16
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:53
+l @ tesseract-core-relaxedsimd-lstm.wasm.js:80
+$func2679 @ 00aeb2ea:0x1ad772
+$func850 @ 00aeb2ea:0x6ecbe
+$func89 @ 00aeb2ea:0x417b
+$func1101 @ 00aeb2ea:0x9e4ca
+$func3335 @ 00aeb2ea:0x218510
+$func56 @ 00aeb2ea:0x3332
+$func47 @ 00aeb2ea:0x2e2c
+$func638 @ 00aeb2ea:0x4dec1
+$nd @ 00aeb2ea:0x2503a1
+S.SetImageFile @ tesseract-core-relaxedsimd-lstm.wasm.js:169
+(anonymous) @ setImage.js:32
+(anonymous) @ index.js:413
+tryCatch @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+asyncGeneratorStep @ index.js:2
+_next @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:343
+(anonymous) @ index.js:529
+(anonymous) @ index.js:22
+Worker.postMessage
+module.exports @ tesseract__js.js?v=5b18d862:723
+(anonymous) @ tesseract__js.js?v=5b18d862:823
+startJob @ tesseract__js.js?v=5b18d862:816
+recognize @ tesseract__js.js?v=5b18d862:912
+await in recognize
+(anonymous) @ realOcr.ts:153
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Image file /input cannot be read!
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:16
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:53
+l @ tesseract-core-relaxedsimd-lstm.wasm.js:80
+$func2679 @ 00aeb2ea:0x1ad772
+$func516 @ 00aeb2ea:0x383de
+$func48 @ 00aeb2ea:0x2ea9
+$nd @ 00aeb2ea:0x2503bd
+S.SetImageFile @ tesseract-core-relaxedsimd-lstm.wasm.js:169
+(anonymous) @ setImage.js:32
+(anonymous) @ index.js:413
+tryCatch @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+asyncGeneratorStep @ index.js:2
+_next @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:343
+(anonymous) @ index.js:529
+(anonymous) @ index.js:22
+Worker.postMessage
+module.exports @ tesseract__js.js?v=5b18d862:723
+(anonymous) @ tesseract__js.js?v=5b18d862:823
+startJob @ tesseract__js.js?v=5b18d862:816
+recognize @ tesseract__js.js?v=5b18d862:912
+await in recognize
+(anonymous) @ realOcr.ts:153
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+tesseract__js.js?v=5b18d862:950 Uncaught Error: Error: Error attempting to read image.
+    at tesseract__js.js?v=5b18d862:950:16
+    at worker.onmessage (tesseract__js.js?v=5b18d862:709:4)
+(anonymous) @ tesseract__js.js?v=5b18d862:950
+worker.onmessage @ tesseract__js.js?v=5b18d862:709
+postMessage
+(anonymous) @ index.js:22
+(anonymous) @ index.js:508
+(anonymous) @ index.js:442
+tryCatch @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+asyncGeneratorStep @ index.js:2
+_next @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:343
+(anonymous) @ index.js:529
+(anonymous) @ index.js:22
+Worker.postMessage
+module.exports @ tesseract__js.js?v=5b18d862:723
+(anonymous) @ tesseract__js.js?v=5b18d862:823
+startJob @ tesseract__js.js?v=5b18d862:816
+recognize @ tesseract__js.js?v=5b18d862:912
+await in recognize
+(anonymous) @ realOcr.ts:153
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+realOcr.ts:210 [ALPR OCR] Error ejecutando OCR: Error: Error attempting to read image.
+(anonymous) @ realOcr.ts:210
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixReadStream: Unknown format: no pix returned
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:16
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:53
+l @ tesseract-core-relaxedsimd-lstm.wasm.js:80
+$func2679 @ 00aeb2ea:0x1ad772
+$func850 @ 00aeb2ea:0x6ecbe
+$func89 @ 00aeb2ea:0x417b
+$func1101 @ 00aeb2ea:0x9e4ca
+$func3335 @ 00aeb2ea:0x218510
+$func56 @ 00aeb2ea:0x3332
+$func47 @ 00aeb2ea:0x2e2c
+$func638 @ 00aeb2ea:0x4de3f
+$nd @ 00aeb2ea:0x2503a1
+S.SetImageFile @ tesseract-core-relaxedsimd-lstm.wasm.js:169
+(anonymous) @ setImage.js:32
+(anonymous) @ index.js:413
+tryCatch @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+asyncGeneratorStep @ index.js:2
+_next @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:343
+(anonymous) @ index.js:529
+(anonymous) @ index.js:22
+Worker.postMessage
+module.exports @ tesseract__js.js?v=5b18d862:723
+(anonymous) @ tesseract__js.js?v=5b18d862:823
+startJob @ tesseract__js.js?v=5b18d862:816
+recognize @ tesseract__js.js?v=5b18d862:912
+await in recognize
+(anonymous) @ realOcr.ts:153
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixRead: pix not read
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:16
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:53
+l @ tesseract-core-relaxedsimd-lstm.wasm.js:80
+$func2679 @ 00aeb2ea:0x1ad772
+$func850 @ 00aeb2ea:0x6ecbe
+$func89 @ 00aeb2ea:0x417b
+$func1101 @ 00aeb2ea:0x9e4ca
+$func3335 @ 00aeb2ea:0x218510
+$func56 @ 00aeb2ea:0x3332
+$func47 @ 00aeb2ea:0x2e2c
+$func638 @ 00aeb2ea:0x4dec1
+$nd @ 00aeb2ea:0x2503a1
+S.SetImageFile @ tesseract-core-relaxedsimd-lstm.wasm.js:169
+(anonymous) @ setImage.js:32
+(anonymous) @ index.js:413
+tryCatch @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+asyncGeneratorStep @ index.js:2
+_next @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:343
+(anonymous) @ index.js:529
+(anonymous) @ index.js:22
+Worker.postMessage
+module.exports @ tesseract__js.js?v=5b18d862:723
+(anonymous) @ tesseract__js.js?v=5b18d862:823
+startJob @ tesseract__js.js?v=5b18d862:816
+recognize @ tesseract__js.js?v=5b18d862:912
+await in recognize
+(anonymous) @ realOcr.ts:153
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Image file /input cannot be read!
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:16
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:53
+l @ tesseract-core-relaxedsimd-lstm.wasm.js:80
+$func2679 @ 00aeb2ea:0x1ad772
+$func516 @ 00aeb2ea:0x383de
+$func48 @ 00aeb2ea:0x2ea9
+$nd @ 00aeb2ea:0x2503bd
+S.SetImageFile @ tesseract-core-relaxedsimd-lstm.wasm.js:169
+(anonymous) @ setImage.js:32
+(anonymous) @ index.js:413
+tryCatch @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+asyncGeneratorStep @ index.js:2
+_next @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:343
+(anonymous) @ index.js:529
+(anonymous) @ index.js:22
+Worker.postMessage
+module.exports @ tesseract__js.js?v=5b18d862:723
+(anonymous) @ tesseract__js.js?v=5b18d862:823
+startJob @ tesseract__js.js?v=5b18d862:816
+recognize @ tesseract__js.js?v=5b18d862:912
+await in recognize
+(anonymous) @ realOcr.ts:153
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+tesseract__js.js?v=5b18d862:950 Uncaught Error: Error: Error attempting to read image.
+    at tesseract__js.js?v=5b18d862:950:16
+    at worker.onmessage (tesseract__js.js?v=5b18d862:709:4)
+(anonymous) @ tesseract__js.js?v=5b18d862:950
+worker.onmessage @ tesseract__js.js?v=5b18d862:709
+postMessage
+(anonymous) @ index.js:22
+(anonymous) @ index.js:508
+(anonymous) @ index.js:442
+tryCatch @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+asyncGeneratorStep @ index.js:2
+_next @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:343
+(anonymous) @ index.js:529
+(anonymous) @ index.js:22
+Worker.postMessage
+module.exports @ tesseract__js.js?v=5b18d862:723
+(anonymous) @ tesseract__js.js?v=5b18d862:823
+startJob @ tesseract__js.js?v=5b18d862:816
+recognize @ tesseract__js.js?v=5b18d862:912
+await in recognize
+(anonymous) @ realOcr.ts:153
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+realOcr.ts:210 [ALPR OCR] Error ejecutando OCR: Error: Error attempting to read image.
+(anonymous) @ realOcr.ts:210
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixReadStream: Unknown format: no pix returned
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:16
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:53
+l @ tesseract-core-relaxedsimd-lstm.wasm.js:80
+$func2679 @ 00aeb2ea:0x1ad772
+$func850 @ 00aeb2ea:0x6ecbe
+$func89 @ 00aeb2ea:0x417b
+$func1101 @ 00aeb2ea:0x9e4ca
+$func3335 @ 00aeb2ea:0x218510
+$func56 @ 00aeb2ea:0x3332
+$func47 @ 00aeb2ea:0x2e2c
+$func638 @ 00aeb2ea:0x4de3f
+$nd @ 00aeb2ea:0x2503a1
+S.SetImageFile @ tesseract-core-relaxedsimd-lstm.wasm.js:169
+(anonymous) @ setImage.js:32
+(anonymous) @ index.js:413
+tryCatch @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+asyncGeneratorStep @ index.js:2
+_next @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:343
+(anonymous) @ index.js:529
+(anonymous) @ index.js:22
+Worker.postMessage
+module.exports @ tesseract__js.js?v=5b18d862:723
+(anonymous) @ tesseract__js.js?v=5b18d862:823
+startJob @ tesseract__js.js?v=5b18d862:816
+recognize @ tesseract__js.js?v=5b18d862:912
+await in recognize
+(anonymous) @ realOcr.ts:153
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixRead: pix not read
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:16
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:53
+l @ tesseract-core-relaxedsimd-lstm.wasm.js:80
+$func2679 @ 00aeb2ea:0x1ad772
+$func850 @ 00aeb2ea:0x6ecbe
+$func89 @ 00aeb2ea:0x417b
+$func1101 @ 00aeb2ea:0x9e4ca
+$func3335 @ 00aeb2ea:0x218510
+$func56 @ 00aeb2ea:0x3332
+$func47 @ 00aeb2ea:0x2e2c
+$func638 @ 00aeb2ea:0x4dec1
+$nd @ 00aeb2ea:0x2503a1
+S.SetImageFile @ tesseract-core-relaxedsimd-lstm.wasm.js:169
+(anonymous) @ setImage.js:32
+(anonymous) @ index.js:413
+tryCatch @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+asyncGeneratorStep @ index.js:2
+_next @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:343
+(anonymous) @ index.js:529
+(anonymous) @ index.js:22
+Worker.postMessage
+module.exports @ tesseract__js.js?v=5b18d862:723
+(anonymous) @ tesseract__js.js?v=5b18d862:823
+startJob @ tesseract__js.js?v=5b18d862:816
+recognize @ tesseract__js.js?v=5b18d862:912
+await in recognize
+(anonymous) @ realOcr.ts:153
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Image file /input cannot be read!
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:16
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:53
+l @ tesseract-core-relaxedsimd-lstm.wasm.js:80
+$func2679 @ 00aeb2ea:0x1ad772
+$func516 @ 00aeb2ea:0x383de
+$func48 @ 00aeb2ea:0x2ea9
+$nd @ 00aeb2ea:0x2503bd
+S.SetImageFile @ tesseract-core-relaxedsimd-lstm.wasm.js:169
+(anonymous) @ setImage.js:32
+(anonymous) @ index.js:413
+tryCatch @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+asyncGeneratorStep @ index.js:2
+_next @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:343
+(anonymous) @ index.js:529
+(anonymous) @ index.js:22
+Worker.postMessage
+module.exports @ tesseract__js.js?v=5b18d862:723
+(anonymous) @ tesseract__js.js?v=5b18d862:823
+startJob @ tesseract__js.js?v=5b18d862:816
+recognize @ tesseract__js.js?v=5b18d862:912
+await in recognize
+(anonymous) @ realOcr.ts:153
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+tesseract__js.js?v=5b18d862:950 Uncaught Error: Error: Error attempting to read image.
+    at tesseract__js.js?v=5b18d862:950:16
+    at worker.onmessage (tesseract__js.js?v=5b18d862:709:4)
+(anonymous) @ tesseract__js.js?v=5b18d862:950
+worker.onmessage @ tesseract__js.js?v=5b18d862:709
+postMessage
+(anonymous) @ index.js:22
+(anonymous) @ index.js:508
+(anonymous) @ index.js:442
+tryCatch @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+asyncGeneratorStep @ index.js:2
+_next @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:343
+(anonymous) @ index.js:529
+(anonymous) @ index.js:22
+Worker.postMessage
+module.exports @ tesseract__js.js?v=5b18d862:723
+(anonymous) @ tesseract__js.js?v=5b18d862:823
+startJob @ tesseract__js.js?v=5b18d862:816
+recognize @ tesseract__js.js?v=5b18d862:912
+await in recognize
+(anonymous) @ realOcr.ts:153
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+realOcr.ts:210 [ALPR OCR] Error ejecutando OCR: Error: Error attempting to read image.
+(anonymous) @ realOcr.ts:210
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixReadStream: Unknown format: no pix returned
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:16
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:53
+l @ tesseract-core-relaxedsimd-lstm.wasm.js:80
+$func2679 @ 00aeb2ea:0x1ad772
+$func850 @ 00aeb2ea:0x6ecbe
+$func89 @ 00aeb2ea:0x417b
+$func1101 @ 00aeb2ea:0x9e4ca
+$func3335 @ 00aeb2ea:0x218510
+$func56 @ 00aeb2ea:0x3332
+$func47 @ 00aeb2ea:0x2e2c
+$func638 @ 00aeb2ea:0x4de3f
+$nd @ 00aeb2ea:0x2503a1
+S.SetImageFile @ tesseract-core-relaxedsimd-lstm.wasm.js:169
+(anonymous) @ setImage.js:32
+(anonymous) @ index.js:413
+tryCatch @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+asyncGeneratorStep @ index.js:2
+_next @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:343
+(anonymous) @ index.js:529
+(anonymous) @ index.js:22
+Worker.postMessage
+module.exports @ tesseract__js.js?v=5b18d862:723
+(anonymous) @ tesseract__js.js?v=5b18d862:823
+startJob @ tesseract__js.js?v=5b18d862:816
+recognize @ tesseract__js.js?v=5b18d862:912
+await in recognize
+(anonymous) @ realOcr.ts:153
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixRead: pix not read
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:16
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:53
+l @ tesseract-core-relaxedsimd-lstm.wasm.js:80
+$func2679 @ 00aeb2ea:0x1ad772
+$func850 @ 00aeb2ea:0x6ecbe
+$func89 @ 00aeb2ea:0x417b
+$func1101 @ 00aeb2ea:0x9e4ca
+$func3335 @ 00aeb2ea:0x218510
+$func56 @ 00aeb2ea:0x3332
+$func47 @ 00aeb2ea:0x2e2c
+$func638 @ 00aeb2ea:0x4dec1
+$nd @ 00aeb2ea:0x2503a1
+S.SetImageFile @ tesseract-core-relaxedsimd-lstm.wasm.js:169
+(anonymous) @ setImage.js:32
+(anonymous) @ index.js:413
+tryCatch @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+asyncGeneratorStep @ index.js:2
+_next @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:343
+(anonymous) @ index.js:529
+(anonymous) @ index.js:22
+Worker.postMessage
+module.exports @ tesseract__js.js?v=5b18d862:723
+(anonymous) @ tesseract__js.js?v=5b18d862:823
+startJob @ tesseract__js.js?v=5b18d862:816
+recognize @ tesseract__js.js?v=5b18d862:912
+await in recognize
+(anonymous) @ realOcr.ts:153
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Image file /input cannot be read!
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:16
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:53
+l @ tesseract-core-relaxedsimd-lstm.wasm.js:80
+$func2679 @ 00aeb2ea:0x1ad772
+$func516 @ 00aeb2ea:0x383de
+$func48 @ 00aeb2ea:0x2ea9
+$nd @ 00aeb2ea:0x2503bd
+S.SetImageFile @ tesseract-core-relaxedsimd-lstm.wasm.js:169
+(anonymous) @ setImage.js:32
+(anonymous) @ index.js:413
+tryCatch @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+asyncGeneratorStep @ index.js:2
+_next @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:343
+(anonymous) @ index.js:529
+(anonymous) @ index.js:22
+Worker.postMessage
+module.exports @ tesseract__js.js?v=5b18d862:723
+(anonymous) @ tesseract__js.js?v=5b18d862:823
+startJob @ tesseract__js.js?v=5b18d862:816
+recognize @ tesseract__js.js?v=5b18d862:912
+await in recognize
+(anonymous) @ realOcr.ts:153
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+tesseract__js.js?v=5b18d862:950 Uncaught Error: Error: Error attempting to read image.
+    at tesseract__js.js?v=5b18d862:950:16
+    at worker.onmessage (tesseract__js.js?v=5b18d862:709:4)
+(anonymous) @ tesseract__js.js?v=5b18d862:950
+worker.onmessage @ tesseract__js.js?v=5b18d862:709
+postMessage
+(anonymous) @ index.js:22
+(anonymous) @ index.js:508
+(anonymous) @ index.js:442
+tryCatch @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+asyncGeneratorStep @ index.js:2
+_next @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:343
+(anonymous) @ index.js:529
+(anonymous) @ index.js:22
+Worker.postMessage
+module.exports @ tesseract__js.js?v=5b18d862:723
+(anonymous) @ tesseract__js.js?v=5b18d862:823
+startJob @ tesseract__js.js?v=5b18d862:816
+recognize @ tesseract__js.js?v=5b18d862:912
+await in recognize
+(anonymous) @ realOcr.ts:153
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+realOcr.ts:210 [ALPR OCR] Error ejecutando OCR: Error: Error attempting to read image.
+(anonymous) @ realOcr.ts:210
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixReadStream: Unknown format: no pix returned
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:16
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:53
+l @ tesseract-core-relaxedsimd-lstm.wasm.js:80
+$func2679 @ 00aeb2ea:0x1ad772
+$func850 @ 00aeb2ea:0x6ecbe
+$func89 @ 00aeb2ea:0x417b
+$func1101 @ 00aeb2ea:0x9e4ca
+$func3335 @ 00aeb2ea:0x218510
+$func56 @ 00aeb2ea:0x3332
+$func47 @ 00aeb2ea:0x2e2c
+$func638 @ 00aeb2ea:0x4de3f
+$nd @ 00aeb2ea:0x2503a1
+S.SetImageFile @ tesseract-core-relaxedsimd-lstm.wasm.js:169
+(anonymous) @ setImage.js:32
+(anonymous) @ index.js:413
+tryCatch @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+asyncGeneratorStep @ index.js:2
+_next @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:343
+(anonymous) @ index.js:529
+(anonymous) @ index.js:22
+Worker.postMessage
+module.exports @ tesseract__js.js?v=5b18d862:723
+(anonymous) @ tesseract__js.js?v=5b18d862:823
+startJob @ tesseract__js.js?v=5b18d862:816
+recognize @ tesseract__js.js?v=5b18d862:912
+await in recognize
+(anonymous) @ realOcr.ts:153
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixRead: pix not read
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:16
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:53
+l @ tesseract-core-relaxedsimd-lstm.wasm.js:80
+$func2679 @ 00aeb2ea:0x1ad772
+$func850 @ 00aeb2ea:0x6ecbe
+$func89 @ 00aeb2ea:0x417b
+$func1101 @ 00aeb2ea:0x9e4ca
+$func3335 @ 00aeb2ea:0x218510
+$func56 @ 00aeb2ea:0x3332
+$func47 @ 00aeb2ea:0x2e2c
+$func638 @ 00aeb2ea:0x4dec1
+$nd @ 00aeb2ea:0x2503a1
+S.SetImageFile @ tesseract-core-relaxedsimd-lstm.wasm.js:169
+(anonymous) @ setImage.js:32
+(anonymous) @ index.js:413
+tryCatch @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+asyncGeneratorStep @ index.js:2
+_next @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:343
+(anonymous) @ index.js:529
+(anonymous) @ index.js:22
+Worker.postMessage
+module.exports @ tesseract__js.js?v=5b18d862:723
+(anonymous) @ tesseract__js.js?v=5b18d862:823
+startJob @ tesseract__js.js?v=5b18d862:816
+recognize @ tesseract__js.js?v=5b18d862:912
+await in recognize
+(anonymous) @ realOcr.ts:153
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Image file /input cannot be read!
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:16
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:53
+l @ tesseract-core-relaxedsimd-lstm.wasm.js:80
+$func2679 @ 00aeb2ea:0x1ad772
+$func516 @ 00aeb2ea:0x383de
+$func48 @ 00aeb2ea:0x2ea9
+$nd @ 00aeb2ea:0x2503bd
+S.SetImageFile @ tesseract-core-relaxedsimd-lstm.wasm.js:169
+(anonymous) @ setImage.js:32
+(anonymous) @ index.js:413
+tryCatch @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+asyncGeneratorStep @ index.js:2
+_next @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:343
+(anonymous) @ index.js:529
+(anonymous) @ index.js:22
+Worker.postMessage
+module.exports @ tesseract__js.js?v=5b18d862:723
+(anonymous) @ tesseract__js.js?v=5b18d862:823
+startJob @ tesseract__js.js?v=5b18d862:816
+recognize @ tesseract__js.js?v=5b18d862:912
+await in recognize
+(anonymous) @ realOcr.ts:153
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+tesseract__js.js?v=5b18d862:950 Uncaught Error: Error: Error attempting to read image.
+    at tesseract__js.js?v=5b18d862:950:16
+    at worker.onmessage (tesseract__js.js?v=5b18d862:709:4)
+(anonymous) @ tesseract__js.js?v=5b18d862:950
+worker.onmessage @ tesseract__js.js?v=5b18d862:709
+postMessage
+(anonymous) @ index.js:22
+(anonymous) @ index.js:508
+(anonymous) @ index.js:442
+tryCatch @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+asyncGeneratorStep @ index.js:2
+_next @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:343
+(anonymous) @ index.js:529
+(anonymous) @ index.js:22
+Worker.postMessage
+module.exports @ tesseract__js.js?v=5b18d862:723
+(anonymous) @ tesseract__js.js?v=5b18d862:823
+startJob @ tesseract__js.js?v=5b18d862:816
+recognize @ tesseract__js.js?v=5b18d862:912
+await in recognize
+(anonymous) @ realOcr.ts:153
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+realOcr.ts:210 [ALPR OCR] Error ejecutando OCR: Error: Error attempting to read image.
+(anonymous) @ realOcr.ts:210
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixReadStream: Unknown format: no pix returned
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:16
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:53
+l @ tesseract-core-relaxedsimd-lstm.wasm.js:80
+$func2679 @ 00aeb2ea:0x1ad772
+$func850 @ 00aeb2ea:0x6ecbe
+$func89 @ 00aeb2ea:0x417b
+$func1101 @ 00aeb2ea:0x9e4ca
+$func3335 @ 00aeb2ea:0x218510
+$func56 @ 00aeb2ea:0x3332
+$func47 @ 00aeb2ea:0x2e2c
+$func638 @ 00aeb2ea:0x4de3f
+$nd @ 00aeb2ea:0x2503a1
+S.SetImageFile @ tesseract-core-relaxedsimd-lstm.wasm.js:169
+(anonymous) @ setImage.js:32
+(anonymous) @ index.js:413
+tryCatch @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+asyncGeneratorStep @ index.js:2
+_next @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:343
+(anonymous) @ index.js:529
+(anonymous) @ index.js:22
+Worker.postMessage
+module.exports @ tesseract__js.js?v=5b18d862:723
+(anonymous) @ tesseract__js.js?v=5b18d862:823
+startJob @ tesseract__js.js?v=5b18d862:816
+recognize @ tesseract__js.js?v=5b18d862:912
+await in recognize
+(anonymous) @ realOcr.ts:153
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixRead: pix not read
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:16
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:53
+l @ tesseract-core-relaxedsimd-lstm.wasm.js:80
+$func2679 @ 00aeb2ea:0x1ad772
+$func850 @ 00aeb2ea:0x6ecbe
+$func89 @ 00aeb2ea:0x417b
+$func1101 @ 00aeb2ea:0x9e4ca
+$func3335 @ 00aeb2ea:0x218510
+$func56 @ 00aeb2ea:0x3332
+$func47 @ 00aeb2ea:0x2e2c
+$func638 @ 00aeb2ea:0x4dec1
+$nd @ 00aeb2ea:0x2503a1
+S.SetImageFile @ tesseract-core-relaxedsimd-lstm.wasm.js:169
+(anonymous) @ setImage.js:32
+(anonymous) @ index.js:413
+tryCatch @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+asyncGeneratorStep @ index.js:2
+_next @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:343
+(anonymous) @ index.js:529
+(anonymous) @ index.js:22
+Worker.postMessage
+module.exports @ tesseract__js.js?v=5b18d862:723
+(anonymous) @ tesseract__js.js?v=5b18d862:823
+startJob @ tesseract__js.js?v=5b18d862:816
+recognize @ tesseract__js.js?v=5b18d862:912
+await in recognize
+(anonymous) @ realOcr.ts:153
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Image file /input cannot be read!
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:16
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:53
+l @ tesseract-core-relaxedsimd-lstm.wasm.js:80
+$func2679 @ 00aeb2ea:0x1ad772
+$func516 @ 00aeb2ea:0x383de
+$func48 @ 00aeb2ea:0x2ea9
+$nd @ 00aeb2ea:0x2503bd
+S.SetImageFile @ tesseract-core-relaxedsimd-lstm.wasm.js:169
+(anonymous) @ setImage.js:32
+(anonymous) @ index.js:413
+tryCatch @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+asyncGeneratorStep @ index.js:2
+_next @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:343
+(anonymous) @ index.js:529
+(anonymous) @ index.js:22
+Worker.postMessage
+module.exports @ tesseract__js.js?v=5b18d862:723
+(anonymous) @ tesseract__js.js?v=5b18d862:823
+startJob @ tesseract__js.js?v=5b18d862:816
+recognize @ tesseract__js.js?v=5b18d862:912
+await in recognize
+(anonymous) @ realOcr.ts:153
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+tesseract__js.js?v=5b18d862:950 Uncaught Error: Error: Error attempting to read image.
+    at tesseract__js.js?v=5b18d862:950:16
+    at worker.onmessage (tesseract__js.js?v=5b18d862:709:4)
+(anonymous) @ tesseract__js.js?v=5b18d862:950
+worker.onmessage @ tesseract__js.js?v=5b18d862:709
+postMessage
+(anonymous) @ index.js:22
+(anonymous) @ index.js:508
+(anonymous) @ index.js:442
+tryCatch @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+asyncGeneratorStep @ index.js:2
+_next @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:343
+(anonymous) @ index.js:529
+(anonymous) @ index.js:22
+Worker.postMessage
+module.exports @ tesseract__js.js?v=5b18d862:723
+(anonymous) @ tesseract__js.js?v=5b18d862:823
+startJob @ tesseract__js.js?v=5b18d862:816
+recognize @ tesseract__js.js?v=5b18d862:912
+await in recognize
+(anonymous) @ realOcr.ts:153
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+realOcr.ts:210 [ALPR OCR] Error ejecutando OCR: Error: Error attempting to read image.
+(anonymous) @ realOcr.ts:210
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixReadStream: Unknown format: no pix returned
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:16
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:53
+l @ tesseract-core-relaxedsimd-lstm.wasm.js:80
+$func2679 @ 00aeb2ea:0x1ad772
+$func850 @ 00aeb2ea:0x6ecbe
+$func89 @ 00aeb2ea:0x417b
+$func1101 @ 00aeb2ea:0x9e4ca
+$func3335 @ 00aeb2ea:0x218510
+$func56 @ 00aeb2ea:0x3332
+$func47 @ 00aeb2ea:0x2e2c
+$func638 @ 00aeb2ea:0x4de3f
+$nd @ 00aeb2ea:0x2503a1
+S.SetImageFile @ tesseract-core-relaxedsimd-lstm.wasm.js:169
+(anonymous) @ setImage.js:32
+(anonymous) @ index.js:413
+tryCatch @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+asyncGeneratorStep @ index.js:2
+_next @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:343
+(anonymous) @ index.js:529
+(anonymous) @ index.js:22
+Worker.postMessage
+module.exports @ tesseract__js.js?v=5b18d862:723
+(anonymous) @ tesseract__js.js?v=5b18d862:823
+startJob @ tesseract__js.js?v=5b18d862:816
+recognize @ tesseract__js.js?v=5b18d862:912
+await in recognize
+(anonymous) @ realOcr.ts:153
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixRead: pix not read
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:16
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:53
+l @ tesseract-core-relaxedsimd-lstm.wasm.js:80
+$func2679 @ 00aeb2ea:0x1ad772
+$func850 @ 00aeb2ea:0x6ecbe
+$func89 @ 00aeb2ea:0x417b
+$func1101 @ 00aeb2ea:0x9e4ca
+$func3335 @ 00aeb2ea:0x218510
+$func56 @ 00aeb2ea:0x3332
+$func47 @ 00aeb2ea:0x2e2c
+$func638 @ 00aeb2ea:0x4dec1
+$nd @ 00aeb2ea:0x2503a1
+S.SetImageFile @ tesseract-core-relaxedsimd-lstm.wasm.js:169
+(anonymous) @ setImage.js:32
+(anonymous) @ index.js:413
+tryCatch @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+asyncGeneratorStep @ index.js:2
+_next @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:343
+(anonymous) @ index.js:529
+(anonymous) @ index.js:22
+Worker.postMessage
+module.exports @ tesseract__js.js?v=5b18d862:723
+(anonymous) @ tesseract__js.js?v=5b18d862:823
+startJob @ tesseract__js.js?v=5b18d862:816
+recognize @ tesseract__js.js?v=5b18d862:912
+await in recognize
+(anonymous) @ realOcr.ts:153
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Image file /input cannot be read!
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:16
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:53
+l @ tesseract-core-relaxedsimd-lstm.wasm.js:80
+$func2679 @ 00aeb2ea:0x1ad772
+$func516 @ 00aeb2ea:0x383de
+$func48 @ 00aeb2ea:0x2ea9
+$nd @ 00aeb2ea:0x2503bd
+S.SetImageFile @ tesseract-core-relaxedsimd-lstm.wasm.js:169
+(anonymous) @ setImage.js:32
+(anonymous) @ index.js:413
+tryCatch @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+asyncGeneratorStep @ index.js:2
+_next @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:343
+(anonymous) @ index.js:529
+(anonymous) @ index.js:22
+Worker.postMessage
+module.exports @ tesseract__js.js?v=5b18d862:723
+(anonymous) @ tesseract__js.js?v=5b18d862:823
+startJob @ tesseract__js.js?v=5b18d862:816
+recognize @ tesseract__js.js?v=5b18d862:912
+await in recognize
+(anonymous) @ realOcr.ts:153
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+tesseract__js.js?v=5b18d862:950 Uncaught Error: Error: Error attempting to read image.
+    at tesseract__js.js?v=5b18d862:950:16
+    at worker.onmessage (tesseract__js.js?v=5b18d862:709:4)
+(anonymous) @ tesseract__js.js?v=5b18d862:950
+worker.onmessage @ tesseract__js.js?v=5b18d862:709
+postMessage
+(anonymous) @ index.js:22
+(anonymous) @ index.js:508
+(anonymous) @ index.js:442
+tryCatch @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+asyncGeneratorStep @ index.js:2
+_next @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:343
+(anonymous) @ index.js:529
+(anonymous) @ index.js:22
+Worker.postMessage
+module.exports @ tesseract__js.js?v=5b18d862:723
+(anonymous) @ tesseract__js.js?v=5b18d862:823
+startJob @ tesseract__js.js?v=5b18d862:816
+recognize @ tesseract__js.js?v=5b18d862:912
+await in recognize
+(anonymous) @ realOcr.ts:153
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+realOcr.ts:210 [ALPR OCR] Error ejecutando OCR: Error: Error attempting to read image.
+(anonymous) @ realOcr.ts:210
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixReadStream: Unknown format: no pix returned
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:16
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:53
+l @ tesseract-core-relaxedsimd-lstm.wasm.js:80
+$func2679 @ 00aeb2ea:0x1ad772
+$func850 @ 00aeb2ea:0x6ecbe
+$func89 @ 00aeb2ea:0x417b
+$func1101 @ 00aeb2ea:0x9e4ca
+$func3335 @ 00aeb2ea:0x218510
+$func56 @ 00aeb2ea:0x3332
+$func47 @ 00aeb2ea:0x2e2c
+$func638 @ 00aeb2ea:0x4de3f
+$nd @ 00aeb2ea:0x2503a1
+S.SetImageFile @ tesseract-core-relaxedsimd-lstm.wasm.js:169
+(anonymous) @ setImage.js:32
+(anonymous) @ index.js:413
+tryCatch @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+asyncGeneratorStep @ index.js:2
+_next @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:343
+(anonymous) @ index.js:529
+(anonymous) @ index.js:22
+Worker.postMessage
+module.exports @ tesseract__js.js?v=5b18d862:723
+(anonymous) @ tesseract__js.js?v=5b18d862:823
+startJob @ tesseract__js.js?v=5b18d862:816
+recognize @ tesseract__js.js?v=5b18d862:912
+await in recognize
+(anonymous) @ realOcr.ts:153
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixRead: pix not read
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:16
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:53
+l @ tesseract-core-relaxedsimd-lstm.wasm.js:80
+$func2679 @ 00aeb2ea:0x1ad772
+$func850 @ 00aeb2ea:0x6ecbe
+$func89 @ 00aeb2ea:0x417b
+$func1101 @ 00aeb2ea:0x9e4ca
+$func3335 @ 00aeb2ea:0x218510
+$func56 @ 00aeb2ea:0x3332
+$func47 @ 00aeb2ea:0x2e2c
+$func638 @ 00aeb2ea:0x4dec1
+$nd @ 00aeb2ea:0x2503a1
+S.SetImageFile @ tesseract-core-relaxedsimd-lstm.wasm.js:169
+(anonymous) @ setImage.js:32
+(anonymous) @ index.js:413
+tryCatch @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+asyncGeneratorStep @ index.js:2
+_next @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:343
+(anonymous) @ index.js:529
+(anonymous) @ index.js:22
+Worker.postMessage
+module.exports @ tesseract__js.js?v=5b18d862:723
+(anonymous) @ tesseract__js.js?v=5b18d862:823
+startJob @ tesseract__js.js?v=5b18d862:816
+recognize @ tesseract__js.js?v=5b18d862:912
+await in recognize
+(anonymous) @ realOcr.ts:153
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Image file /input cannot be read!
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:16
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:53
+l @ tesseract-core-relaxedsimd-lstm.wasm.js:80
+$func2679 @ 00aeb2ea:0x1ad772
+$func516 @ 00aeb2ea:0x383de
+$func48 @ 00aeb2ea:0x2ea9
+$nd @ 00aeb2ea:0x2503bd
+S.SetImageFile @ tesseract-core-relaxedsimd-lstm.wasm.js:169
+(anonymous) @ setImage.js:32
+(anonymous) @ index.js:413
+tryCatch @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+asyncGeneratorStep @ index.js:2
+_next @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:343
+(anonymous) @ index.js:529
+(anonymous) @ index.js:22
+Worker.postMessage
+module.exports @ tesseract__js.js?v=5b18d862:723
+(anonymous) @ tesseract__js.js?v=5b18d862:823
+startJob @ tesseract__js.js?v=5b18d862:816
+recognize @ tesseract__js.js?v=5b18d862:912
+await in recognize
+(anonymous) @ realOcr.ts:153
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+tesseract__js.js?v=5b18d862:950 Uncaught Error: Error: Error attempting to read image.
+    at tesseract__js.js?v=5b18d862:950:16
+    at worker.onmessage (tesseract__js.js?v=5b18d862:709:4)
+(anonymous) @ tesseract__js.js?v=5b18d862:950
+worker.onmessage @ tesseract__js.js?v=5b18d862:709
+postMessage
+(anonymous) @ index.js:22
+(anonymous) @ index.js:508
+(anonymous) @ index.js:442
+tryCatch @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+asyncGeneratorStep @ index.js:2
+_next @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:343
+(anonymous) @ index.js:529
+(anonymous) @ index.js:22
+Worker.postMessage
+module.exports @ tesseract__js.js?v=5b18d862:723
+(anonymous) @ tesseract__js.js?v=5b18d862:823
+startJob @ tesseract__js.js?v=5b18d862:816
+recognize @ tesseract__js.js?v=5b18d862:912
+await in recognize
+(anonymous) @ realOcr.ts:153
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+realOcr.ts:210 [ALPR OCR] Error ejecutando OCR: Error: Error attempting to read image.
+(anonymous) @ realOcr.ts:210
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixReadStream: Unknown format: no pix returned
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:16
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:53
+l @ tesseract-core-relaxedsimd-lstm.wasm.js:80
+$func2679 @ 00aeb2ea:0x1ad772
+$func850 @ 00aeb2ea:0x6ecbe
+$func89 @ 00aeb2ea:0x417b
+$func1101 @ 00aeb2ea:0x9e4ca
+$func3335 @ 00aeb2ea:0x218510
+$func56 @ 00aeb2ea:0x3332
+$func47 @ 00aeb2ea:0x2e2c
+$func638 @ 00aeb2ea:0x4de3f
+$nd @ 00aeb2ea:0x2503a1
+S.SetImageFile @ tesseract-core-relaxedsimd-lstm.wasm.js:169
+(anonymous) @ setImage.js:32
+(anonymous) @ index.js:413
+tryCatch @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+asyncGeneratorStep @ index.js:2
+_next @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:343
+(anonymous) @ index.js:529
+(anonymous) @ index.js:22
+Worker.postMessage
+module.exports @ tesseract__js.js?v=5b18d862:723
+(anonymous) @ tesseract__js.js?v=5b18d862:823
+startJob @ tesseract__js.js?v=5b18d862:816
+recognize @ tesseract__js.js?v=5b18d862:912
+await in recognize
+(anonymous) @ realOcr.ts:153
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixRead: pix not read
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:16
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:53
+l @ tesseract-core-relaxedsimd-lstm.wasm.js:80
+$func2679 @ 00aeb2ea:0x1ad772
+$func850 @ 00aeb2ea:0x6ecbe
+$func89 @ 00aeb2ea:0x417b
+$func1101 @ 00aeb2ea:0x9e4ca
+$func3335 @ 00aeb2ea:0x218510
+$func56 @ 00aeb2ea:0x3332
+$func47 @ 00aeb2ea:0x2e2c
+$func638 @ 00aeb2ea:0x4dec1
+$nd @ 00aeb2ea:0x2503a1
+S.SetImageFile @ tesseract-core-relaxedsimd-lstm.wasm.js:169
+(anonymous) @ setImage.js:32
+(anonymous) @ index.js:413
+tryCatch @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+asyncGeneratorStep @ index.js:2
+_next @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:343
+(anonymous) @ index.js:529
+(anonymous) @ index.js:22
+Worker.postMessage
+module.exports @ tesseract__js.js?v=5b18d862:723
+(anonymous) @ tesseract__js.js?v=5b18d862:823
+startJob @ tesseract__js.js?v=5b18d862:816
+recognize @ tesseract__js.js?v=5b18d862:912
+await in recognize
+(anonymous) @ realOcr.ts:153
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Image file /input cannot be read!
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:16
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:53
+l @ tesseract-core-relaxedsimd-lstm.wasm.js:80
+$func2679 @ 00aeb2ea:0x1ad772
+$func516 @ 00aeb2ea:0x383de
+$func48 @ 00aeb2ea:0x2ea9
+$nd @ 00aeb2ea:0x2503bd
+S.SetImageFile @ tesseract-core-relaxedsimd-lstm.wasm.js:169
+(anonymous) @ setImage.js:32
+(anonymous) @ index.js:413
+tryCatch @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+asyncGeneratorStep @ index.js:2
+_next @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:343
+(anonymous) @ index.js:529
+(anonymous) @ index.js:22
+Worker.postMessage
+module.exports @ tesseract__js.js?v=5b18d862:723
+(anonymous) @ tesseract__js.js?v=5b18d862:823
+startJob @ tesseract__js.js?v=5b18d862:816
+recognize @ tesseract__js.js?v=5b18d862:912
+await in recognize
+(anonymous) @ realOcr.ts:153
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+tesseract__js.js?v=5b18d862:950 Uncaught Error: Error: Error attempting to read image.
+    at tesseract__js.js?v=5b18d862:950:16
+    at worker.onmessage (tesseract__js.js?v=5b18d862:709:4)
+(anonymous) @ tesseract__js.js?v=5b18d862:950
+worker.onmessage @ tesseract__js.js?v=5b18d862:709
+postMessage
+(anonymous) @ index.js:22
+(anonymous) @ index.js:508
+(anonymous) @ index.js:442
+tryCatch @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+asyncGeneratorStep @ index.js:2
+_next @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:343
+(anonymous) @ index.js:529
+(anonymous) @ index.js:22
+Worker.postMessage
+module.exports @ tesseract__js.js?v=5b18d862:723
+(anonymous) @ tesseract__js.js?v=5b18d862:823
+startJob @ tesseract__js.js?v=5b18d862:816
+recognize @ tesseract__js.js?v=5b18d862:912
+await in recognize
+(anonymous) @ realOcr.ts:153
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+realOcr.ts:210 [ALPR OCR] Error ejecutando OCR: Error: Error attempting to read image.
+(anonymous) @ realOcr.ts:210
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixReadStream: Unknown format: no pix returned
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:16
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:53
+l @ tesseract-core-relaxedsimd-lstm.wasm.js:80
+$func2679 @ 00aeb2ea:0x1ad772
+$func850 @ 00aeb2ea:0x6ecbe
+$func89 @ 00aeb2ea:0x417b
+$func1101 @ 00aeb2ea:0x9e4ca
+$func3335 @ 00aeb2ea:0x218510
+$func56 @ 00aeb2ea:0x3332
+$func47 @ 00aeb2ea:0x2e2c
+$func638 @ 00aeb2ea:0x4de3f
+$nd @ 00aeb2ea:0x2503a1
+S.SetImageFile @ tesseract-core-relaxedsimd-lstm.wasm.js:169
+(anonymous) @ setImage.js:32
+(anonymous) @ index.js:413
+tryCatch @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+asyncGeneratorStep @ index.js:2
+_next @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:343
+(anonymous) @ index.js:529
+(anonymous) @ index.js:22
+Worker.postMessage
+module.exports @ tesseract__js.js?v=5b18d862:723
+(anonymous) @ tesseract__js.js?v=5b18d862:823
+startJob @ tesseract__js.js?v=5b18d862:816
+recognize @ tesseract__js.js?v=5b18d862:912
+await in recognize
+(anonymous) @ realOcr.ts:153
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixRead: pix not read
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:16
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:53
+l @ tesseract-core-relaxedsimd-lstm.wasm.js:80
+$func2679 @ 00aeb2ea:0x1ad772
+$func850 @ 00aeb2ea:0x6ecbe
+$func89 @ 00aeb2ea:0x417b
+$func1101 @ 00aeb2ea:0x9e4ca
+$func3335 @ 00aeb2ea:0x218510
+$func56 @ 00aeb2ea:0x3332
+$func47 @ 00aeb2ea:0x2e2c
+$func638 @ 00aeb2ea:0x4dec1
+$nd @ 00aeb2ea:0x2503a1
+S.SetImageFile @ tesseract-core-relaxedsimd-lstm.wasm.js:169
+(anonymous) @ setImage.js:32
+(anonymous) @ index.js:413
+tryCatch @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+asyncGeneratorStep @ index.js:2
+_next @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:343
+(anonymous) @ index.js:529
+(anonymous) @ index.js:22
+Worker.postMessage
+module.exports @ tesseract__js.js?v=5b18d862:723
+(anonymous) @ tesseract__js.js?v=5b18d862:823
+startJob @ tesseract__js.js?v=5b18d862:816
+recognize @ tesseract__js.js?v=5b18d862:912
+await in recognize
+(anonymous) @ realOcr.ts:153
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Image file /input cannot be read!
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:16
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:53
+l @ tesseract-core-relaxedsimd-lstm.wasm.js:80
+$func2679 @ 00aeb2ea:0x1ad772
+$func516 @ 00aeb2ea:0x383de
+$func48 @ 00aeb2ea:0x2ea9
+$nd @ 00aeb2ea:0x2503bd
+S.SetImageFile @ tesseract-core-relaxedsimd-lstm.wasm.js:169
+(anonymous) @ setImage.js:32
+(anonymous) @ index.js:413
+tryCatch @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+asyncGeneratorStep @ index.js:2
+_next @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:343
+(anonymous) @ index.js:529
+(anonymous) @ index.js:22
+Worker.postMessage
+module.exports @ tesseract__js.js?v=5b18d862:723
+(anonymous) @ tesseract__js.js?v=5b18d862:823
+startJob @ tesseract__js.js?v=5b18d862:816
+recognize @ tesseract__js.js?v=5b18d862:912
+await in recognize
+(anonymous) @ realOcr.ts:153
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+tesseract__js.js?v=5b18d862:950 Uncaught Error: Error: Error attempting to read image.
+    at tesseract__js.js?v=5b18d862:950:16
+    at worker.onmessage (tesseract__js.js?v=5b18d862:709:4)
+(anonymous) @ tesseract__js.js?v=5b18d862:950
+worker.onmessage @ tesseract__js.js?v=5b18d862:709
+postMessage
+(anonymous) @ index.js:22
+(anonymous) @ index.js:508
+(anonymous) @ index.js:442
+tryCatch @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+asyncGeneratorStep @ index.js:2
+_next @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:343
+(anonymous) @ index.js:529
+(anonymous) @ index.js:22
+Worker.postMessage
+module.exports @ tesseract__js.js?v=5b18d862:723
+(anonymous) @ tesseract__js.js?v=5b18d862:823
+startJob @ tesseract__js.js?v=5b18d862:816
+recognize @ tesseract__js.js?v=5b18d862:912
+await in recognize
+(anonymous) @ realOcr.ts:153
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+realOcr.ts:210 [ALPR OCR] Error ejecutando OCR: Error: Error attempting to read image.
+(anonymous) @ realOcr.ts:210
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixReadStream: Unknown format: no pix returned
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:16
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:53
+l @ tesseract-core-relaxedsimd-lstm.wasm.js:80
+$func2679 @ 00aeb2ea:0x1ad772
+$func850 @ 00aeb2ea:0x6ecbe
+$func89 @ 00aeb2ea:0x417b
+$func1101 @ 00aeb2ea:0x9e4ca
+$func3335 @ 00aeb2ea:0x218510
+$func56 @ 00aeb2ea:0x3332
+$func47 @ 00aeb2ea:0x2e2c
+$func638 @ 00aeb2ea:0x4de3f
+$nd @ 00aeb2ea:0x2503a1
+S.SetImageFile @ tesseract-core-relaxedsimd-lstm.wasm.js:169
+(anonymous) @ setImage.js:32
+(anonymous) @ index.js:413
+tryCatch @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+asyncGeneratorStep @ index.js:2
+_next @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:343
+(anonymous) @ index.js:529
+(anonymous) @ index.js:22
+Worker.postMessage
+module.exports @ tesseract__js.js?v=5b18d862:723
+(anonymous) @ tesseract__js.js?v=5b18d862:823
+startJob @ tesseract__js.js?v=5b18d862:816
+recognize @ tesseract__js.js?v=5b18d862:912
+await in recognize
+(anonymous) @ realOcr.ts:153
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixRead: pix not read
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:16
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:53
+l @ tesseract-core-relaxedsimd-lstm.wasm.js:80
+$func2679 @ 00aeb2ea:0x1ad772
+$func850 @ 00aeb2ea:0x6ecbe
+$func89 @ 00aeb2ea:0x417b
+$func1101 @ 00aeb2ea:0x9e4ca
+$func3335 @ 00aeb2ea:0x218510
+$func56 @ 00aeb2ea:0x3332
+$func47 @ 00aeb2ea:0x2e2c
+$func638 @ 00aeb2ea:0x4dec1
+$nd @ 00aeb2ea:0x2503a1
+S.SetImageFile @ tesseract-core-relaxedsimd-lstm.wasm.js:169
+(anonymous) @ setImage.js:32
+(anonymous) @ index.js:413
+tryCatch @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+asyncGeneratorStep @ index.js:2
+_next @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:343
+(anonymous) @ index.js:529
+(anonymous) @ index.js:22
+Worker.postMessage
+module.exports @ tesseract__js.js?v=5b18d862:723
+(anonymous) @ tesseract__js.js?v=5b18d862:823
+startJob @ tesseract__js.js?v=5b18d862:816
+recognize @ tesseract__js.js?v=5b18d862:912
+await in recognize
+(anonymous) @ realOcr.ts:153
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Image file /input cannot be read!
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:16
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:53
+l @ tesseract-core-relaxedsimd-lstm.wasm.js:80
+$func2679 @ 00aeb2ea:0x1ad772
+$func516 @ 00aeb2ea:0x383de
+$func48 @ 00aeb2ea:0x2ea9
+$nd @ 00aeb2ea:0x2503bd
+S.SetImageFile @ tesseract-core-relaxedsimd-lstm.wasm.js:169
+(anonymous) @ setImage.js:32
+(anonymous) @ index.js:413
+tryCatch @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+asyncGeneratorStep @ index.js:2
+_next @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:343
+(anonymous) @ index.js:529
+(anonymous) @ index.js:22
+Worker.postMessage
+module.exports @ tesseract__js.js?v=5b18d862:723
+(anonymous) @ tesseract__js.js?v=5b18d862:823
+startJob @ tesseract__js.js?v=5b18d862:816
+recognize @ tesseract__js.js?v=5b18d862:912
+await in recognize
+(anonymous) @ realOcr.ts:153
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+tesseract__js.js?v=5b18d862:950 Uncaught Error: Error: Error attempting to read image.
+    at tesseract__js.js?v=5b18d862:950:16
+    at worker.onmessage (tesseract__js.js?v=5b18d862:709:4)
+(anonymous) @ tesseract__js.js?v=5b18d862:950
+worker.onmessage @ tesseract__js.js?v=5b18d862:709
+postMessage
+(anonymous) @ index.js:22
+(anonymous) @ index.js:508
+(anonymous) @ index.js:442
+tryCatch @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+asyncGeneratorStep @ index.js:2
+_next @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:343
+(anonymous) @ index.js:529
+(anonymous) @ index.js:22
+Worker.postMessage
+module.exports @ tesseract__js.js?v=5b18d862:723
+(anonymous) @ tesseract__js.js?v=5b18d862:823
+startJob @ tesseract__js.js?v=5b18d862:816
+recognize @ tesseract__js.js?v=5b18d862:912
+await in recognize
+(anonymous) @ realOcr.ts:153
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+realOcr.ts:210 [ALPR OCR] Error ejecutando OCR: Error: Error attempting to read image.
+(anonymous) @ realOcr.ts:210
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixReadStream: Unknown format: no pix returned
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:16
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:53
+l @ tesseract-core-relaxedsimd-lstm.wasm.js:80
+$func2679 @ 00aeb2ea:0x1ad772
+$func850 @ 00aeb2ea:0x6ecbe
+$func89 @ 00aeb2ea:0x417b
+$func1101 @ 00aeb2ea:0x9e4ca
+$func3335 @ 00aeb2ea:0x218510
+$func56 @ 00aeb2ea:0x3332
+$func47 @ 00aeb2ea:0x2e2c
+$func638 @ 00aeb2ea:0x4de3f
+$nd @ 00aeb2ea:0x2503a1
+S.SetImageFile @ tesseract-core-relaxedsimd-lstm.wasm.js:169
+(anonymous) @ setImage.js:32
+(anonymous) @ index.js:413
+tryCatch @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+asyncGeneratorStep @ index.js:2
+_next @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:343
+(anonymous) @ index.js:529
+(anonymous) @ index.js:22
+Worker.postMessage
+module.exports @ tesseract__js.js?v=5b18d862:723
+(anonymous) @ tesseract__js.js?v=5b18d862:823
+startJob @ tesseract__js.js?v=5b18d862:816
+recognize @ tesseract__js.js?v=5b18d862:912
+await in recognize
+(anonymous) @ realOcr.ts:153
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixRead: pix not read
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:16
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:53
+l @ tesseract-core-relaxedsimd-lstm.wasm.js:80
+$func2679 @ 00aeb2ea:0x1ad772
+$func850 @ 00aeb2ea:0x6ecbe
+$func89 @ 00aeb2ea:0x417b
+$func1101 @ 00aeb2ea:0x9e4ca
+$func3335 @ 00aeb2ea:0x218510
+$func56 @ 00aeb2ea:0x3332
+$func47 @ 00aeb2ea:0x2e2c
+$func638 @ 00aeb2ea:0x4dec1
+$nd @ 00aeb2ea:0x2503a1
+S.SetImageFile @ tesseract-core-relaxedsimd-lstm.wasm.js:169
+(anonymous) @ setImage.js:32
+(anonymous) @ index.js:413
+tryCatch @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+asyncGeneratorStep @ index.js:2
+_next @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:343
+(anonymous) @ index.js:529
+(anonymous) @ index.js:22
+Worker.postMessage
+module.exports @ tesseract__js.js?v=5b18d862:723
+(anonymous) @ tesseract__js.js?v=5b18d862:823
+startJob @ tesseract__js.js?v=5b18d862:816
+recognize @ tesseract__js.js?v=5b18d862:912
+await in recognize
+(anonymous) @ realOcr.ts:153
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Image file /input cannot be read!
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:16
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:53
+l @ tesseract-core-relaxedsimd-lstm.wasm.js:80
+$func2679 @ 00aeb2ea:0x1ad772
+$func516 @ 00aeb2ea:0x383de
+$func48 @ 00aeb2ea:0x2ea9
+$nd @ 00aeb2ea:0x2503bd
+S.SetImageFile @ tesseract-core-relaxedsimd-lstm.wasm.js:169
+(anonymous) @ setImage.js:32
+(anonymous) @ index.js:413
+tryCatch @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+asyncGeneratorStep @ index.js:2
+_next @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:343
+(anonymous) @ index.js:529
+(anonymous) @ index.js:22
+Worker.postMessage
+module.exports @ tesseract__js.js?v=5b18d862:723
+(anonymous) @ tesseract__js.js?v=5b18d862:823
+startJob @ tesseract__js.js?v=5b18d862:816
+recognize @ tesseract__js.js?v=5b18d862:912
+await in recognize
+(anonymous) @ realOcr.ts:153
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+tesseract__js.js?v=5b18d862:950 Uncaught Error: Error: Error attempting to read image.
+    at tesseract__js.js?v=5b18d862:950:16
+    at worker.onmessage (tesseract__js.js?v=5b18d862:709:4)
+(anonymous) @ tesseract__js.js?v=5b18d862:950
+worker.onmessage @ tesseract__js.js?v=5b18d862:709
+postMessage
+(anonymous) @ index.js:22
+(anonymous) @ index.js:508
+(anonymous) @ index.js:442
+tryCatch @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+asyncGeneratorStep @ index.js:2
+_next @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:343
+(anonymous) @ index.js:529
+(anonymous) @ index.js:22
+Worker.postMessage
+module.exports @ tesseract__js.js?v=5b18d862:723
+(anonymous) @ tesseract__js.js?v=5b18d862:823
+startJob @ tesseract__js.js?v=5b18d862:816
+recognize @ tesseract__js.js?v=5b18d862:912
+await in recognize
+(anonymous) @ realOcr.ts:153
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+realOcr.ts:210 [ALPR OCR] Error ejecutando OCR: Error: Error attempting to read image.
+(anonymous) @ realOcr.ts:210
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixReadStream: Unknown format: no pix returned
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:16
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:53
+l @ tesseract-core-relaxedsimd-lstm.wasm.js:80
+$func2679 @ 00aeb2ea:0x1ad772
+$func850 @ 00aeb2ea:0x6ecbe
+$func89 @ 00aeb2ea:0x417b
+$func1101 @ 00aeb2ea:0x9e4ca
+$func3335 @ 00aeb2ea:0x218510
+$func56 @ 00aeb2ea:0x3332
+$func47 @ 00aeb2ea:0x2e2c
+$func638 @ 00aeb2ea:0x4de3f
+$nd @ 00aeb2ea:0x2503a1
+S.SetImageFile @ tesseract-core-relaxedsimd-lstm.wasm.js:169
+(anonymous) @ setImage.js:32
+(anonymous) @ index.js:413
+tryCatch @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+asyncGeneratorStep @ index.js:2
+_next @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:343
+(anonymous) @ index.js:529
+(anonymous) @ index.js:22
+Worker.postMessage
+module.exports @ tesseract__js.js?v=5b18d862:723
+(anonymous) @ tesseract__js.js?v=5b18d862:823
+startJob @ tesseract__js.js?v=5b18d862:816
+recognize @ tesseract__js.js?v=5b18d862:912
+await in recognize
+(anonymous) @ realOcr.ts:153
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixRead: pix not read
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:16
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:53
+l @ tesseract-core-relaxedsimd-lstm.wasm.js:80
+$func2679 @ 00aeb2ea:0x1ad772
+$func850 @ 00aeb2ea:0x6ecbe
+$func89 @ 00aeb2ea:0x417b
+$func1101 @ 00aeb2ea:0x9e4ca
+$func3335 @ 00aeb2ea:0x218510
+$func56 @ 00aeb2ea:0x3332
+$func47 @ 00aeb2ea:0x2e2c
+$func638 @ 00aeb2ea:0x4dec1
+$nd @ 00aeb2ea:0x2503a1
+S.SetImageFile @ tesseract-core-relaxedsimd-lstm.wasm.js:169
+(anonymous) @ setImage.js:32
+(anonymous) @ index.js:413
+tryCatch @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+asyncGeneratorStep @ index.js:2
+_next @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:343
+(anonymous) @ index.js:529
+(anonymous) @ index.js:22
+Worker.postMessage
+module.exports @ tesseract__js.js?v=5b18d862:723
+(anonymous) @ tesseract__js.js?v=5b18d862:823
+startJob @ tesseract__js.js?v=5b18d862:816
+recognize @ tesseract__js.js?v=5b18d862:912
+await in recognize
+(anonymous) @ realOcr.ts:153
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Image file /input cannot be read!
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:16
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:53
+l @ tesseract-core-relaxedsimd-lstm.wasm.js:80
+$func2679 @ 00aeb2ea:0x1ad772
+$func516 @ 00aeb2ea:0x383de
+$func48 @ 00aeb2ea:0x2ea9
+$nd @ 00aeb2ea:0x2503bd
+S.SetImageFile @ tesseract-core-relaxedsimd-lstm.wasm.js:169
+(anonymous) @ setImage.js:32
+(anonymous) @ index.js:413
+tryCatch @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+asyncGeneratorStep @ index.js:2
+_next @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:343
+(anonymous) @ index.js:529
+(anonymous) @ index.js:22
+Worker.postMessage
+module.exports @ tesseract__js.js?v=5b18d862:723
+(anonymous) @ tesseract__js.js?v=5b18d862:823
+startJob @ tesseract__js.js?v=5b18d862:816
+recognize @ tesseract__js.js?v=5b18d862:912
+await in recognize
+(anonymous) @ realOcr.ts:153
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+tesseract__js.js?v=5b18d862:950 Uncaught Error: Error: Error attempting to read image.
+    at tesseract__js.js?v=5b18d862:950:16
+    at worker.onmessage (tesseract__js.js?v=5b18d862:709:4)
+(anonymous) @ tesseract__js.js?v=5b18d862:950
+worker.onmessage @ tesseract__js.js?v=5b18d862:709
+postMessage
+(anonymous) @ index.js:22
+(anonymous) @ index.js:508
+(anonymous) @ index.js:442
+tryCatch @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+asyncGeneratorStep @ index.js:2
+_next @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:343
+(anonymous) @ index.js:529
+(anonymous) @ index.js:22
+Worker.postMessage
+module.exports @ tesseract__js.js?v=5b18d862:723
+(anonymous) @ tesseract__js.js?v=5b18d862:823
+startJob @ tesseract__js.js?v=5b18d862:816
+recognize @ tesseract__js.js?v=5b18d862:912
+await in recognize
+(anonymous) @ realOcr.ts:153
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+realOcr.ts:210 [ALPR OCR] Error ejecutando OCR: Error: Error attempting to read image.
+(anonymous) @ realOcr.ts:210
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixReadStream: Unknown format: no pix returned
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:16
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:53
+l @ tesseract-core-relaxedsimd-lstm.wasm.js:80
+$func2679 @ 00aeb2ea:0x1ad772
+$func850 @ 00aeb2ea:0x6ecbe
+$func89 @ 00aeb2ea:0x417b
+$func1101 @ 00aeb2ea:0x9e4ca
+$func3335 @ 00aeb2ea:0x218510
+$func56 @ 00aeb2ea:0x3332
+$func47 @ 00aeb2ea:0x2e2c
+$func638 @ 00aeb2ea:0x4de3f
+$nd @ 00aeb2ea:0x2503a1
+S.SetImageFile @ tesseract-core-relaxedsimd-lstm.wasm.js:169
+(anonymous) @ setImage.js:32
+(anonymous) @ index.js:413
+tryCatch @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+asyncGeneratorStep @ index.js:2
+_next @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:343
+(anonymous) @ index.js:529
+(anonymous) @ index.js:22
+Worker.postMessage
+module.exports @ tesseract__js.js?v=5b18d862:723
+(anonymous) @ tesseract__js.js?v=5b18d862:823
+startJob @ tesseract__js.js?v=5b18d862:816
+recognize @ tesseract__js.js?v=5b18d862:912
+await in recognize
+(anonymous) @ realOcr.ts:153
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixRead: pix not read
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:16
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:53
+l @ tesseract-core-relaxedsimd-lstm.wasm.js:80
+$func2679 @ 00aeb2ea:0x1ad772
+$func850 @ 00aeb2ea:0x6ecbe
+$func89 @ 00aeb2ea:0x417b
+$func1101 @ 00aeb2ea:0x9e4ca
+$func3335 @ 00aeb2ea:0x218510
+$func56 @ 00aeb2ea:0x3332
+$func47 @ 00aeb2ea:0x2e2c
+$func638 @ 00aeb2ea:0x4dec1
+$nd @ 00aeb2ea:0x2503a1
+S.SetImageFile @ tesseract-core-relaxedsimd-lstm.wasm.js:169
+(anonymous) @ setImage.js:32
+(anonymous) @ index.js:413
+tryCatch @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+asyncGeneratorStep @ index.js:2
+_next @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:343
+(anonymous) @ index.js:529
+(anonymous) @ index.js:22
+Worker.postMessage
+module.exports @ tesseract__js.js?v=5b18d862:723
+(anonymous) @ tesseract__js.js?v=5b18d862:823
+startJob @ tesseract__js.js?v=5b18d862:816
+recognize @ tesseract__js.js?v=5b18d862:912
+await in recognize
+(anonymous) @ realOcr.ts:153
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Image file /input cannot be read!
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:16
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:53
+l @ tesseract-core-relaxedsimd-lstm.wasm.js:80
+$func2679 @ 00aeb2ea:0x1ad772
+$func516 @ 00aeb2ea:0x383de
+$func48 @ 00aeb2ea:0x2ea9
+$nd @ 00aeb2ea:0x2503bd
+S.SetImageFile @ tesseract-core-relaxedsimd-lstm.wasm.js:169
+(anonymous) @ setImage.js:32
+(anonymous) @ index.js:413
+tryCatch @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+asyncGeneratorStep @ index.js:2
+_next @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:343
+(anonymous) @ index.js:529
+(anonymous) @ index.js:22
+Worker.postMessage
+module.exports @ tesseract__js.js?v=5b18d862:723
+(anonymous) @ tesseract__js.js?v=5b18d862:823
+startJob @ tesseract__js.js?v=5b18d862:816
+recognize @ tesseract__js.js?v=5b18d862:912
+await in recognize
+(anonymous) @ realOcr.ts:153
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+tesseract__js.js?v=5b18d862:950 Uncaught Error: Error: Error attempting to read image.
+    at tesseract__js.js?v=5b18d862:950:16
+    at worker.onmessage (tesseract__js.js?v=5b18d862:709:4)
+(anonymous) @ tesseract__js.js?v=5b18d862:950
+worker.onmessage @ tesseract__js.js?v=5b18d862:709
+postMessage
+(anonymous) @ index.js:22
+(anonymous) @ index.js:508
+(anonymous) @ index.js:442
+tryCatch @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+asyncGeneratorStep @ index.js:2
+_next @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:343
+(anonymous) @ index.js:529
+(anonymous) @ index.js:22
+Worker.postMessage
+module.exports @ tesseract__js.js?v=5b18d862:723
+(anonymous) @ tesseract__js.js?v=5b18d862:823
+startJob @ tesseract__js.js?v=5b18d862:816
+recognize @ tesseract__js.js?v=5b18d862:912
+await in recognize
+(anonymous) @ realOcr.ts:153
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+realOcr.ts:210 [ALPR OCR] Error ejecutando OCR: Error: Error attempting to read image.
+(anonymous) @ realOcr.ts:210
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixReadStream: Unknown format: no pix returned
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:16
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:53
+l @ tesseract-core-relaxedsimd-lstm.wasm.js:80
+$func2679 @ 00aeb2ea:0x1ad772
+$func850 @ 00aeb2ea:0x6ecbe
+$func89 @ 00aeb2ea:0x417b
+$func1101 @ 00aeb2ea:0x9e4ca
+$func3335 @ 00aeb2ea:0x218510
+$func56 @ 00aeb2ea:0x3332
+$func47 @ 00aeb2ea:0x2e2c
+$func638 @ 00aeb2ea:0x4de3f
+$nd @ 00aeb2ea:0x2503a1
+S.SetImageFile @ tesseract-core-relaxedsimd-lstm.wasm.js:169
+(anonymous) @ setImage.js:32
+(anonymous) @ index.js:413
+tryCatch @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+asyncGeneratorStep @ index.js:2
+_next @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:343
+(anonymous) @ index.js:529
+(anonymous) @ index.js:22
+Worker.postMessage
+module.exports @ tesseract__js.js?v=5b18d862:723
+(anonymous) @ tesseract__js.js?v=5b18d862:823
+startJob @ tesseract__js.js?v=5b18d862:816
+recognize @ tesseract__js.js?v=5b18d862:912
+await in recognize
+(anonymous) @ realOcr.ts:153
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixRead: pix not read
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:16
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:53
+l @ tesseract-core-relaxedsimd-lstm.wasm.js:80
+$func2679 @ 00aeb2ea:0x1ad772
+$func850 @ 00aeb2ea:0x6ecbe
+$func89 @ 00aeb2ea:0x417b
+$func1101 @ 00aeb2ea:0x9e4ca
+$func3335 @ 00aeb2ea:0x218510
+$func56 @ 00aeb2ea:0x3332
+$func47 @ 00aeb2ea:0x2e2c
+$func638 @ 00aeb2ea:0x4dec1
+$nd @ 00aeb2ea:0x2503a1
+S.SetImageFile @ tesseract-core-relaxedsimd-lstm.wasm.js:169
+(anonymous) @ setImage.js:32
+(anonymous) @ index.js:413
+tryCatch @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+asyncGeneratorStep @ index.js:2
+_next @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:343
+(anonymous) @ index.js:529
+(anonymous) @ index.js:22
+Worker.postMessage
+module.exports @ tesseract__js.js?v=5b18d862:723
+(anonymous) @ tesseract__js.js?v=5b18d862:823
+startJob @ tesseract__js.js?v=5b18d862:816
+recognize @ tesseract__js.js?v=5b18d862:912
+await in recognize
+(anonymous) @ realOcr.ts:153
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Image file /input cannot be read!
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:16
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:53
+l @ tesseract-core-relaxedsimd-lstm.wasm.js:80
+$func2679 @ 00aeb2ea:0x1ad772
+$func516 @ 00aeb2ea:0x383de
+$func48 @ 00aeb2ea:0x2ea9
+$nd @ 00aeb2ea:0x2503bd
+S.SetImageFile @ tesseract-core-relaxedsimd-lstm.wasm.js:169
+(anonymous) @ setImage.js:32
+(anonymous) @ index.js:413
+tryCatch @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+asyncGeneratorStep @ index.js:2
+_next @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:343
+(anonymous) @ index.js:529
+(anonymous) @ index.js:22
+Worker.postMessage
+module.exports @ tesseract__js.js?v=5b18d862:723
+(anonymous) @ tesseract__js.js?v=5b18d862:823
+startJob @ tesseract__js.js?v=5b18d862:816
+recognize @ tesseract__js.js?v=5b18d862:912
+await in recognize
+(anonymous) @ realOcr.ts:153
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+tesseract__js.js?v=5b18d862:950 Uncaught Error: Error: Error attempting to read image.
+    at tesseract__js.js?v=5b18d862:950:16
+    at worker.onmessage (tesseract__js.js?v=5b18d862:709:4)
+(anonymous) @ tesseract__js.js?v=5b18d862:950
+worker.onmessage @ tesseract__js.js?v=5b18d862:709
+postMessage
+(anonymous) @ index.js:22
+(anonymous) @ index.js:508
+(anonymous) @ index.js:442
+tryCatch @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+asyncGeneratorStep @ index.js:2
+_next @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:343
+(anonymous) @ index.js:529
+(anonymous) @ index.js:22
+Worker.postMessage
+module.exports @ tesseract__js.js?v=5b18d862:723
+(anonymous) @ tesseract__js.js?v=5b18d862:823
+startJob @ tesseract__js.js?v=5b18d862:816
+recognize @ tesseract__js.js?v=5b18d862:912
+await in recognize
+(anonymous) @ realOcr.ts:153
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+realOcr.ts:210 [ALPR OCR] Error ejecutando OCR: Error: Error attempting to read image.
+(anonymous) @ realOcr.ts:210
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixReadStream: Unknown format: no pix returned
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:16
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:53
+l @ tesseract-core-relaxedsimd-lstm.wasm.js:80
+$func2679 @ 00aeb2ea:0x1ad772
+$func850 @ 00aeb2ea:0x6ecbe
+$func89 @ 00aeb2ea:0x417b
+$func1101 @ 00aeb2ea:0x9e4ca
+$func3335 @ 00aeb2ea:0x218510
+$func56 @ 00aeb2ea:0x3332
+$func47 @ 00aeb2ea:0x2e2c
+$func638 @ 00aeb2ea:0x4de3f
+$nd @ 00aeb2ea:0x2503a1
+S.SetImageFile @ tesseract-core-relaxedsimd-lstm.wasm.js:169
+(anonymous) @ setImage.js:32
+(anonymous) @ index.js:413
+tryCatch @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+asyncGeneratorStep @ index.js:2
+_next @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:343
+(anonymous) @ index.js:529
+(anonymous) @ index.js:22
+Worker.postMessage
+module.exports @ tesseract__js.js?v=5b18d862:723
+(anonymous) @ tesseract__js.js?v=5b18d862:823
+startJob @ tesseract__js.js?v=5b18d862:816
+recognize @ tesseract__js.js?v=5b18d862:912
+await in recognize
+(anonymous) @ realOcr.ts:153
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Error in pixRead: pix not read
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:16
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:53
+l @ tesseract-core-relaxedsimd-lstm.wasm.js:80
+$func2679 @ 00aeb2ea:0x1ad772
+$func850 @ 00aeb2ea:0x6ecbe
+$func89 @ 00aeb2ea:0x417b
+$func1101 @ 00aeb2ea:0x9e4ca
+$func3335 @ 00aeb2ea:0x218510
+$func56 @ 00aeb2ea:0x3332
+$func47 @ 00aeb2ea:0x2e2c
+$func638 @ 00aeb2ea:0x4dec1
+$nd @ 00aeb2ea:0x2503a1
+S.SetImageFile @ tesseract-core-relaxedsimd-lstm.wasm.js:169
+(anonymous) @ setImage.js:32
+(anonymous) @ index.js:413
+tryCatch @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+asyncGeneratorStep @ index.js:2
+_next @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:343
+(anonymous) @ index.js:529
+(anonymous) @ index.js:22
+Worker.postMessage
+module.exports @ tesseract__js.js?v=5b18d862:723
+(anonymous) @ tesseract__js.js?v=5b18d862:823
+startJob @ tesseract__js.js?v=5b18d862:816
+recognize @ tesseract__js.js?v=5b18d862:912
+await in recognize
+(anonymous) @ realOcr.ts:153
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+tesseract-core-relaxedsimd-lstm.wasm.js:18 Image file /input cannot be read!
+xg @ tesseract-core-relaxedsimd-lstm.wasm.js:18
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:16
+write @ tesseract-core-relaxedsimd-lstm.wasm.js:53
+l @ tesseract-core-relaxedsimd-lstm.wasm.js:80
+$func2679 @ 00aeb2ea:0x1ad772
+$func516 @ 00aeb2ea:0x383de
+$func48 @ 00aeb2ea:0x2ea9
+$nd @ 00aeb2ea:0x2503bd
+S.SetImageFile @ tesseract-core-relaxedsimd-lstm.wasm.js:169
+(anonymous) @ setImage.js:32
+(anonymous) @ index.js:413
+tryCatch @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+asyncGeneratorStep @ index.js:2
+_next @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:343
+(anonymous) @ index.js:529
+(anonymous) @ index.js:22
+Worker.postMessage
+module.exports @ tesseract__js.js?v=5b18d862:723
+(anonymous) @ tesseract__js.js?v=5b18d862:823
+startJob @ tesseract__js.js?v=5b18d862:816
+recognize @ tesseract__js.js?v=5b18d862:912
+await in recognize
+(anonymous) @ realOcr.ts:153
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+tesseract__js.js?v=5b18d862:950 Uncaught Error: Error: Error attempting to read image.
+    at tesseract__js.js?v=5b18d862:950:16
+    at worker.onmessage (tesseract__js.js?v=5b18d862:709:4)
+(anonymous) @ tesseract__js.js?v=5b18d862:950
+worker.onmessage @ tesseract__js.js?v=5b18d862:709
+postMessage
+(anonymous) @ index.js:22
+(anonymous) @ index.js:508
+(anonymous) @ index.js:442
+tryCatch @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+asyncGeneratorStep @ index.js:2
+_next @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:2
+(anonymous) @ index.js:343
+(anonymous) @ index.js:529
+(anonymous) @ index.js:22
+Worker.postMessage
+module.exports @ tesseract__js.js?v=5b18d862:723
+(anonymous) @ tesseract__js.js?v=5b18d862:823
+startJob @ tesseract__js.js?v=5b18d862:816
+recognize @ tesseract__js.js?v=5b18d862:912
+await in recognize
+(anonymous) @ realOcr.ts:153
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+realOcr.ts:210 [ALPR OCR] Error ejecutando OCR: Error: Error attempting to read image.
+(anonymous) @ realOcr.ts:210
+await in (anonymous)
+(anonymous) @ CameraStation.tsx:355
+ Error in pixReadStream: Unknown format: no pix returned
+ Error in pixRead: pix not read
+ Image file /input cannot be read!
+tesseract__js.js?v=5b18d862:950 Uncaught 
+ [ALPR OCR] Error ejecutando OCR: Error: Error attempting to read image.
+ Error in pixReadStream: Unknown format: no pix returned
+ Error in pixRead: pix not read
+ Image file /input cannot be read!
+tesseract__js.js?v=5b18d862:950 Uncaught 
+ [ALPR OCR] Error ejecutando OCR: Error: Error attempting to read image.
+ Error in pixReadStream: Unknown format: no pix returned
+ Error in pixRead: pix not read
+ Image file /input cannot be read!
+tesseract__js.js?v=5b18d862:950 Uncaught 
+ [ALPR OCR] Error ejecutando OCR: Error: Error attempting to read image.
+ Error in pixReadStream: Unknown format: no pix returned
+ Error in pixRead: pix not read
+ Image file /input cannot be read!
+tesseract__js.js?v=5b18d862:950 Uncaught 
+ [ALPR OCR] Error ejecutando OCR: Error: Error attempting to read image.
+ Error in pixReadStream: Unknown format: no pix returned
+ Error in pixRead: pix not read
+ Image file /input cannot be read!
+tesseract__js.js?v=5b18d862:950 Uncaught 
+ [ALPR OCR] Error ejecutando OCR: Error: Error attempting to read image.
+ Error in pixReadStream: Unknown format: no pix returned
+ Error in pixRead: pix not read
+ Image file /input cannot be read!
+tesseract__js.js?v=5b18d862:950 Uncaught 
+ [ALPR OCR] Error ejecutando OCR: Error: Error attempting to read image.
+ Error in pixReadStream: Unknown format: no pix returned
+ Error in pixRead: pix not read
+ Image file /input cannot be read!
+tesseract__js.js?v=5b18d862:950 Uncaught 
+ [ALPR OCR] Error ejecutando OCR: Error: Error attempting to read image.
+ Error in pixReadStream: Unknown format: no pix returned
+ Error in pixRead: pix not read
+ Image file /input cannot be read!
+tesseract__js.js?v=5b18d862:950 Uncaught 
+ [ALPR OCR] Error ejecutando OCR: Error: Error attempting to read image.
+ Error in pixReadStream: Unknown format: no pix returned
+ Error in pixRead: pix not read
+ Image file /input cannot be read!
+tesseract__js.js?v=5b18d862:950 Uncaught 
+ [ALPR OCR] Error ejecutando OCR: Error: Error attempting to read image.

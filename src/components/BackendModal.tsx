@@ -56,12 +56,20 @@ export const BackendModal: React.FC<BackendModalProps> = ({
       cmd: '# Windows (PowerShell):\npython -m venv venv\n.\\venv\\Scripts\\Activate.ps1\n\n# Linux / Mac:\npython3 -m venv venv\nsource venv/bin/activate',
     },
     {
-      title: '3. Instalar librerías de requirements.txt',
+      title: '3. Instalar librerías de requirements.txt (Backend)',
       cmd: 'pip install -r requirements.txt',
     },
     {
-      title: '4. Iniciar el servidor FastAPI (Uvicorn)',
+      title: '4. Iniciar el servidor FastAPI en puerto 8000 (Backend)',
       cmd: 'python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload',
+    },
+    {
+      title: '5. En una segunda terminal: Entrar al Frontend e instalar dependencias',
+      cmd: 'cd frontend\nnpm install',
+    },
+    {
+      title: '6. Iniciar el servidor Frontend en puerto 3000',
+      cmd: 'npm run dev',
     },
   ];
 

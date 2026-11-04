@@ -1,0 +1,6 @@
+{
+  "name": "SGE Pro - Gestión de Estacionamiento Inteligente",
+  "description": "Sistema de Gestión de Estacionamiento Inteligente con validación ALPR/OCR, Tickets QR de doble factor, aforo de 8 cajones, simulación y SQLite.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

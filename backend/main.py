@@ -119,15 +119,22 @@ def get_easyocr_reader():
 
 
 def get_yolo_detector():
-    """Carga el detector YOLO (Ultralytics YOLOv8) para detección precisa de vehículos y matrículas"""
+    """Carga el detector YOLO. Si existe un modelo entrenado (best.pt o peru_plates.pt), lo usa con prioridad"""
     global yolo_detector
     if yolo_detector is None:
         try:
             from ultralytics import YOLO
-            logger.info("Iniciando detector YOLOv8 para localización de vehículos y placas...")
-            # Cargar yolov8n.pt (modelo ultraligero y rápido)
-            yolo_detector = YOLO("yolov8n.pt")
-            logger.info("Detector YOLOv8 inicializado correctamente.")
+            # 1. Buscar si el usuario colocó su modelo entrenado con el dataset de Roboflow
+            model_paths = ["best.pt", "peru_plates.pt", "runs/detect/train/weights/best.pt", "yolov8n.pt"]
+            chosen_model = "yolov8n.pt"
+            for mp in model_paths:
+                if os.path.exists(mp):
+                    chosen_model = mp
+                    break
+            
+            logger.info(f"Cargando detector YOLOv8 con pesos: '{chosen_model}'...")
+            yolo_detector = YOLO(chosen_model)
+            logger.info(f"Detector YOLOv8 ('{chosen_model}') listo para inferencia.")
         except Exception as e:
             logger.warning(f"YOLOv8 no disponible ({e}). Se utilizará detección geométrica OpenCV.")
             yolo_detector = None

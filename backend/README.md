@@ -43,7 +43,17 @@ pip install -r requirements.txt
 
 > **Nota sobre YOLOv8 y EasyOCR:** En el primer arranque, Ultralytics descargará automáticamente el modelo compacto `yolov8n.pt` (~6MB) y EasyOCR descargará el modelo de caracteres. Si tu PC cuenta con GPU NVIDIA, puedes instalar PyTorch con CUDA para inferencia a 60+ FPS; de lo contrario funcionará con total fluidez en CPU.
 
-### 4. Iniciar el servidor FastAPI
+### 4. (Opcional) Usar tu Dataset de Roboflow (Placas Peruanas):
+Si descargaste el dataset de Roboflow (`YOLOv8 TXT` de ~40MB):
+1. Descomprime el contenido dentro de la carpeta `backend/dataset/` (debe quedar `backend/dataset/data.yaml`, `train/` y `valid/`).
+2. Ejecuta el script de entrenamiento:
+   ```bash
+   python train_dataset.py
+   ```
+3. Esto generará el archivo `best.pt` con los pesos entrenados para placas de Perú.
+4. `main.py` detectará automáticamente `best.pt` y lo usará en lugar del modelo genérico.
+
+### 5. Iniciar el servidor FastAPI
 ```bash
 python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 ```

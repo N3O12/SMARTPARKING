@@ -9,10 +9,10 @@ import {
   CAPACIDAD_MAXIMA
 } from './parkingRules';
 
-test('normalizarPlaca cleans spaces and formats standard 6-7 char plates', () => {
-  assert.equal(normalizarPlaca('w1x 942'), 'W1X-942');
+test('normalizarPlaca cleans spaces and formats standard 6 char plates', () => {
+  assert.equal(normalizarPlaca('x71 962'), 'X71-962');
   assert.equal(normalizarPlaca('abc-123'), 'ABC-123');
-  assert.equal(normalizarPlaca('  xyz8899 '), 'XYZ-8899');
+  assert.equal(normalizarPlaca('abc f12'), 'ABC-F12');
 });
 
 test('calcularAutosEnTransito returns difference between recinto and ocupados', () => {

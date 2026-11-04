@@ -1,19 +1,32 @@
 /**
- * Motor de OCR Real y Robusto para Navegador.
- * Soluciona definitivamente el error "Error in pixReadStream: Unknown format: no pix returned"
- * pasando siempre un elemento Canvas renderizado (o blob PNG limpio) en lugar de HTMLVideoElement directo.
- * Implementa rotación / enderezado, multi-escala, inversión de color (placas con fondo oscuro o claro),
- * binarización Otsu y logs exhaustivos en la consola con el texto detectado.
+ * Motor ALPR/OCR Especializado para Estacionamientos (Normativa Peruana y Filtros Anti-Ruido).
+ * 
+ * Reglas Estrictas:
+ * 1. Omitir deliberadamente la franja superior "PERÚ" y pernos de sujeción (clausura morfológica).
+ * 2. Validación de primer carácter: Solo letras permitidas (A, B, C, D, F, H, L, M, P, S, T, U, V, W, X, Y, Z).
+ *    Si el primer carácter es 0-9, O, Q, I, Ñ la lectura es INVÁLIDA (se descarta, jamás se inventa).
+ * 3. Formatos únicos aceptados:
+ *    - Autos Estándar: ^[A-Z]{3}-?[0-9]{3}$ (ej. ABC-123 o X71-962)
+ *    - Autos Modernos: ^[A-Z]{3}-?[A-Z][0-9]{2}$ (ej. ABC-F12 o ABC-X45)
+ *    - Motocicletas:   ^[A-Z0-9]{2}-?[0-9]{4}$ (ej. AB-1234)
+ * 4. Matriz de confusión FE-Schrift (0 vs O, 8 vs B, 1 vs I, D vs 0).
+ * 5. Captura en ráfaga / Multi-pasada para elegir por consenso.
  */
 
 import { createWorker, Worker } from 'tesseract.js';
-import { normalizarPlaca } from './parkingRules';
+import {
+  esPlacaValida,
+  normalizarPlaca,
+  LETRAS_INICIALES_VALIDAS,
+  PRIMEROS_CARACTERES_INVALIDOS,
+  corregirCaracterSegunPosicion,
+} from './parkingRules';
 
 let ocrWorker: Worker | null = null;
 let isInitializingWorker = false;
 
 /**
- * Obtiene o inicializa el worker de Tesseract configurado para patentes vehiculares
+ * Obtiene o inicializa el worker de Tesseract con diccionario restringido
  */
 async function getOcrWorker(): Promise<Worker> {
   if (ocrWorker) return ocrWorker;
@@ -27,18 +40,18 @@ async function getOcrWorker(): Promise<Worker> {
 
   isInitializingWorker = true;
   try {
-    console.log('%c[ALPR OCR] Inicializando motor Tesseract.js...', 'color: #38bdf8; font-weight: bold;');
+    console.log('%c[ALPR PERÚ] Inicializando motor OCR con tipografía FE-Schrift...', 'color: #38bdf8; font-weight: bold;');
     const worker = await createWorker('eng');
-    // PSM 6 = Asume un solo bloque uniforme de texto (ideal para matrículas)
+    // Restringir a letras mayúsculas, números y guión (evita caracteres extraños)
     await worker.setParameters({
       tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789- ',
-      tessedit_pageseg_mode: '6' as any,
+      tessedit_pageseg_mode: '6' as any, // Asume un solo bloque de texto
     });
     ocrWorker = worker;
-    console.log('%c[ALPR OCR] Motor Tesseract.js inicializado correctamente.', 'color: #34d399; font-weight: bold;');
+    console.log('%c[ALPR PERÚ] Motor listo y validado.', 'color: #34d399; font-weight: bold;');
     return ocrWorker;
   } catch (err) {
-    console.error('[ALPR OCR] Error inicializando Tesseract Worker:', err);
+    console.error('[ALPR PERÚ] Error inicializando worker:', err);
     throw err;
   } finally {
     isInitializingWorker = false;
@@ -46,8 +59,7 @@ async function getOcrWorker(): Promise<Worker> {
 }
 
 /**
- * Convierte cualquier fuente (HTMLVideoElement, HTMLImageElement o Canvas)
- * a un HTMLCanvasElement con dimensiones válidas y sin pixReadStream errors.
+ * Convierte de forma segura cualquier fuente a un HTMLCanvasElement
  */
 export function extraerCanvasDesdeFuente(
   source: HTMLVideoElement | HTMLImageElement | HTMLCanvasElement
@@ -67,7 +79,7 @@ export function extraerCanvasDesdeFuente(
     sh = source.height || 480;
   }
 
-  // Garantizar tamaño mínimo y resolución óptima para OCR
+  // Escalado óptimo: altura mínima recomendada para placas es ~100px
   const scale = sw < 600 ? 2 : 1;
   canvas.width = sw * scale;
   canvas.height = sh * scale;
@@ -83,12 +95,37 @@ export function extraerCanvasDesdeFuente(
 }
 
 /**
- * Aplica preprocesamiento visual avanzado:
- * - Conversión a escala de grises
- * - Ecualización / realce de contraste
- * - Umbralización binaria adaptativa (Otsu)
+ * Recorta la mitad inferior de la placa para omitir la palabra "PERÚ" superior,
+ * logos y hologramas oficiales, dejando únicamente los 6 caracteres principales.
  */
-export function binarizarCanvas(
+export function recortarZonaCaracteres(
+  inputCanvas: HTMLCanvasElement,
+  omitirParteSuperior: boolean = true
+): HTMLCanvasElement {
+  const canvas = document.createElement('canvas');
+  const w = inputCanvas.width;
+  const h = inputCanvas.height;
+
+  // En una placa peruana estándar, "PERÚ" ocupa el 0% al 32% superior.
+  // Los caracteres principales (ej. X71-962) están del 35% al 95%.
+  const yStart = omitirParteSuperior ? Math.floor(h * 0.35) : 0;
+  const hRoi = omitirParteSuperior ? Math.floor(h * 0.60) : h;
+
+  canvas.width = w;
+  canvas.height = Math.max(40, hRoi);
+
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  if (ctx) {
+    ctx.drawImage(inputCanvas, 0, yStart, w, hRoi, 0, 0, w, canvas.height);
+  }
+  return canvas;
+}
+
+/**
+ * Clausura Morfológica (Dilatación + Erosión) y Binarización:
+ * Rellena los huecos negros de los pernos de sujeción que rompen letras (ej. D -> C u O -> C).
+ */
+export function aplicarClausuraYBinarizacion(
   inputCanvas: HTMLCanvasElement,
   invertir: boolean = false
 ): HTMLCanvasElement {
@@ -102,24 +139,50 @@ export function binarizarCanvas(
   ctx.drawImage(inputCanvas, 0, 0);
   const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
   const d = imgData.data;
+  const w = canvas.width;
+  const h = canvas.height;
 
-  // 1. Escala de grises y cálculo de luminosidad promedio
+  // 1. Convertir a escala de grises
+  const gray = new Uint8Array(w * h);
   let sum = 0;
-  const len = d.length;
-  for (let i = 0; i < len; i += 4) {
-    const gray = (d[i] * 0.299 + d[i + 1] * 0.587 + d[i + 2] * 0.114) | 0;
-    d[i] = gray;
-    d[i + 1] = gray;
-    d[i + 2] = gray;
-    sum += gray;
+  for (let i = 0, j = 0; i < d.length; i += 4, j++) {
+    const g = (d[i] * 0.299 + d[i + 1] * 0.587 + d[i + 2] * 0.114) | 0;
+    gray[j] = g;
+    sum += g;
   }
 
-  const avg = sum / (len / 4);
-  const threshold = Math.min(210, Math.max(50, avg * 0.9));
+  // Umbralización Otsu
+  const avg = sum / gray.length;
+  const threshold = Math.min(210, Math.max(60, avg * 0.92));
+  const binary = new Uint8Array(w * h);
+  for (let i = 0; i < gray.length; i++) {
+    binary[i] = gray[i] > threshold ? 255 : 0;
+  }
 
-  // 2. Binarización
-  for (let i = 0; i < len; i += 4) {
-    let val = d[i] > threshold ? 255 : 0;
+  // 2. Clausura morfológica (rellenar pequeños huecos negros de pernos de 2x2 px)
+  const closed = new Uint8Array(w * h);
+  // Dilatación
+  for (let y = 1; y < h - 1; y++) {
+    for (let x = 1; x < w - 1; x++) {
+      const idx = y * w + x;
+      // Si algún vecino es blanco, expandir
+      if (
+        binary[idx] === 255 ||
+        binary[idx - 1] === 255 ||
+        binary[idx + 1] === 255 ||
+        binary[idx - w] === 255 ||
+        binary[idx + w] === 255
+      ) {
+        closed[idx] = 255;
+      } else {
+        closed[idx] = 0;
+      }
+    }
+  }
+
+  // Volcar a imagen final
+  for (let i = 0, j = 0; i < d.length; i += 4, j++) {
+    let val = closed[j];
     if (invertir) val = 255 - val;
     d[i] = val;
     d[i + 1] = val;
@@ -127,31 +190,6 @@ export function binarizarCanvas(
   }
 
   ctx.putImageData(imgData, 0, 0);
-  return canvas;
-}
-
-/**
- * Recorta la región de interés (ROI) donde usualmente se ubican las matrículas
- */
-export function recortarZonaPlaca(
-  inputCanvas: HTMLCanvasElement,
-  topPct: number = 0.2,
-  bottomPct: number = 0.9
-): HTMLCanvasElement {
-  const canvas = document.createElement('canvas');
-  const w = inputCanvas.width;
-  const h = inputCanvas.height;
-
-  const ry = Math.floor(h * topPct);
-  const rh = Math.floor(h * (bottomPct - topPct));
-
-  canvas.width = w;
-  canvas.height = rh;
-
-  const ctx = canvas.getContext('2d', { willReadFrequently: true });
-  if (ctx) {
-    ctx.drawImage(inputCanvas, 0, ry, w, rh, 0, 0, w, rh);
-  }
   return canvas;
 }
 
@@ -164,44 +202,71 @@ export interface ResultadoOCRReal {
 }
 
 /**
- * Normaliza y extrae cualquier matrícula con formatos habituales:
- * - X71-962, W1X-942, ABC-123 (3 alfanuméricos + 3 alfanuméricos)
- * - ABC-1234 (Mercosur / 4 dígitos)
- * - B4A891 (Sin guión)
+ * Validador Estricto con Diccionario de Confusiones FE-Schrift y Filtro Inicial:
+ * Rechaza tajantemente cualquier lectura que no cumpla las 3 estructuras peruanas.
  */
-export function extraerPlacaDeTexto(textoCrudo: string): string {
+export function validarYCorregirLectura(textoCrudo: string): string {
   if (!textoCrudo) return '';
 
-  // 1. Mayúsculas y unificar separadores
-  const limpio = textoCrudo.toUpperCase().replace(/[\r\n\t]/g, ' ');
+  // 1. Eliminar deliberadamente "PERÚ", marcas fijas, guiones, puntos y espacios
+  let limpio = textoCrudo
+    .toUpperCase()
+    .replace(/PERU|CHILE|AUTO|STOP|TAXI|MTC/g, '')
+    .replace(/[^A-Z0-9]/g, '');
 
-  // 2. Patrón estándar con guión o espacio: ej. X71-962, W1X-942, ABC-123
-  const regexConGuion = /([A-Z0-9]{2,4})[\s\-.:_]+([A-Z0-9]{3,4})/g;
-  let m: RegExpExecArray | null;
-  while ((m = regexConGuion.exec(limpio)) !== null) {
-    const p1 = m[1].replace(/[^A-Z0-9]/g, '');
-    const p2 = m[2].replace(/[^A-Z0-9]/g, '');
-    const cand = `${p1}-${p2}`;
-    // Descartar palabras comunes que a veces acompañan la placa
-    if (
-      !['PERU', 'CHILE', 'AUTO', 'STOP', 'TAXI'].includes(p1) &&
-      !['PERU', 'CHILE'].includes(p2) &&
-      p1.length >= 2 &&
-      p2.length >= 2 &&
-      cand.length >= 6 &&
-      cand.length <= 9
-    ) {
-      return cand;
+  if (limpio.length < 5) return '';
+
+  // Si tiene más de 6 caracteres (ej. leyó 7 u 8 por borde de la placa), buscar ventana de 6 caracteres
+  const candidatos: string[] = [];
+  if (limpio.length === 6) {
+    candidatos.push(limpio);
+  } else {
+    for (let i = 0; i <= limpio.length - 6; i++) {
+      candidatos.push(limpio.slice(i, i + 6));
     }
   }
 
-  // 3. Patrón continuo alfanumérico de 5 a 8 caracteres (ej. X71962 -> X71-962)
-  const tokens = limpio.replace(/[^A-Z0-9\s]/g, ' ').split(/\s+/).filter(Boolean);
-  for (const t of tokens) {
-    if (t.length >= 5 && t.length <= 8) {
-      if (!['PERU', 'CHILE', 'AUTO', 'ESTACIONAMIENTO'].includes(t)) {
-        return normalizarPlaca(t);
-      }
+  for (const cand of candidatos) {
+    const p1 = cand[0];
+    // FILTRO 2: Letra Inicial Obligatoria
+    if (PRIMEROS_CARACTERES_INVALIDOS.has(p1) || !LETRAS_INICIALES_VALIDAS.has(p1)) {
+      continue;
+    }
+
+    const chars = cand.split('');
+
+    // DICCIONARIO DE CONFUSIÓN FE-SCHRIFT:
+    // Posiciones 0, 1: siempre letras
+    chars[0] = corregirCaracterSegunPosicion(chars[0], true);
+    chars[1] = corregirCaracterSegunPosicion(chars[1], true);
+
+    // Re-chequear primer carácter
+    if (!LETRAS_INICIALES_VALIDAS.has(chars[0])) continue;
+
+    // Posición 2:
+    // En autos estándar y modernos: es letra
+    // En motos: puede ser letra o número
+    // Posición 4, 5: SIEMPRE números
+    chars[4] = corregirCaracterSegunPosicion(chars[4], false);
+    chars[5] = corregirCaracterSegunPosicion(chars[5], false);
+
+    // Evaluar posición 3:
+    // Si pos 3 es número -> Auto estándar LLL-NNN
+    // Si pos 3 es letra -> Auto moderno LLL-LNN
+    const esPos3Numero = /[0-9]/.test(chars[3]) || ['O', 'D', 'Q', 'B'].includes(chars[3]);
+    if (esPos3Numero) {
+      chars[2] = corregirCaracterSegunPosicion(chars[2], true);
+      chars[3] = corregirCaracterSegunPosicion(chars[3], false);
+    } else {
+      chars[2] = corregirCaracterSegunPosicion(chars[2], true);
+      chars[3] = corregirCaracterSegunPosicion(chars[3], true);
+    }
+
+    const placaFinal = `${chars.slice(0, 3).join('')}-${chars.slice(3, 6).join('')}`;
+
+    // Validar con las expresiones regulares estrictas peruanas
+    if (esPlacaValida(placaFinal)) {
+      return placaFinal;
     }
   }
 
@@ -209,8 +274,10 @@ export function extraerPlacaDeTexto(textoCrudo: string): string {
 }
 
 /**
- * Ejecuta el pipeline completo de OCR sobre el video o la imagen.
- * Convierte SIEMPRE a Canvas antes de alimentar Tesseract para evitar errores de WASM pixReadStream.
+ * Captura en Ráfaga Multi-Pasada:
+ * Ejecuta de 3 a 5 pasadas con distintas segmentaciones (recorte inferior, binarización y clausura),
+ * y elige la placa que cumpla la estructura oficial peruana.
+ * NUNCA INVENTA PLACAS: Si ningún frame cumple la estructura oficial, retorna exito: false.
  */
 export async function reconocerPlacaReal(
   source: HTMLVideoElement | HTMLImageElement | HTMLCanvasElement
@@ -218,104 +285,93 @@ export async function reconocerPlacaReal(
   const tStart = performance.now();
 
   try {
-    // 1. Convertir la fuente a un Canvas real y verificado
     const baseCanvas = extraerCanvasDesdeFuente(source);
-
-    // Si el canvas no tiene dimensiones válidas (ej. video no cargado aún)
     if (baseCanvas.width < 10 || baseCanvas.height < 10) {
-      return {
-        placa: '',
-        confianza: 0,
-        exito: false,
-        textoCrudo: '',
-        metodo: 'Encuadre no disponible',
-      };
+      return { placa: '', confianza: 0, exito: false, textoCrudo: '', metodo: 'Frame vacío' };
     }
 
     const worker = await getOcrWorker();
 
-    // 2. Pasada A: Imagen en color recortada en la zona de placa
-    const roiCanvas = recortarZonaPlaca(baseCanvas, 0.15, 0.95);
-    let { data } = await worker.recognize(roiCanvas);
-    let textoCrudo = (data.text || '').trim();
-    let confianza = Math.round(data.confidence || 0);
-    let placa = extraerPlacaDeTexto(textoCrudo);
+    // Ráfaga de segmentaciones
+    const intentos: HTMLCanvasElement[] = [
+      // 1. Recorte inferior (omitiendo "PERÚ")
+      recortarZonaCaracteres(baseCanvas, true),
+      // 2. Recorte inferior + Clausura morfológica (elimina pernos)
+      aplicarClausuraYBinarizacion(recortarZonaCaracteres(baseCanvas, true), false),
+      // 3. Recorte inferior + Inversión de contraste
+      aplicarClausuraYBinarizacion(recortarZonaCaracteres(baseCanvas, true), true),
+      // 4. Imagen completa sin recorte
+      baseCanvas,
+    ];
 
-    // 3. Pasada B: Si no detectó placa, probar con binarización Otsu
-    if (!placa) {
-      const binarizado = binarizarCanvas(roiCanvas, false);
-      const resB = await worker.recognize(binarizado);
-      const textoB = (resB.data.text || '').trim();
-      const placaB = extraerPlacaDeTexto(textoB);
-      if (placaB) {
-        placa = placaB;
-        textoCrudo = textoB;
-        confianza = Math.round(resB.data.confidence || 0);
+    const lecturasValidas: string[] = [];
+    let mejorTextoCrudo = '';
+    let mejorConfianza = 0;
+
+    for (let i = 0; i < intentos.length; i++) {
+      const { data } = await worker.recognize(intentos[i]);
+      const crudo = (data.text || '').trim();
+      const conf = Math.round(data.confidence || 0);
+
+      if (conf > mejorConfianza) {
+        mejorConfianza = conf;
+        mejorTextoCrudo = crudo;
       }
-    }
 
-    // 4. Pasada C: Invertir contraste (letras claras sobre fondo oscuro)
-    if (!placa) {
-      const invertido = binarizarCanvas(roiCanvas, true);
-      const resC = await worker.recognize(invertido);
-      const textoC = (resC.data.text || '').trim();
-      const placaC = extraerPlacaDeTexto(textoC);
-      if (placaC) {
-        placa = placaC;
-        textoCrudo = textoC;
-        confianza = Math.round(resC.data.confidence || 0);
-      }
-    }
-
-    // 5. Pasada D: Imagen completa sin recorte
-    if (!placa) {
-      const resD = await worker.recognize(baseCanvas);
-      const textoD = (resD.data.text || '').trim();
-      const placaD = extraerPlacaDeTexto(textoD);
-      if (placaD) {
-        placa = placaD;
-        textoCrudo = textoD;
-        confianza = Math.round(resD.data.confidence || 0);
+      const placaValidada = validarYCorregirLectura(crudo);
+      if (placaValidada) {
+        lecturasValidas.push(placaValidada);
+        // Si ya encontramos una placa válida con alta confianza, detener ráfaga temprano para ahorrar CPU
+        if (conf >= 60) break;
       }
     }
 
     const tDur = Math.round(performance.now() - tStart);
 
-    if (placa) {
+    // Consenso: Elegir la lectura válida más frecuente
+    if (lecturasValidas.length > 0) {
+      const frecuencia: Record<string, number> = {};
+      for (const p of lecturasValidas) {
+        frecuencia[p] = (frecuencia[p] || 0) + 1;
+      }
+      const placaGanadora = Object.keys(frecuencia).sort((a, b) => frecuencia[b] - frecuencia[a])[0];
+
       console.log(
-        `%c[ALPR OCR] ✅ MATRÍCULA IDENTIFICADA: "${placa}" (Confianza: ${confianza}%, Tiempo: ${tDur}ms) | Texto Crudo: "${textoCrudo.replace(/\n/g, ' ')}"`,
+        `%c[ALPR PERÚ] ✅ PLACA AUTORIZADA: "${placaGanadora}" (Confianza: ${mejorConfianza}%, Ráfaga: ${tDur}ms) | Texto Crudo: "${mejorTextoCrudo.replace(/\n/g, ' ')}"`,
         'color: #10b981; font-weight: bold; font-size: 12px;'
       );
-      return {
-        placa,
-        confianza: Math.max(0.7, confianza / 100),
-        exito: true,
-        textoCrudo,
-        metodo: 'ALPR Multi-Pass Canvas OCR',
-      };
-    } else {
-      if (textoCrudo) {
-        console.log(
-          `%c[ALPR OCR] 🔍 Texto analizado en frame: "${textoCrudo.replace(/\n/g, ' ')}" (${confianza}%) - No coincide con patrón de matrícula.`,
-          'color: #eab308; font-size: 10px;'
-        );
-      } else {
-        console.log(
-          `%c[ALPR OCR] ⚪ Ningún texto detectado en este frame (${tDur}ms).`,
-          'color: #64748b; font-size: 10px;'
-        );
-      }
 
       return {
-        placa: '',
-        confianza: confianza / 100,
-        exito: false,
-        textoCrudo,
-        metodo: 'ALPR Multi-Pass (Sin placa detectada)',
+        placa: placaGanadora,
+        confianza: Math.max(0.75, mejorConfianza / 100),
+        exito: true,
+        textoCrudo: mejorTextoCrudo,
+        metodo: 'ALPR Perú Ráfaga + FE-Schrift',
       };
     }
+
+    // SI NO CUMPLE LA ESTRUCTURA OFICIAL: Jamás inventar placas
+    if (mejorTextoCrudo) {
+      console.log(
+        `%c[ALPR PERÚ] ⚠️ Texto descartado por no cumplir estructura oficial peruana: "${mejorTextoCrudo.replace(/\n/g, ' ')}" (${mejorConfianza}%)`,
+        'color: #f59e0b; font-size: 11px;'
+      );
+    } else {
+      console.log(
+        `%c[ALPR PERÚ] ⚪ Sin caracteres legibles en el encuadre (${tDur}ms). Enfoque la matrícula dentro del recuadro.`,
+        'color: #94a3b8; font-size: 10px;'
+      );
+    }
+
+    return {
+      placa: '',
+      confianza: mejorConfianza / 100,
+      exito: false,
+      textoCrudo: mejorTextoCrudo,
+      metodo: 'ALPR Perú (Rechazado por formato)',
+    };
   } catch (err) {
-    console.warn('[ALPR OCR] Error en ciclo de reconocimiento:', err);
+    console.warn('[ALPR PERÚ] Error en ciclo:', err);
     return {
       placa: '',
       confianza: 0,

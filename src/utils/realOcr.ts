@@ -234,12 +234,12 @@ export interface ResultadoOCRReal {
  * Validador Estricto con Filtro de Letra Inicial y Longitud Exacta (6 caracteres)
  */
 export function validarYCorregirLectura(textoCrudo: string, confianza: number): string {
-  // Descartar si el OCR arrojó confianza baja (< 50%) para evitar basura visual
-  if (!textoCrudo || confianza < 50) return '';
+  // Descartar si el OCR arrojó confianza muy baja (< 30%)
+  if (!textoCrudo || confianza < 30) return '';
 
   let limpio = textoCrudo
     .toUpperCase()
-    .replace(/PERU|CHILE|AUTO|STOP|TAXI|MTC/g, '')
+    .replace(/PERU|PERÚ|CHILE|AUTO|STOP|TAXI|MTC/g, '')
     .replace(/[^A-Z0-9]/g, '');
 
   if (limpio.length < 5) return '';
@@ -264,23 +264,17 @@ export function validarYCorregirLectura(textoCrudo: string, confianza: number): 
     const chars = cand.split('');
 
     // DICCIONARIO DE CONFUSIÓN FE-SCHRIFT:
+    // Carácter 0: SIEMPRE Letra geográfica oficial
     chars[0] = corregirCaracterSegunPosicion(chars[0], true);
-    chars[1] = corregirCaracterSegunPosicion(chars[1], true);
-
     if (!LETRAS_INICIALES_VALIDAS.has(chars[0])) continue;
 
-    // Posición 4, 5: SIEMPRE números
+    // Caracteres 4 y 5: SIEMPRE números en placas peruanas de 6 caracteres
     chars[4] = corregirCaracterSegunPosicion(chars[4], false);
     chars[5] = corregirCaracterSegunPosicion(chars[5], false);
 
-    // Evaluar posición 3
-    const esPos3Numero = /[0-9]/.test(chars[3]) || ['O', 'D', 'Q', 'B'].includes(chars[3]);
-    if (esPos3Numero) {
-      chars[2] = corregirCaracterSegunPosicion(chars[2], true);
+    // Carácter 3: si parece dígito o confusión típica (0, O, D, Q, B, 1, I), convertir a número
+    if (/[0-9ODQBI]/.test(chars[3])) {
       chars[3] = corregirCaracterSegunPosicion(chars[3], false);
-    } else {
-      chars[2] = corregirCaracterSegunPosicion(chars[2], true);
-      chars[3] = corregirCaracterSegunPosicion(chars[3], true);
     }
 
     const placaFinal = `${chars.slice(0, 3).join('')}-${chars.slice(3, 6).join('')}`;
@@ -355,12 +349,12 @@ export async function reconocerPlacaReal(
         mejorTextoCrudo = crudo;
       }
 
-      // Validar con umbral de confianza mínimo de 50%
+      // Validar con umbral de confianza mínimo de 30%
       const placaValidada = validarYCorregirLectura(crudo, conf);
-      if (placaValidada && conf >= 50) {
+      if (placaValidada && conf >= 30) {
         mejorPlaca = placaValidada;
         mejorConfianza = conf;
-        break; // Detener en cuanto una segmentación dé una placa con alta confianza
+        break; // Detener en cuanto una segmentación dé una placa con confianza suficiente
       }
     }
 

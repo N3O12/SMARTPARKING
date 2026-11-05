@@ -151,42 +151,46 @@ PALABRAS_PROHIBIDAS_UI = {
 def limpiar_texto_placa(texto: str) -> str:
     """
     Normaliza y extrae un patrón estricto de matrícula vehicular peruana (MTC):
-    - Estándar autos: 3 alfanuméricos + 3 dígitos (ej: ABC-123, A1B-234, X71-962, AEF-710)
+    - Estándar autos: 3 alfanuméricos + 3 dígitos (ej: W2U-792, ABC-123, A1B-234, X71-962, AEF-710)
     - Motos / Especiales: 2 alfanuméricos + 4 dígitos (ej: AB-1234, 12-3456)
-    - Descartar totalmente cadenas sin números (ej: COO-WCM de barras de navegador) o palabras de UI.
+    - Filtra 'PERU', 'PERÚ', 'MTC' impresos en la parte superior de las placas oficiales
+    - Descarta ruidos de interfaz web o cadenas sin dígitos
     """
     if not texto:
         return ""
-    limpio = re.sub(r'[^A-Z0-9]', '', texto.upper())
     
     # 1. Descartar si contiene palabras de URL o interfaz
     for palabra in PALABRAS_PROHIBIDAS_UI:
-        if palabra in limpio:
+        if palabra in texto.upper():
             return ""
 
-    # Longitud mínima de matrícula peruana
-    if len(limpio) < 5 or len(limpio) > 8:
+    # 2. Remover cabeceras oficiales impresas en la chapa (ej. "PERU", "MTC")
+    t = re.sub(r'\b(PERU|PERÚ|MTC|AUTO|TAXI|CHILE)\b', '', texto.upper())
+    limpio = re.sub(r'[^A-Z0-9]', '', t)
+    # Limpiar si venía pegado sin espacios (ej. "PERUW2U792" -> "W2U792")
+    limpio = limpio.replace("PERU", "").replace("PERÚ", "").replace("MTC", "")
+
+    if len(limpio) < 5:
         return ""
 
-    # 2. Formato estándar MTC: 3 alfanuméricos + 3 dígitos obligatorios (ej. A1B-234, X71-962)
+    # 3. Formato estándar MTC: 3 alfanuméricos + 3 dígitos obligatorios (ej. W2U-792, A1B-234, X71-962)
     match_std = re.search(r'([A-Z0-9]{3})([0-9]{3})', limpio)
     if match_std:
         p1, p2 = match_std.group(1), match_std.group(2)
         # Asegurar que el primer bloque no sea ruido de 3 ceros o letras idénticas de UI
-        if p1 != "000" and p1 != "OOO":
+        if p1 not in ("000", "OOO"):
             return f"{p1}-{p2}"
 
-    # 3. Formato moto/especial: 2 alfanuméricos + 4 dígitos (ej. AB-1234)
+    # 4. Formato moto/especial: 2 alfanuméricos + 4 dígitos (ej. AB-1234)
     match_moto = re.search(r'([A-Z0-9]{2})([0-9]{4})', limpio)
     if match_moto:
         return f"{match_moto.group(1)}-{match_moto.group(2)}"
 
-    # 4. Formato de 6 caracteres con guión (exige al menos 2 números en la matrícula)
+    # 5. Formato de 6 caracteres con guión (exige al menos 2 números en la matrícula)
     match_6 = re.search(r'([A-Z0-9]{3})([A-Z0-9]{3})', limpio)
     if match_6:
         cand = f"{match_6.group(1)}-{match_6.group(2)}"
         total_digitos = sum(c.isdigit() for c in cand)
-        # Una placa vehicular peruana NUNCA es 100% letras (ej. COO-WCM es falso positivo)
         if total_digitos >= 2:
             return cand
 
@@ -375,29 +379,66 @@ def preprocesar_y_leer_placa(img: np.ndarray) -> dict:
     clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(6, 6))
     gray_clahe = clahe.apply(sharpened)
 
-    # 4. Lectura OCR con EasyOCR y FILTRO ESTRICTO DE CONFIANZA
+    def extraer_candidatos_ocr(resultados_ocr, min_conf=0.28):
+        cands = []
+        if not resultados_ocr:
+            return cands
+        
+        # 1. Cajas individuales (ej. "W2U-792")
+        for (bbox, text, conf) in resultados_ocr:
+            p = limpiar_texto_placa(text)
+            c = float(conf)
+            if p and c >= min_conf:
+                cands.append((p, c))
+        
+        # 2. Texto total concatenado de la placa (ej. "PERU W2U 792" -> "W2U-792")
+        textos_todos = [r[1] for r in resultados_ocr if r[1].strip()]
+        if len(textos_todos) > 1:
+            texto_unido = " ".join(textos_todos)
+            p_unida = limpiar_texto_placa(texto_unido)
+            if p_unida:
+                avg_conf = sum(float(r[2]) for r in resultados_ocr) / len(resultados_ocr)
+                if avg_conf >= min_conf:
+                    cands.append((p_unida, avg_conf))
+
+        # 3. Pares de cajas consecutivas (ej. "W2U" y "792")
+        for i in range(len(resultados_ocr) - 1):
+            txt_par = f"{resultados_ocr[i][1]} {resultados_ocr[i+1][1]}"
+            p_par = limpiar_texto_placa(txt_par)
+            if p_par:
+                c_par = (float(resultados_ocr[i][2]) + float(resultados_ocr[i+1][2])) / 2.0
+                if c_par >= min_conf:
+                    cands.append((p_par, c_par))
+                    
+        return cands
+
+    # 4. Lectura OCR multi-pasada: Pasada 1 en color natural, Pasada 2 en CLAHE ecualizado
     reader = get_easyocr_reader()
     texto_detectado = ""
     confianza = 0.0
-    MIN_CONFIANZA_ACEPTABLE = 0.35  # Umbral mínimo: nunca aceptar ruidos espurios o detecciones de 1%
 
     if reader is not None:
         try:
-            resultados = reader.readtext(
-                gray_clahe,
-                allowlist='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-',
+            # Pasada 1: Imagen en color natural (ideal para placas amarillas peruanas y texto reflectante)
+            res_color = reader.readtext(
+                roi_optima,
+                allowlist='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789- ',
                 detail=1,
                 paragraph=False,
                 batch_size=1
             )
-            
-            candidatos = []
-            for (bbox, text, conf) in resultados:
-                placa_cand = limpiar_texto_placa(text)
-                c_val = float(conf)
-                # Exigir formato de placa peruana válido y confianza >= 35%
-                if placa_cand and c_val >= MIN_CONFIANZA_ACEPTABLE:
-                    candidatos.append((placa_cand, c_val))
+            candidatos = extraer_candidatos_ocr(res_color, min_conf=0.28)
+
+            # Pasada 2: Si no hubo candidatos, probar con CLAHE ecualizado y enfocado
+            if not candidatos:
+                res_clahe = reader.readtext(
+                    gray_clahe,
+                    allowlist='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789- ',
+                    detail=1,
+                    paragraph=False,
+                    batch_size=1
+                )
+                candidatos = extraer_candidatos_ocr(res_clahe, min_conf=0.28)
             
             if candidatos:
                 candidatos.sort(key=lambda x: x[1], reverse=True)
@@ -405,26 +446,6 @@ def preprocesar_y_leer_placa(img: np.ndarray) -> dict:
                 confianza = candidatos[0][1]
         except Exception as e:
             logger.error(f"Error en lectura EasyOCR: {e}")
-
-    # Si EasyOCR no leyó en la imagen ecualizada, prueba una pasada en color con el mismo filtro estricto
-    if not texto_detectado and reader is not None:
-        try:
-            resultados_color = reader.readtext(
-                roi_optima,
-                allowlist='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-',
-                detail=1,
-                paragraph=False,
-                batch_size=1
-            )
-            for (bbox, text, conf) in resultados_color:
-                placa_cand = limpiar_texto_placa(text)
-                c_val = float(conf)
-                if placa_cand and c_val >= MIN_CONFIANZA_ACEPTABLE:
-                    texto_detectado = placa_cand
-                    confianza = c_val
-                    break
-        except Exception:
-            pass
 
     duracion_ms = round((time.time() - t_start) * 1000, 1)
     if texto_detectado:

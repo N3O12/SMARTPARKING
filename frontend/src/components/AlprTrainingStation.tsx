@@ -530,6 +530,43 @@ export const AlprTrainingStation: React.FC<AlprTrainingStationProps> = ({
         res = null;
       }
 
+      if (res && res.frame_width && res.frame_height) {
+        setDetectedFrameDims({ width: res.frame_width, height: res.frame_height });
+      }
+
+      // Si el detector localizó la caja de la placa
+      if (res && res.bbox && res.bbox.length === 4 && res.bbox[2] > res.bbox[0]) {
+        setLastBbox(res.bbox);
+        setLockedBbox(res.bbox);
+        
+        await new Promise<void>((resolve) => {
+          recortarRegionPlaca(base64, res!.bbox, async (cropData) => {
+            setLockedCropImage(cropData);
+
+            // Si el backend no leyó la placa o la confianza fue baja, ejecutar OCR directo sobre el recorte
+            if (!res?.placa || res.confianza < 35) {
+              try {
+                const cropRes = await reconocerPlacaReal(cropData);
+                if (cropRes.placa && cropRes.confianza > 0.25) {
+                  res = {
+                    ...res!,
+                    placa: cropRes.placa,
+                    confianza: Math.round(cropRes.confianza * 100),
+                    textoCrudo: cropRes.textoCrudo,
+                    metodo: 'OCR sobre Recorte de Matrícula',
+                    exito: true,
+                  };
+                }
+              } catch (e) {
+                console.warn('Aviso en OCR de recorte:', e);
+              }
+            }
+            resolve();
+          });
+        });
+      }
+
+      // Si aún no se tiene placa, intentar OCR sobre la foto completa
       if (!res || !res.placa || res.confianza < 35) {
         const localRes = await reconocerPlacaReal(base64);
         if (localRes.placa && localRes.confianza > (res?.confianza || 0)) {
@@ -537,19 +574,7 @@ export const AlprTrainingStation: React.FC<AlprTrainingStationProps> = ({
         }
       }
 
-      if (res && res.frame_width && res.frame_height) {
-        setDetectedFrameDims({ width: res.frame_width, height: res.frame_height });
-      }
-
-      if (res && res.bbox && res.bbox.length === 4 && res.bbox[2] > res.bbox[0]) {
-        setLastBbox(res.bbox);
-        setLockedBbox(res.bbox);
-        recortarRegionPlaca(base64, res.bbox, (cropData) => {
-          setLockedCropImage(cropData);
-        });
-      }
-
-      if (res && res.placa && res.confianza >= 35) {
+      if (res && res.placa && res.confianza >= 30) {
         const placaNormalizada = normalizarPlaca(res.placa);
         setDetectedPlate(placaNormalizada);
         setLockedPlate(placaNormalizada);

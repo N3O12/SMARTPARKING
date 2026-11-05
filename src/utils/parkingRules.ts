@@ -95,52 +95,54 @@ export function corregirCaracterSegunPosicion(
 export function normalizarPlaca(texto: string): string {
   if (!texto) return '';
 
-  // 1. Omitir deliberadamente palabras fijas y ruidos comunes
+  // 1. Omitir deliberadamente palabras fijas de cabeceras oficiales y ruidos comunes
   let limpio = texto
     .toUpperCase()
-    .replace(/PERU|CHILE|AUTO|STOP|TAXI|MTC/g, '')
+    .replace(/PERU|PERÚ|CHILE|AUTO|STOP|TAXI|MTC/g, '')
     .replace(/[^A-Z0-9]/g, '');
 
   if (limpio.length < 5) return '';
 
-  // Si tiene más de 6 caracteres (ej. tomó 7), quedarnos con el núcleo de 6 caracteres
+  // 2. Si tiene más de 6 caracteres (ej. "PERUW2U792" o ruidos pegados), buscar subsecuencia válida de 6 caracteres
   if (limpio.length > 6) {
-    limpio = limpio.slice(0, 6);
+    let subValida = '';
+    for (let i = 0; i <= limpio.length - 6; i++) {
+      const sub = limpio.slice(i, i + 6);
+      if (LETRAS_INICIALES_VALIDAS.has(sub[0]) && !PRIMEROS_CARACTERES_INVALIDOS.has(sub[0])) {
+        // Verificar que tenga al menos 2 dígitos para evitar falsos positivos
+        const numDigitos = (sub.match(/[0-9]/g) || []).length;
+        if (numDigitos >= 2) {
+          subValida = sub;
+          break;
+        }
+      }
+    }
+    limpio = subValida || limpio.slice(0, 6);
   }
 
-  // 2. Validación de primer carácter
+  // 3. Validación de primer carácter
   const primerChar = limpio[0];
   if (PRIMEROS_CARACTERES_INVALIDOS.has(primerChar) || !LETRAS_INICIALES_VALIDAS.has(primerChar)) {
-    // Si el primer carácter fue confundido (ej: un 0 o una O), no es válido como serie peruana
     return '';
   }
 
   if (limpio.length === 6) {
-    // Si ya viene como 3 letras + 3 números
-    const estandarMatch = limpio.match(/^([A-Z]{3})([0-9]{3})$/);
-    if (estandarMatch) {
-      return `${estandarMatch[1]}-${estandarMatch[2]}`;
-    }
+    // Verificar que contenga al menos 2 números (evita palabras como COOWCM)
+    const digitos = (limpio.match(/[0-9]/g) || []).length;
+    if (digitos < 2) return '';
 
-    // Si viene como 3 letras + 1 letra + 2 números (Moderno)
-    const modernoMatch = limpio.match(/^([A-Z]{3})([A-Z][0-9]{2})$/);
-    if (modernoMatch) {
-      return `${modernoMatch[1]}-${modernoMatch[2]}`;
-    }
-
-    // Si viene como 3 caracteres alfanuméricos + 3 alfanuméricos (ej. X71-962 o W1X-942)
-    // donde la serie tiene números/letras combinados
-    const alfanumMatch = limpio.match(/^([A-Z0-9]{3})([A-Z0-9]{3})$/);
-    if (alfanumMatch) {
-      return `${alfanumMatch[1]}-${alfanumMatch[2]}`;
-    }
+    return `${limpio.slice(0, 3)}-${limpio.slice(3, 6)}`;
   }
 
   return '';
 }
 
 /**
- * Valida si una placa cumple con cualquiera de las estructuras legales peruanas
+ * Valida si una placa cumple con cualquiera de las estructuras legales peruanas (MTC)
+ * - Autos y camionetas estándar: ABC-123, AEF-710 (3 letras + 3 dígitos)
+ * - Camionetas, taxis y comerciales: W2U-792, A1A-123, T1A-123, F5U-597, A1B-234, X71-962 (1 letra inicial + 2 alfanuméricos + 3 dígitos)
+ * - Autos modernos combinados: ABC-X45 (3 letras + 1 letra + 2 dígitos)
+ * - Motos: AB-1234 (2 alfanuméricos + 4 dígitos)
  */
 export function esPlacaValida(placa: string): boolean {
   if (!placa) return false;
@@ -148,22 +150,35 @@ export function esPlacaValida(placa: string): boolean {
   if (sinGuion.length !== 6) return false;
 
   const primerChar = sinGuion[0];
-  if (!LETRAS_INICIALES_VALIDAS.has(primerChar)) return false;
+  if (!LETRAS_INICIALES_VALIDAS.has(primerChar) || PRIMEROS_CARACTERES_INVALIDOS.has(primerChar)) {
+    return false;
+  }
 
-  // Regex 1: Autos y camionetas estándar (3 letras, guion opcional, 3 números)
+  // Descartar cadenas compuestas solo por letras (ej: COO-WCM o palabras)
+  const numDigitos = (sinGuion.match(/[0-9]/g) || []).length;
+  if (numDigitos < 2) return false;
+
+  // Regex 1: Autos estándar particulares (3 letras + 3 números)
   const regexAutoEstandar = /^[A-Z]{3}-?[0-9]{3}$/;
-  // Regex 2: Autos modernos combinados (3 letras, 1 letra, 2 números)
+  // Regex 2: Camionetas, pick-ups, taxis y comerciales peruanos (ej. W2U-792, A1A-123, X71-962)
+  const regexComercial = /^[A-Z][A-Z0-9]{2}-?[0-9]{3}$/;
+  // Regex 3: Autos modernos combinados (3 letras + 1 letra + 2 números)
   const regexAutoModerno = /^[A-Z]{3}-?[A-Z][0-9]{2}$/;
-  // Regex 3: Motocicletas (2 caracteres + 4 números)
+  // Regex 4: Motocicletas y vehículos menores (2 alfanuméricos + 4 números)
   const regexMoto = /^[A-Z0-9]{2}-?[0-9]{4}$/;
+  // Regex 5: Regla general MTC: 1 letra inicial válida + 5 caracteres con al menos 2 números
+  const regexGeneral = /^[A-Z][A-Z0-9]{2}-?[A-Z0-9]{3}$/;
 
   return (
     regexAutoEstandar.test(placa) ||
+    regexComercial.test(placa) ||
     regexAutoModerno.test(placa) ||
     regexMoto.test(placa) ||
     regexAutoEstandar.test(sinGuion) ||
+    regexComercial.test(sinGuion) ||
     regexAutoModerno.test(sinGuion) ||
-    regexMoto.test(sinGuion)
+    regexMoto.test(sinGuion) ||
+    (regexGeneral.test(sinGuion) && numDigitos >= 2)
   );
 }
 

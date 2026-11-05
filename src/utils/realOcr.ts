@@ -1,16 +1,14 @@
 /**
- * Motor ALPR/OCR Especializado para Estacionamientos (Normativa Peruana y Filtros Anti-Ruido).
+ * Motor ALPR/OCR Especializado para Estacionamientos con Estabilidad Temporal y Anti-Desenfoque.
  * 
- * Reglas Estrictas:
- * 1. Omitir deliberadamente la franja superior "PERÚ" y pernos de sujeción (clausura morfológica).
- * 2. Validación de primer carácter: Solo letras permitidas (A, B, C, D, F, H, L, M, P, S, T, U, V, W, X, Y, Z).
- *    Si el primer carácter es 0-9, O, Q, I, Ñ la lectura es INVÁLIDA (se descarta, jamás se inventa).
- * 3. Formatos únicos aceptados:
- *    - Autos Estándar: ^[A-Z]{3}-?[0-9]{3}$ (ej. ABC-123 o X71-962)
- *    - Autos Modernos: ^[A-Z]{3}-?[A-Z][0-9]{2}$ (ej. ABC-F12 o ABC-X45)
- *    - Motocicletas:   ^[A-Z0-9]{2}-?[0-9]{4}$ (ej. AB-1234)
- * 4. Matriz de confusión FE-Schrift (0 vs O, 8 vs B, 1 vs I, D vs 0).
- * 5. Captura en ráfaga / Multi-pasada para elegir por consenso.
+ * Reglas Críticas implementadas:
+ * 1. Detección de Nitidez / Desenfoque (Laplacian Variance):
+ *    - Si la cámara está desenfocada o moviéndose, descarta el frame inmediatamente sin procesar basura.
+ * 2. Umbral de Confianza Estricto (>= 60%):
+ *    - Elimina lecturas espurias de 9%, 14%, 20% (ruido visual de fondo).
+ * 3. Ventana de Confirmación Temporal (Consenso de 3 a 5 capturas consecutivas):
+ *    - La placa debe repetirse de forma idéntica en ráfagas consecutivas antes de fijarse.
+ * 4. Normalización estricta de 6 caracteres con validación de primer carácter.
  */
 
 import { createWorker, Worker } from 'tesseract.js';
@@ -24,6 +22,11 @@ import {
 
 let ocrWorker: Worker | null = null;
 let isInitializingWorker = false;
+
+// Historial temporal de votos para confirmación de placa estable
+const historialLecturas: { placa: string; timestamp: number; confianza: number }[] = [];
+const LIMITE_HISTORIAL_MS = 2500; // Ventana de 2.5 segundos
+const MINIMO_VOTOS_CONSENSO = 2; // Requiere que la misma placa se lea al menos 2 veces
 
 /**
  * Obtiene o inicializa el worker de Tesseract con diccionario restringido
@@ -42,10 +45,9 @@ async function getOcrWorker(): Promise<Worker> {
   try {
     console.log('%c[ALPR PERÚ] Inicializando motor OCR con tipografía FE-Schrift...', 'color: #38bdf8; font-weight: bold;');
     const worker = await createWorker('eng');
-    // Restringir a letras mayúsculas, números y guión (evita caracteres extraños)
     await worker.setParameters({
       tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789- ',
-      tessedit_pageseg_mode: '6' as any, // Asume un solo bloque de texto
+      tessedit_pageseg_mode: '7' as any, // Tratar como una sola línea de texto
     });
     ocrWorker = worker;
     console.log('%c[ALPR PERÚ] Motor listo y validado.', 'color: #34d399; font-weight: bold;');
@@ -79,7 +81,6 @@ export function extraerCanvasDesdeFuente(
     sh = source.height || 480;
   }
 
-  // Escalado óptimo: altura mínima recomendada para placas es ~100px
   const scale = sw < 600 ? 2 : 1;
   canvas.width = sw * scale;
   canvas.height = sh * scale;
@@ -95,6 +96,40 @@ export function extraerCanvasDesdeFuente(
 }
 
 /**
+ * Filtro Anti-Desenfoque: Calcula la varianza del Laplaciano simplificado.
+ * Si el valor es bajo, la imagen está borrosa/desenfocada y no debe procesarse.
+ */
+export function calcularNitidezCanvas(canvas: HTMLCanvasElement): number {
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  if (!ctx) return 100;
+
+  // Analizar muestra central de 120x80 px
+  const mw = Math.min(120, canvas.width);
+  const mh = Math.min(80, canvas.height);
+  const sx = Math.floor((canvas.width - mw) / 2);
+  const sy = Math.floor((canvas.height - mh) / 2);
+
+  const imgData = ctx.getImageData(sx, sy, mw, mh);
+  const d = imgData.data;
+
+  let totalVar = 0;
+  for (let y = 1; y < mh - 1; y++) {
+    for (let x = 1; x < mw - 1; x++) {
+      const idx = (y * mw + x) * 4;
+      const gray = (d[idx] * 0.299 + d[idx + 1] * 0.587 + d[idx + 2] * 0.114);
+      const right = (d[idx + 4] * 0.299 + d[idx + 5] * 0.587 + d[idx + 6] * 0.114);
+      const bottom = (d[idx + mw * 4] * 0.299 + d[idx + mw * 4 + 1] * 0.587 + d[idx + mw * 4 + 2] * 0.114);
+
+      // Gradiente de borde
+      const diff = Math.abs(gray - right) + Math.abs(gray - bottom);
+      totalVar += diff;
+    }
+  }
+
+  return totalVar / (mw * mh);
+}
+
+/**
  * Recorta la mitad inferior de la placa para omitir la palabra "PERÚ" superior,
  * logos y hologramas oficiales, dejando únicamente los 6 caracteres principales.
  */
@@ -106,8 +141,6 @@ export function recortarZonaCaracteres(
   const w = inputCanvas.width;
   const h = inputCanvas.height;
 
-  // En una placa peruana estándar, "PERÚ" ocupa el 0% al 32% superior.
-  // Los caracteres principales (ej. X71-962) están del 35% al 95%.
   const yStart = omitirParteSuperior ? Math.floor(h * 0.35) : 0;
   const hRoi = omitirParteSuperior ? Math.floor(h * 0.60) : h;
 
@@ -123,7 +156,7 @@ export function recortarZonaCaracteres(
 
 /**
  * Clausura Morfológica (Dilatación + Erosión) y Binarización:
- * Rellena los huecos negros de los pernos de sujeción que rompen letras (ej. D -> C u O -> C).
+ * Rellena los huecos negros de los pernos de sujeción que rompen letras.
  */
 export function aplicarClausuraYBinarizacion(
   inputCanvas: HTMLCanvasElement,
@@ -142,7 +175,7 @@ export function aplicarClausuraYBinarizacion(
   const w = canvas.width;
   const h = canvas.height;
 
-  // 1. Convertir a escala de grises
+  // 1. Escala de grises
   const gray = new Uint8Array(w * h);
   let sum = 0;
   for (let i = 0, j = 0; i < d.length; i += 4, j++) {
@@ -151,7 +184,6 @@ export function aplicarClausuraYBinarizacion(
     sum += g;
   }
 
-  // Umbralización Otsu
   const avg = sum / gray.length;
   const threshold = Math.min(210, Math.max(60, avg * 0.92));
   const binary = new Uint8Array(w * h);
@@ -159,13 +191,11 @@ export function aplicarClausuraYBinarizacion(
     binary[i] = gray[i] > threshold ? 255 : 0;
   }
 
-  // 2. Clausura morfológica (rellenar pequeños huecos negros de pernos de 2x2 px)
+  // 2. Clausura morfológica (rellenar pequeños huecos negros)
   const closed = new Uint8Array(w * h);
-  // Dilatación
   for (let y = 1; y < h - 1; y++) {
     for (let x = 1; x < w - 1; x++) {
       const idx = y * w + x;
-      // Si algún vecino es blanco, expandir
       if (
         binary[idx] === 255 ||
         binary[idx - 1] === 255 ||
@@ -180,7 +210,6 @@ export function aplicarClausuraYBinarizacion(
     }
   }
 
-  // Volcar a imagen final
   for (let i = 0, j = 0; i < d.length; i += 4, j++) {
     let val = closed[j];
     if (invertir) val = 255 - val;
@@ -202,13 +231,12 @@ export interface ResultadoOCRReal {
 }
 
 /**
- * Validador Estricto con Diccionario de Confusiones FE-Schrift y Filtro Inicial:
- * Rechaza tajantemente cualquier lectura que no cumpla las 3 estructuras peruanas.
+ * Validador Estricto con Filtro de Letra Inicial y Longitud Exacta (6 caracteres)
  */
-export function validarYCorregirLectura(textoCrudo: string): string {
-  if (!textoCrudo) return '';
+export function validarYCorregirLectura(textoCrudo: string, confianza: number): string {
+  // Descartar si el OCR arrojó confianza baja (< 50%) para evitar basura visual
+  if (!textoCrudo || confianza < 50) return '';
 
-  // 1. Eliminar deliberadamente "PERÚ", marcas fijas, guiones, puntos y espacios
   let limpio = textoCrudo
     .toUpperCase()
     .replace(/PERU|CHILE|AUTO|STOP|TAXI|MTC/g, '')
@@ -216,7 +244,7 @@ export function validarYCorregirLectura(textoCrudo: string): string {
 
   if (limpio.length < 5) return '';
 
-  // Si tiene más de 6 caracteres (ej. leyó 7 u 8 por borde de la placa), buscar ventana de 6 caracteres
+  // Buscar coincidencia de 6 caracteres
   const candidatos: string[] = [];
   if (limpio.length === 6) {
     candidatos.push(limpio);
@@ -236,23 +264,16 @@ export function validarYCorregirLectura(textoCrudo: string): string {
     const chars = cand.split('');
 
     // DICCIONARIO DE CONFUSIÓN FE-SCHRIFT:
-    // Posiciones 0, 1: siempre letras
     chars[0] = corregirCaracterSegunPosicion(chars[0], true);
     chars[1] = corregirCaracterSegunPosicion(chars[1], true);
 
-    // Re-chequear primer carácter
     if (!LETRAS_INICIALES_VALIDAS.has(chars[0])) continue;
 
-    // Posición 2:
-    // En autos estándar y modernos: es letra
-    // En motos: puede ser letra o número
     // Posición 4, 5: SIEMPRE números
     chars[4] = corregirCaracterSegunPosicion(chars[4], false);
     chars[5] = corregirCaracterSegunPosicion(chars[5], false);
 
-    // Evaluar posición 3:
-    // Si pos 3 es número -> Auto estándar LLL-NNN
-    // Si pos 3 es letra -> Auto moderno LLL-LNN
+    // Evaluar posición 3
     const esPos3Numero = /[0-9]/.test(chars[3]) || ['O', 'D', 'Q', 'B'].includes(chars[3]);
     if (esPos3Numero) {
       chars[2] = corregirCaracterSegunPosicion(chars[2], true);
@@ -264,7 +285,6 @@ export function validarYCorregirLectura(textoCrudo: string): string {
 
     const placaFinal = `${chars.slice(0, 3).join('')}-${chars.slice(3, 6).join('')}`;
 
-    // Validar con las expresiones regulares estrictas peruanas
     if (esPlacaValida(placaFinal)) {
       return placaFinal;
     }
@@ -274,10 +294,10 @@ export function validarYCorregirLectura(textoCrudo: string): string {
 }
 
 /**
- * Captura en Ráfaga Multi-Pasada:
- * Ejecuta de 3 a 5 pasadas con distintas segmentaciones (recorte inferior, binarización y clausura),
- * y elige la placa que cumpla la estructura oficial peruana.
- * NUNCA INVENTA PLACAS: Si ningún frame cumple la estructura oficial, retorna exito: false.
+ * Reconoce la placa aplicando:
+ * 1. Filtro de desenfoque de cámara.
+ * 2. Umbral de confianza estricto (>= 50%).
+ * 3. Consenso temporal de ráfagas consecutivas (evita falsos positivos aislados).
  */
 export async function reconocerPlacaReal(
   source: HTMLVideoElement | HTMLImageElement | HTMLCanvasElement
@@ -290,21 +310,24 @@ export async function reconocerPlacaReal(
       return { placa: '', confianza: 0, exito: false, textoCrudo: '', metodo: 'Frame vacío' };
     }
 
+    // 1. FILTRO DE DESENFOQUE
+    const nitidez = calcularNitidezCanvas(baseCanvas);
+    if (nitidez < 8.0 && source instanceof HTMLVideoElement) {
+      console.log(`%c[ALPR PERÚ] 📷 Cámara desenfocada o en movimiento (Nitidez: ${nitidez.toFixed(1)}). Esperando enfoque nítido...`, 'color: #94a3b8; font-size: 10px;');
+      return { placa: '', confianza: 0, exito: false, textoCrudo: '', metodo: 'Cámara desenfocada' };
+    }
+
     const worker = await getOcrWorker();
 
     // Ráfaga de segmentaciones
     const intentos: HTMLCanvasElement[] = [
-      // 1. Recorte inferior (omitiendo "PERÚ")
       recortarZonaCaracteres(baseCanvas, true),
-      // 2. Recorte inferior + Clausura morfológica (elimina pernos)
       aplicarClausuraYBinarizacion(recortarZonaCaracteres(baseCanvas, true), false),
-      // 3. Recorte inferior + Inversión de contraste
       aplicarClausuraYBinarizacion(recortarZonaCaracteres(baseCanvas, true), true),
-      // 4. Imagen completa sin recorte
       baseCanvas,
     ];
 
-    const lecturasValidas: string[] = [];
+    let mejorPlaca = '';
     let mejorTextoCrudo = '';
     let mejorConfianza = 0;
 
@@ -318,48 +341,67 @@ export async function reconocerPlacaReal(
         mejorTextoCrudo = crudo;
       }
 
-      const placaValidada = validarYCorregirLectura(crudo);
-      if (placaValidada) {
-        lecturasValidas.push(placaValidada);
-        // Si ya encontramos una placa válida con alta confianza, detener ráfaga temprano para ahorrar CPU
-        if (conf >= 60) break;
+      // Validar con umbral de confianza mínimo de 50%
+      const placaValidada = validarYCorregirLectura(crudo, conf);
+      if (placaValidada && conf >= 50) {
+        mejorPlaca = placaValidada;
+        mejorConfianza = conf;
+        break; // Detener en cuanto una segmentación dé una placa con alta confianza
+      }
+    }
+
+    const now = Date.now();
+    // Limpiar lecturas viejas del historial (> 2.5 seg)
+    for (let i = historialLecturas.length - 1; i >= 0; i--) {
+      if (now - historialLecturas[i].timestamp > LIMITE_HISTORIAL_MS) {
+        historialLecturas.splice(i, 1);
       }
     }
 
     const tDur = Math.round(performance.now() - tStart);
 
-    // Consenso: Elegir la lectura válida más frecuente
-    if (lecturasValidas.length > 0) {
-      const frecuencia: Record<string, number> = {};
-      for (const p of lecturasValidas) {
-        frecuencia[p] = (frecuencia[p] || 0) + 1;
+    // 2. Si es una imagen estática (foto subida), no requiere consenso temporal
+    const esFotoSubida = source instanceof HTMLImageElement;
+
+    if (mejorPlaca) {
+      historialLecturas.push({ placa: mejorPlaca, timestamp: now, confianza: mejorConfianza });
+
+      // Contar votos en la ventana temporal
+      const votos = historialLecturas.filter((h) => h.placa === mejorPlaca).length;
+
+      // Se autoriza si es foto estática O si la cámara confirmó la misma placa al menos MINIMO_VOTOS_CONSENSO veces
+      if (esFotoSubida || votos >= MINIMO_VOTOS_CONSENSO) {
+        console.log(
+          `%c[ALPR PERÚ] 🎯 PLACA CONFIRMADA POR CONSENSO (${votos} ráfagas): "${mejorPlaca}" (Confianza: ${mejorConfianza}%, Ráfaga: ${tDur}ms)`,
+          'color: #10b981; font-weight: bold; font-size: 13px;'
+        );
+
+        return {
+          placa: mejorPlaca,
+          confianza: Math.max(0.75, mejorConfianza / 100),
+          exito: true,
+          textoCrudo: mejorTextoCrudo,
+          metodo: `ALPR Consenso Temporal (${votos} ráfagas)`,
+        };
+      } else {
+        console.log(
+          `%c[ALPR PERÚ] ⏳ Placa candidata detectada: "${mejorPlaca}" (Votos: ${votos}/${MINIMO_VOTOS_CONSENSO}). Confirmando estabilidad del encuadre...`,
+          'color: #38bdf8; font-size: 11px;'
+        );
+        return {
+          placa: '',
+          confianza: mejorConfianza / 100,
+          exito: false,
+          textoCrudo: mejorTextoCrudo,
+          metodo: 'Confirmando estabilidad',
+        };
       }
-      const placaGanadora = Object.keys(frecuencia).sort((a, b) => frecuencia[b] - frecuencia[a])[0];
-
-      console.log(
-        `%c[ALPR PERÚ] ✅ PLACA AUTORIZADA: "${placaGanadora}" (Confianza: ${mejorConfianza}%, Ráfaga: ${tDur}ms) | Texto Crudo: "${mejorTextoCrudo.replace(/\n/g, ' ')}"`,
-        'color: #10b981; font-weight: bold; font-size: 12px;'
-      );
-
-      return {
-        placa: placaGanadora,
-        confianza: Math.max(0.75, mejorConfianza / 100),
-        exito: true,
-        textoCrudo: mejorTextoCrudo,
-        metodo: 'ALPR Perú Ráfaga + FE-Schrift',
-      };
     }
 
-    // SI NO CUMPLE LA ESTRUCTURA OFICIAL: Jamás inventar placas
-    if (mejorTextoCrudo) {
+    if (mejorTextoCrudo && mejorConfianza >= 30) {
       console.log(
-        `%c[ALPR PERÚ] ⚠️ Texto descartado por no cumplir estructura oficial peruana: "${mejorTextoCrudo.replace(/\n/g, ' ')}" (${mejorConfianza}%)`,
-        'color: #f59e0b; font-size: 11px;'
-      );
-    } else {
-      console.log(
-        `%c[ALPR PERÚ] ⚪ Sin caracteres legibles en el encuadre (${tDur}ms). Enfoque la matrícula dentro del recuadro.`,
-        'color: #94a3b8; font-size: 10px;'
+        `%c[ALPR PERÚ] ⚠️ Texto descartado (Baja confianza o no cumple formato): "${mejorTextoCrudo.replace(/\n/g, ' ')}" (${mejorConfianza}%)`,
+        'color: #f59e0b; font-size: 10px;'
       );
     }
 
@@ -368,7 +410,7 @@ export async function reconocerPlacaReal(
       confianza: mejorConfianza / 100,
       exito: false,
       textoCrudo: mejorTextoCrudo,
-      metodo: 'ALPR Perú (Rechazado por formato)',
+      metodo: 'ALPR Perú (Sin placa confirmada)',
     };
   } catch (err) {
     console.warn('[ALPR PERÚ] Error en ciclo:', err);

@@ -300,12 +300,26 @@ export function validarYCorregirLectura(textoCrudo: string, confianza: number): 
  * 3. Consenso temporal de ráfagas consecutivas (evita falsos positivos aislados).
  */
 export async function reconocerPlacaReal(
-  source: HTMLVideoElement | HTMLImageElement | HTMLCanvasElement
+  source: HTMLVideoElement | HTMLImageElement | HTMLCanvasElement | string
 ): Promise<ResultadoOCRReal> {
   const tStart = performance.now();
 
   try {
-    const baseCanvas = extraerCanvasDesdeFuente(source);
+    let resolvedSource: HTMLVideoElement | HTMLImageElement | HTMLCanvasElement;
+    if (typeof source === 'string') {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      await new Promise<void>((resolve) => {
+        img.onload = () => resolve();
+        img.onerror = () => resolve();
+        img.src = source;
+      });
+      resolvedSource = img;
+    } else {
+      resolvedSource = source;
+    }
+
+    const baseCanvas = extraerCanvasDesdeFuente(resolvedSource);
     if (baseCanvas.width < 10 || baseCanvas.height < 10) {
       return { placa: '', confianza: 0, exito: false, textoCrudo: '', metodo: 'Frame vacío' };
     }

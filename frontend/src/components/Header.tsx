@@ -15,6 +15,8 @@ interface HeaderProps {
   onOpenBackendModal: () => void;
   onOpenTotem: () => void;
   onResetCajones: () => void;
+  viewMode?: 'ALPR_ONLY' | 'PARKING';
+  onToggleViewMode?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -23,6 +25,8 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenBackendModal,
   onOpenTotem,
   onResetCajones,
+  viewMode = 'ALPR_ONLY',
+  onToggleViewMode,
 }) => {
   const [time, setTime] = useState<string>('');
 
@@ -94,24 +98,44 @@ export const Header: React.FC<HeaderProps> = ({
             <Server className="w-3.5 h-3.5 text-slate-400" />
           </button>
 
+          {/* Conmutador de Modo: ALPR Exclusivo vs Estacionamiento Completo */}
+          {onToggleViewMode && (
+            <button
+              onClick={onToggleViewMode}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all shadow-sm active:scale-95 ${
+                viewMode === 'ALPR_ONLY'
+                  ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/50 hover:bg-cyan-500/30'
+                  : 'bg-indigo-500/20 text-indigo-300 border-indigo-500/50 hover:bg-indigo-500/30'
+              }`}
+              title="Alternar entre modo solo cámara ALPR y vista completa del estacionamiento"
+            >
+              <Car className="w-3.5 h-3.5" />
+              <span>{viewMode === 'ALPR_ONLY' ? '📷 Solo Cámara ALPR' : '🚗 Estacionamiento'}</span>
+            </button>
+          )}
+
           {/* Botón Modo Tótem */}
-          <button
-            onClick={onOpenTotem}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-750 text-slate-200 text-xs font-semibold border border-slate-700 transition-all shadow-sm active:scale-95"
-            title="Abrir Tótem para Conductores en Pantalla Completa"
-          >
-            <Maximize2 className="w-3.5 h-3.5 text-cyan-400" />
-            <span className="hidden md:inline">Tótem 2D</span>
-          </button>
+          {viewMode === 'PARKING' && (
+            <button
+              onClick={onOpenTotem}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-750 text-slate-200 text-xs font-semibold border border-slate-700 transition-all shadow-sm active:scale-95"
+              title="Abrir Tótem para Conductores en Pantalla Completa"
+            >
+              <Maximize2 className="w-3.5 h-3.5 text-cyan-400" />
+              <span className="hidden md:inline">Tótem 2D</span>
+            </button>
+          )}
 
           {/* Reiniciar Cajones */}
-          <button
-            onClick={onResetCajones}
-            className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors"
-            title="Reiniciar sensores de cajones a LIBRE"
-          >
-            <RefreshCcw className="w-3.5 h-3.5" />
-          </button>
+          {viewMode === 'PARKING' && (
+            <button
+              onClick={onResetCajones}
+              className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors"
+              title="Reiniciar sensores de cajones a LIBRE"
+            >
+              <RefreshCcw className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
       </div>
     </header>

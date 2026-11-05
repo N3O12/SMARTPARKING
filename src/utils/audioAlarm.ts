@@ -101,6 +101,10 @@ class SoundManager {
     }
   }
 
+  public playSuccessChime(): void {
+    this.playSuccessBeep();
+  }
+
   /**
    * Beep de escaneo o captura de OCR
    */

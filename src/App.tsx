@@ -18,6 +18,7 @@ import { TicketModal } from './components/TicketModal';
 import { SecurityAlertModal } from './components/SecurityAlertModal';
 import { TotemModal } from './components/TotemModal';
 import { BackendModal } from './components/BackendModal';
+import { AlprTrainingStation } from './components/AlprTrainingStation';
 import { soundManager } from './utils/audioAlarm';
 
 export default function App() {
@@ -53,6 +54,9 @@ export default function App() {
   // Estado de conexión a backend FastAPI
   const [isBackendOnline, setIsBackendOnline] = useState<boolean>(false);
   const [preferLocal, setPreferLocal] = useState<boolean>(parkingApi.getPreferLocal());
+
+  // Modo de visualización: 'ALPR_ONLY' (calibración y auto-entrenamiento cámara) o 'PARKING' (sistema completo)
+  const [viewMode, setViewMode] = useState<'ALPR_ONLY' | 'PARKING'>('ALPR_ONLY');
 
   // Cargar estado inicial y movimientos
   const fetchDatos = useCallback(async () => {
@@ -149,64 +153,78 @@ export default function App() {
         onOpenBackendModal={() => setIsBackendModalOpen(true)}
         onOpenTotem={() => setIsTotemOpen(true)}
         onResetCajones={handleResetCajones}
+        viewMode={viewMode}
+        onToggleViewMode={() => setViewMode((v) => (v === 'ALPR_ONLY' ? 'PARKING' : 'ALPR_ONLY'))}
       />
 
       {/* Contenido Principal */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-5 space-y-5">
-        {/* FILA 1: KPIs de Aforo + Pantalla LCD 16x2 */}
-        <div className="space-y-3">
-          <KpiCards
-            enRecinto={estado.en_recinto}
-            capacidadMax={estado.capacidad_max}
-            ocupados={estado.ocupados}
-            libres={estado.libres}
-            enTransito={estado.en_transito}
-            totalHistorico={estado.total_historico}
+        {viewMode === 'ALPR_ONLY' ? (
+          /* MODO EXCLUSIVO: CÁMARA ALPR, CONFIRMACIÓN Y AUTO-ENTRENAMIENTO */
+          <AlprTrainingStation
+            onProcesarOCR={handleProcesarOCR}
+            onVolverEstacionamiento={() => setViewMode('PARKING')}
+            isBackendOnline={isBackendOnline}
           />
+        ) : (
+          /* MODO ESTACIONAMIENTO COMPLETO */
+          <>
+            {/* FILA 1: KPIs de Aforo + Pantalla LCD 16x2 */}
+            <div className="space-y-3">
+              <KpiCards
+                enRecinto={estado.en_recinto}
+                capacidadMax={estado.capacidad_max}
+                ocupados={estado.ocupados}
+                libres={estado.libres}
+                enTransito={estado.en_transito}
+                totalHistorico={estado.total_historico}
+              />
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Pantalla LCD Virtual 16x2 I2C */}
-            <div className="md:col-span-1">
-              <VirtualLcd mensajeKey={lcdMensaje} />
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Pantalla LCD Virtual 16x2 I2C */}
+                <div className="md:col-span-1">
+                  <VirtualLcd mensajeKey={lcdMensaje} />
+                </div>
+
+                {/* Minimapa 2D Interactivo de 8 Cajones */}
+                <div className="md:col-span-2">
+                  <Minimapa2D
+                    cajones={estado.cajones}
+                    onToggleCajon={handleToggleCajon}
+                    onOpenTotem={() => setIsTotemOpen(true)}
+                  />
+                </div>
+              </div>
             </div>
 
-            {/* Minimapa 2D Interactivo de 8 Cajones */}
-            <div className="md:col-span-2">
-              <Minimapa2D
-                cajones={estado.cajones}
-                onToggleCajon={handleToggleCajon}
-                onOpenTotem={() => setIsTotemOpen(true)}
+            {/* FILA 2: Estación de Cámaras (Cámara 1 Entrada + OCR & Cámara 2 Salida + Doble Factor) */}
+            <div id="camera-station-section">
+              <CameraStation
+                enRecinto={estado.en_recinto}
+                capacidadMax={estado.capacidad_max}
+                ticketsActivos={estado.tickets_activos}
+                onProcesarOCR={handleProcesarOCR}
+                onEmitirEntrada={handleEmitirEntrada}
+                onValidarSalida={handleValidarSalida}
+                onSetLcdMensaje={setLcdMensaje}
+                onTicketGenerado={(tkt) => setTicketEmitido(tkt)}
+                onAlertaFraude={(alerta) => setAlertaSeguridad(alerta)}
               />
             </div>
-          </div>
-        </div>
 
-        {/* FILA 2: Estación de Cámaras (Cámara 1 Entrada + OCR & Cámara 2 Salida + Doble Factor) */}
-        <div id="camera-station-section">
-          <CameraStation
-            enRecinto={estado.en_recinto}
-            capacidadMax={estado.capacidad_max}
-            ticketsActivos={estado.tickets_activos}
-            onProcesarOCR={handleProcesarOCR}
-            onEmitirEntrada={handleEmitirEntrada}
-            onValidarSalida={handleValidarSalida}
-            onSetLcdMensaje={setLcdMensaje}
-            onTicketGenerado={(tkt) => setTicketEmitido(tkt)}
-            onAlertaFraude={(alerta) => setAlertaSeguridad(alerta)}
-          />
-        </div>
-
-        {/* FILA 3: Historial de Movimientos en Tiempo Real (SQLite) */}
-        <MovementsTable
-          movimientos={movimientos}
-          filtroPlaca={filtroPlaca}
-          filtroEstado={filtroEstado}
-          onFiltroPlacaChange={setFiltroPlaca}
-          onFiltroEstadoChange={setFiltroEstado}
-          onRefresh={fetchDatos}
-          onExportCSV={handleExportCSV}
-          onCargarEnSalida={handleCargarEnSalida}
-        />
+            {/* FILA 3: Historial de Movimientos en Tiempo Real (SQLite) */}
+            <MovementsTable
+              movimientos={movimientos}
+              filtroPlaca={filtroPlaca}
+              filtroEstado={filtroEstado}
+              onFiltroPlacaChange={setFiltroPlaca}
+              onFiltroEstadoChange={setFiltroEstado}
+              onRefresh={fetchDatos}
+              onExportCSV={handleExportCSV}
+              onCargarEnSalida={handleCargarEnSalida}
+            />
+          </>
+        )}
       </main>
 
       {/* Footer informativo */}

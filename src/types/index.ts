@@ -71,3 +71,30 @@ export type MensajeLcd =
   | 'RETIRE_TICKET'
   | 'QR_PLACA_VALIDO'
   | 'ERROR_SEGURIDAD';
+
+export interface FeedbackEntrenamientoPayload {
+  imageBase64: string;
+  placaCorrecta: string;
+  placaDetectada?: string;
+  esCorrecta: boolean;
+  bbox?: number[];
+}
+
+export interface FeedbackStats {
+  total_muestras: number;
+  total_confirmadas: number;
+  total_corregidas: number;
+  correcciones: Record<
+    string,
+    {
+      ultima_interaccion: string;
+      es_correcta: boolean;
+      detectado_previo: string;
+      total_muestras: number;
+      ultima_imagen?: string;
+    }
+  >;
+  modelo_actual: string;
+  listo_para_reentrenar: boolean;
+}
+

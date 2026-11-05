@@ -380,11 +380,18 @@ export const AlprTrainingStation: React.FC<AlprTrainingStationProps> = ({
           res = null;
         }
 
-        // 2. Si no hubo respuesta de backend o falló, ejecutar OCR local con reglas FE-Schrift
+        // 2. Si no hubo respuesta de backend o falló, ejecutar OCR local en toda la foto
         if (!res || !res.placa || res.confianza < 40) {
           const localRes = await reconocerPlacaReal(frameBase64);
-          if (localRes.placa && localRes.confianza > (res?.confianza || 0)) {
-            res = localRes;
+          if (localRes.placa) {
+            res = {
+              placa: localRes.placa,
+              confianza: Math.round(localRes.confianza <= 1.0 ? localRes.confianza * 100 : localRes.confianza),
+              exito: true,
+              textoCrudo: localRes.textoCrudo,
+              metodo: localRes.metodo,
+              bbox: localRes.bbox || res?.bbox,
+            };
           }
         }
 
@@ -565,24 +572,40 @@ export const AlprTrainingStation: React.FC<AlprTrainingStationProps> = ({
         });
       }
 
-      // Si aún no se tiene placa, intentar OCR sobre la foto completa
+      // Si aún no se tiene placa, escanear toda la foto buscando secuencias de placa (ej. escritas en una hoja)
       if (!res || !res.placa || res.confianza < 35) {
         const localRes = await reconocerPlacaReal(base64);
-        if (localRes.placa && localRes.confianza > (res?.confianza || 0)) {
-          res = localRes;
+        if (localRes.placa) {
+          const confNorm = Math.round(localRes.confianza <= 1.0 ? localRes.confianza * 100 : localRes.confianza);
+          res = {
+            placa: localRes.placa,
+            confianza: confNorm,
+            exito: true,
+            textoCrudo: localRes.textoCrudo,
+            metodo: localRes.metodo,
+            bbox: localRes.bbox || res?.bbox,
+          };
+
+          if (localRes.bbox && localRes.bbox.length === 4 && localRes.bbox[2] > localRes.bbox[0]) {
+            setLastBbox(localRes.bbox);
+            setLockedBbox(localRes.bbox);
+            recortarRegionPlaca(base64, localRes.bbox, (cropData) => {
+              setLockedCropImage(cropData);
+            });
+          }
         }
       }
 
       const placaNormalizada = res?.placa ? normalizarPlaca(res.placa) : '';
 
-      if (placaNormalizada && (res?.confianza || 0) >= 15) {
+      if (placaNormalizada) {
         setDetectedPlate(placaNormalizada);
         setLockedPlate(placaNormalizada);
         setDetectedRaw(res?.textoCrudo || res?.placa || placaNormalizada);
-        const finalConf = Math.max(res?.confianza || 0, 70);
+        const finalConf = Math.max(res?.confianza || 0, 75);
         setDetectedConfidence(finalConf);
         setLockedConfidence(finalConf);
-        setDetectedMethod(res?.metodo || 'ALPR Análisis Estático');
+        setDetectedMethod(res?.metodo || 'Secuencia Detectada en Toda la Foto');
         setIsValidationFrozen(true);
         soundManager.playSuccessChime();
         setActionFeedbackMsg({

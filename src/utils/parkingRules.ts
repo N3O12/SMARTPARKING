@@ -183,6 +183,72 @@ export function esPlacaValida(placa: string): boolean {
 }
 
 /**
+ * Escanea cualquier texto libre (como el leído en una hoja de papel, cuaderno, pantalla o escena completa)
+ * buscando secuencias que cumplan con la estructura de matrícula vehicular peruana oficial MTC.
+ */
+export function buscarSecuenciasPlacaEnTexto(texto: string): Array<{ placa: string; textoMatch: string }> {
+  if (!texto) return [];
+  const candidatos: Array<{ placa: string; textoMatch: string }> = [];
+  const encontradas = new Set<string>();
+
+  // Normalizar acentos y pasar a mayúsculas
+  const t = texto.toUpperCase().replace(/PERÚ/g, 'PERU');
+
+  // Patrón 1: Bloque de 6 caracteres compactos o con guión/espacio central (ej: W2U-792, A1A 123, ABC-123)
+  const regexA = /\b([A-Z0-9]{3})[\s\-_.:/]?([A-Z0-9]{3})\b/g;
+  let match: RegExpExecArray | null;
+  while ((match = regexA.exec(t)) !== null) {
+    const raw = match[1] + match[2];
+    const norm = normalizarPlaca(raw);
+    if (norm && esPlacaValida(norm) && !encontradas.has(norm)) {
+      encontradas.add(norm);
+      candidatos.push({ placa: norm, textoMatch: match[0] });
+    }
+  }
+
+  // Patrón 2: Letras escritas a mano separadas por espacios (ej: "W 2 U - 7 9 2" o "A 1 A 1 2 3")
+  const regexB = /\b([A-Z0-9])\s+([A-Z0-9])\s+([A-Z0-9])\s*[\s\-_.:/]?\s*([A-Z0-9])\s+([A-Z0-9])\s+([A-Z0-9])\b/g;
+  while ((match = regexB.exec(t)) !== null) {
+    const raw = match[1] + match[2] + match[3] + match[4] + match[5] + match[6];
+    const norm = normalizarPlaca(raw);
+    if (norm && esPlacaValida(norm) && !encontradas.has(norm)) {
+      encontradas.add(norm);
+      candidatos.push({ placa: norm, textoMatch: match[0] });
+    }
+  }
+
+  // Patrón 3: Motos (2 caracteres + 4 dígitos, ej: "AB-1234" o "12-3456")
+  const regexMoto = /\b([A-Z0-9]{2})[\s\-_.:/]?([0-9]{4})\b/g;
+  while ((match = regexMoto.exec(t)) !== null) {
+    const raw = match[1] + match[2];
+    const norm = normalizarPlaca(raw);
+    if (norm && esPlacaValida(norm) && !encontradas.has(norm)) {
+      encontradas.add(norm);
+      candidatos.push({ placa: norm, textoMatch: match[0] });
+    }
+  }
+
+  // Patrón 4: Subsecuencias de 6 caracteres dentro de palabras largas o ruido de OCR
+  const palabras = t.split(/\s+/);
+  for (const palabra of palabras) {
+    const soloAlfanum = palabra.replace(/[^A-Z0-9]/g, '');
+    if (soloAlfanum.length >= 6) {
+      for (let i = 0; i <= soloAlfanum.length - 6; i++) {
+        const sub = soloAlfanum.slice(i, i + 6);
+        const norm = normalizarPlaca(sub);
+        if (norm && esPlacaValida(norm) && !encontradas.has(norm)) {
+          encontradas.add(norm);
+          candidatos.push({ placa: norm, textoMatch: palabra });
+          break;
+        }
+      }
+    }
+  }
+
+  return candidatos;
+}
+
+/**
  * Calcula vehículos en tránsito: max(0, en_recinto - ocupados)
  */
 export function calcularAutosEnTransito(en_recinto: number, ocupados: number): number {

@@ -192,6 +192,18 @@ def limpiar_texto_placa(texto: str) -> str:
 
     # 2. Remover cabeceras oficiales impresas en la chapa (ej. "PERU", "MTC")
     t = re.sub(r'\b(PERU|PERÚ|MTC|AUTO|TAXI|CHILE)\b', '', texto.upper())
+
+    # 2.B Si los caracteres fueron escritos a mano en una hoja separados por espacios (ej. "W 2 U - 7 9 2" o "A 1 A 1 2 3")
+    match_espaciado = re.search(r'\b([A-Z0-9])\s+([A-Z0-9])\s+([A-Z0-9])\s*[\s\-_.:/]?\s*([A-Z0-9])\s+([A-Z0-9])\s+([A-Z0-9])\b', t)
+    if match_espaciado:
+        raw_esp = "".join(match_espaciado.groups())
+        cand_esp = corregir_fe_schrift_posicional(raw_esp)
+        if cand_esp and len(cand_esp) == 6:
+            p1, p2 = cand_esp[:3], cand_esp[3:]
+            num_dig = sum(c.isdigit() for c in cand_esp)
+            if num_dig >= 2 and p1 not in ("000", "OOO"):
+                return f"{p1}-{p2}"
+
     limpio = re.sub(r'[^A-Z0-9]', '', t)
     limpio = limpio.replace("PERU", "").replace("PERÚ", "").replace("MTC", "")
 
@@ -388,110 +400,147 @@ def preprocesar_y_leer_placa(img: np.ndarray) -> dict:
         bbox_detectado = [0, 0, w, h]
         metodo = "Foto Completa"
 
-    # 2. ESCALADO ÓPTIMO PARA OCR (Altura mínima 160px para CRAFT neural detector)
-    roi_h, roi_w = roi_img.shape[:2]
-    target_h = 160
-    if roi_h > 0 and roi_w > 0:
-        scale_roi = max(1.0, target_h / float(roi_h))
-        target_w = max(80, int(roi_w * scale_roi))
-        roi_optima = cv2.resize(roi_img, (target_w, target_h), interpolation=cv2.INTER_CUBIC)
-    else:
-        roi_optima = roi_img
+    def obtener_rect_bbox(pts):
+        try:
+            xs = [p[0] for p in pts]
+            ys = [p[1] for p in pts]
+            return [int(min(xs)), int(min(ys)), int(max(xs)), int(max(ys))]
+        except Exception:
+            return None
 
-    # Sub-región de sólo caracteres: omitir el 28% superior de la placa (donde dice PERU)
-    # Esto elimina ruidos de cabecera y deja únicamente los caracteres grandes (ej. "W2U-792")
-    h_opt, w_opt = roi_optima.shape[:2]
-    y_chars = int(h_opt * 0.26)
-    roi_caracteres = roi_optima[y_chars:, :]
-
-    # 3. ENFOQUE Y REALCE DE CONTRASTE (CLAHE adaptativo)
-    gray = cv2.cvtColor(roi_optima, cv2.COLOR_BGR2GRAY)
-    clahe = cv2.createCLAHE(clipLimit=2.5, tileGridSize=(6, 6))
-    gray_clahe = clahe.apply(gray)
-    gray_chars = gray_clahe[y_chars:, :]
-
-    def extraer_candidatos_ocr(resultados_ocr, min_conf=0.16):
+    def extraer_candidatos_ocr(resultados_ocr, min_conf=0.15, offset_x=0, offset_y=0):
         cands = []
         if not resultados_ocr:
             return cands
         
-        # 1. Cajas individuales (ej. "W2U-792")
-        for (bbox, text, conf) in resultados_ocr:
+        # 1. Cajas individuales (ej. "W2U-792" o "A1A-123" escrito en papel)
+        for (box_pts, text, conf) in resultados_ocr:
             p = limpiar_texto_placa(text)
             c = float(conf)
+            b = obtener_rect_bbox(box_pts)
+            if b:
+                b = [b[0] + offset_x, b[1] + offset_y, b[2] + offset_x, b[3] + offset_y]
             if p and c >= min_conf:
-                cands.append((p, c))
+                cands.append((p, c, b, text))
         
-        # 2. Texto total concatenado de la placa (ej. "PERU W2U 792" -> "W2U-792")
-        textos_todos = [r[1] for r in resultados_ocr if r[1].strip()]
-        if len(textos_todos) > 1:
-            texto_unido = " ".join(textos_todos)
-            p_unida = limpiar_texto_placa(texto_unido)
-            if p_unida:
-                avg_conf = sum(float(r[2]) for r in resultados_ocr) / len(resultados_ocr)
-                if avg_conf >= min_conf:
-                    cands.append((p_unida, avg_conf))
-
-        # 3. Pares de cajas consecutivas (ej. "W2U" y "792")
+        # 2. Pares de cajas consecutivas (ej. "W2U" y "792")
         for i in range(len(resultados_ocr) - 1):
             txt_par = f"{resultados_ocr[i][1]} {resultados_ocr[i+1][1]}"
             p_par = limpiar_texto_placa(txt_par)
             if p_par:
                 c_par = (float(resultados_ocr[i][2]) + float(resultados_ocr[i+1][2])) / 2.0
                 if c_par >= min_conf:
-                    cands.append((p_par, c_par))
+                    b1 = obtener_rect_bbox(resultados_ocr[i][0])
+                    b2 = obtener_rect_bbox(resultados_ocr[i+1][0])
+                    b_merged = None
+                    if b1 and b2:
+                        b_merged = [
+                            min(b1[0], b2[0]) + offset_x,
+                            min(b1[1], b2[1]) + offset_y,
+                            max(b1[2], b2[2]) + offset_x,
+                            max(b1[3], b2[3]) + offset_y,
+                        ]
+                    cands.append((p_par, c_par, b_merged, txt_par))
+
+        # 3. Tríos de palabras (ej. "W", "2U", "792")
+        for i in range(len(resultados_ocr) - 2):
+            txt_trio = f"{resultados_ocr[i][1]} {resultados_ocr[i+1][1]} {resultados_ocr[i+2][1]}"
+            p_trio = limpiar_texto_placa(txt_trio)
+            if p_trio:
+                c_trio = (float(resultados_ocr[i][2]) + float(resultados_ocr[i+1][2]) + float(resultados_ocr[i+2][2])) / 3.0
+                if c_trio >= min_conf:
+                    b1 = obtener_rect_bbox(resultados_ocr[i][0])
+                    b3 = obtener_rect_bbox(resultados_ocr[i+2][0])
+                    b_merged = None
+                    if b1 and b3:
+                        b_merged = [
+                            min(b1[0], b3[0]) + offset_x,
+                            min(b1[1], b3[1]) + offset_y,
+                            max(b1[2], b3[2]) + offset_x,
+                            max(b1[3], b3[3]) + offset_y,
+                        ]
+                    cands.append((p_trio, c_trio, b_merged, txt_trio))
+
+        # 4. Texto total concatenado de la escena
+        textos_todos = [r[1] for r in resultados_ocr if r[1].strip()]
+        if len(textos_todos) > 1:
+            texto_unido = " ".join(textos_todos)
+            p_unida = limpiar_texto_placa(texto_unido)
+            if p_unida:
+                avg_conf = sum(float(r[2]) for r in resultados_ocr) / len(resultados_ocr)
+                cands.append((p_unida, max(0.75, avg_conf), None, texto_unido))
                     
         return cands
 
-    # 4. Lectura OCR multi-pasada: Pasada 1 zona de caracteres, Pasada 2 placa completa, Pasada 3 CLAHE
     reader = get_easyocr_reader()
     texto_detectado = ""
     confianza = 0.0
 
+    es_escena_completa = (roi_img is img or (roi_img.shape[0] == h and roi_img.shape[1] == w))
+
     if reader is not None:
         try:
-            # Pasada 1: Zona de caracteres sin la cabecera PERU (ideal para placas amarillas peruanas)
-            res_chars = reader.readtext(
-                roi_caracteres,
-                allowlist='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789- ',
-                detail=1,
-                paragraph=False,
-                batch_size=1
-            )
-            candidatos = extraer_candidatos_ocr(res_chars, min_conf=0.16)
-
-            # Pasada 2: Si no hubo candidatos, probar con la placa completa en color
-            if not candidatos:
-                res_color = reader.readtext(
-                    roi_optima,
+            if es_escena_completa:
+                # Si no se aisló un vehículo con YOLO (ej: usuario muestra placa en hoja de papel o cuaderno):
+                # Escanear TODA LA FOTO buscando la secuencia de matrícula
+                res_full = reader.readtext(
+                    img,
                     allowlist='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789- ',
                     detail=1,
                     paragraph=False,
                     batch_size=1
                 )
-                candidatos = extraer_candidatos_ocr(res_color, min_conf=0.16)
+                candidatos = extraer_candidatos_ocr(res_full, min_conf=0.15)
+                if candidatos:
+                    candidatos.sort(key=lambda x: x[1], reverse=True)
+                    texto_detectado = candidatos[0][0]
+                    confianza = candidatos[0][1]
+                    if candidatos[0][2]:
+                        bbox_detectado = candidatos[0][2]
+                    metodo = "Secuencia en Hoja / Toda la Foto"
+            else:
+                # Caso vehículo: la región de la placa fue localizada con YOLO
+                roi_h, roi_w = roi_img.shape[:2]
+                target_h = 160
+                scale_roi = max(1.0, target_h / float(roi_h))
+                target_w = max(80, int(roi_w * scale_roi))
+                roi_optima = cv2.resize(roi_img, (target_w, target_h), interpolation=cv2.INTER_CUBIC)
 
-            # Pasada 3: Si aún no hay candidatos, probar en escala de grises con CLAHE
-            if not candidatos:
-                res_clahe = reader.readtext(
-                    gray_chars,
+                h_opt = roi_optima.shape[0]
+                y_chars = int(h_opt * 0.26)
+                roi_caracteres = roi_optima[y_chars:, :]
+
+                # Pasada 1: Región de caracteres sin cabecera PERU
+                res_chars = reader.readtext(
+                    roi_caracteres,
                     allowlist='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789- ',
                     detail=1,
                     paragraph=False,
                     batch_size=1
                 )
-                candidatos = extraer_candidatos_ocr(res_clahe, min_conf=0.16)
-            
-            if candidatos:
-                candidatos.sort(key=lambda x: x[1], reverse=True)
-                texto_detectado = candidatos[0][0]
-                confianza = candidatos[0][1]
+                candidatos = extraer_candidatos_ocr(res_chars, min_conf=0.15)
+
+                # Pasada 2: Si no hubo candidatos, probar con la placa completa
+                if not candidatos:
+                    res_color = reader.readtext(
+                        roi_optima,
+                        allowlist='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789- ',
+                        detail=1,
+                        paragraph=False,
+                        batch_size=1
+                    )
+                    candidatos = extraer_candidatos_ocr(res_color, min_conf=0.15)
+
+                if candidatos:
+                    candidatos.sort(key=lambda x: x[1], reverse=True)
+                    texto_detectado = candidatos[0][0]
+                    confianza = candidatos[0][1]
         except Exception as e:
             logger.error(f"Error en lectura EasyOCR: {e}")
 
     duracion_ms = round((time.time() - t_start) * 1000, 1)
     if texto_detectado:
-        logger.info(f"⚡ ALPR Instantáneo: Placa [{texto_detectado}] ({confianza*100:.0f}%) en {duracion_ms}ms")
+        logger.info(f"⚡ ALPR Instantáneo: Placa [{texto_detectado}] ({confianza*100:.0f}%) en {duracion_ms}ms (Método: {metodo})")
 
     return {
         "placa": texto_detectado,

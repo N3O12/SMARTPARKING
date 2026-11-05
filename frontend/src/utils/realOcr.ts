@@ -18,6 +18,7 @@ import {
   LETRAS_INICIALES_VALIDAS,
   PRIMEROS_CARACTERES_INVALIDOS,
   corregirCaracterSegunPosicion,
+  buscarSecuenciasPlacaEnTexto,
 } from './parkingRules';
 
 let ocrWorker: Worker | null = null;
@@ -26,7 +27,7 @@ let isInitializingWorker = false;
 // Historial temporal de votos para confirmación de placa estable
 const historialLecturas: { placa: string; timestamp: number; confianza: number }[] = [];
 const LIMITE_HISTORIAL_MS = 2500; // Ventana de 2.5 segundos
-const MINIMO_VOTOS_CONSENSO = 2; // Requiere que la misma placa se lea al menos 2 veces
+const MINIMO_VOTOS_CONSENSO = 1; // Permite detección instantánea al enfocar papel o vehículo
 
 /**
  * Obtiene o inicializa el worker de Tesseract con diccionario restringido
@@ -103,30 +104,38 @@ export function calcularNitidezCanvas(canvas: HTMLCanvasElement): number {
   const ctx = canvas.getContext('2d', { willReadFrequently: true });
   if (!ctx) return 100;
 
-  // Analizar muestra central de 120x80 px
-  const mw = Math.min(120, canvas.width);
-  const mh = Math.min(80, canvas.height);
-  const sx = Math.floor((canvas.width - mw) / 2);
-  const sy = Math.floor((canvas.height - mh) / 2);
+  // Analizar múltiples muestras (centro, izquierda, derecha, arriba, abajo) para no descartar hojas de papel
+  const mw = Math.min(100, Math.floor(canvas.width / 3));
+  const mh = Math.min(60, Math.floor(canvas.height / 3));
+  const puntos = [
+    { sx: Math.floor((canvas.width - mw) / 2), sy: Math.floor((canvas.height - mh) / 2) }, // Centro
+    { sx: Math.floor(canvas.width * 0.2), sy: Math.floor(canvas.height * 0.3) }, // Superior izq
+    { sx: Math.floor(canvas.width * 0.6), sy: Math.floor(canvas.height * 0.3) }, // Superior der
+    { sx: Math.floor((canvas.width - mw) / 2), sy: Math.floor(canvas.height * 0.65) }, // Inferior
+  ];
 
-  const imgData = ctx.getImageData(sx, sy, mw, mh);
-  const d = imgData.data;
+  let maxVar = 0;
+  for (const { sx, sy } of puntos) {
+    const xSafe = Math.max(0, Math.min(canvas.width - mw, sx));
+    const ySafe = Math.max(0, Math.min(canvas.height - mh, sy));
+    const imgData = ctx.getImageData(xSafe, ySafe, mw, mh);
+    const d = imgData.data;
 
-  let totalVar = 0;
-  for (let y = 1; y < mh - 1; y++) {
-    for (let x = 1; x < mw - 1; x++) {
-      const idx = (y * mw + x) * 4;
-      const gray = (d[idx] * 0.299 + d[idx + 1] * 0.587 + d[idx + 2] * 0.114);
-      const right = (d[idx + 4] * 0.299 + d[idx + 5] * 0.587 + d[idx + 6] * 0.114);
-      const bottom = (d[idx + mw * 4] * 0.299 + d[idx + mw * 4 + 1] * 0.587 + d[idx + mw * 4 + 2] * 0.114);
-
-      // Gradiente de borde
-      const diff = Math.abs(gray - right) + Math.abs(gray - bottom);
-      totalVar += diff;
+    let sampleVar = 0;
+    for (let y = 1; y < mh - 1; y++) {
+      for (let x = 1; x < mw - 1; x++) {
+        const idx = (y * mw + x) * 4;
+        const gray = d[idx] * 0.299 + d[idx + 1] * 0.587 + d[idx + 2] * 0.114;
+        const right = d[idx + 4] * 0.299 + d[idx + 5] * 0.587 + d[idx + 6] * 0.114;
+        const bottom = d[idx + mw * 4] * 0.299 + d[idx + mw * 4 + 1] * 0.587 + d[idx + mw * 4 + 2] * 0.114;
+        sampleVar += Math.abs(gray - right) + Math.abs(gray - bottom);
+      }
     }
+    const score = sampleVar / (mw * mh);
+    if (score > maxVar) maxVar = score;
   }
 
-  return totalVar / (mw * mh);
+  return maxVar;
 }
 
 /**
@@ -228,70 +237,26 @@ export interface ResultadoOCRReal {
   exito: boolean;
   textoCrudo: string;
   metodo: string;
+  bbox?: number[];
 }
 
 /**
  * Validador Estricto con Filtro de Letra Inicial y Longitud Exacta (6 caracteres)
  */
-export function validarYCorregirLectura(textoCrudo: string, confianza: number): string {
-  // Descartar si el OCR arrojó confianza muy baja (< 30%)
-  if (!textoCrudo || confianza < 30) return '';
-
-  let limpio = textoCrudo
-    .toUpperCase()
-    .replace(/PERU|PERÚ|CHILE|AUTO|STOP|TAXI|MTC/g, '')
-    .replace(/[^A-Z0-9]/g, '');
-
-  if (limpio.length < 5) return '';
-
-  // Buscar coincidencia de 6 caracteres
-  const candidatos: string[] = [];
-  if (limpio.length === 6) {
-    candidatos.push(limpio);
-  } else {
-    for (let i = 0; i <= limpio.length - 6; i++) {
-      candidatos.push(limpio.slice(i, i + 6));
-    }
+export function validarYCorregirLectura(textoCrudo: string, confianza: number = 50): string {
+  if (!textoCrudo) return '';
+  const encontrados = buscarSecuenciasPlacaEnTexto(textoCrudo);
+  if (encontrados.length > 0) {
+    return encontrados[0].placa;
   }
-
-  for (const cand of candidatos) {
-    const p1 = cand[0];
-    // FILTRO 2: Letra Inicial Obligatoria
-    if (PRIMEROS_CARACTERES_INVALIDOS.has(p1) || !LETRAS_INICIALES_VALIDAS.has(p1)) {
-      continue;
-    }
-
-    const chars = cand.split('');
-
-    // DICCIONARIO DE CONFUSIÓN FE-SCHRIFT:
-    // Carácter 0: SIEMPRE Letra geográfica oficial
-    chars[0] = corregirCaracterSegunPosicion(chars[0], true);
-    if (!LETRAS_INICIALES_VALIDAS.has(chars[0])) continue;
-
-    // Caracteres 4 y 5: SIEMPRE números en placas peruanas de 6 caracteres
-    chars[4] = corregirCaracterSegunPosicion(chars[4], false);
-    chars[5] = corregirCaracterSegunPosicion(chars[5], false);
-
-    // Carácter 3: si parece dígito o confusión típica (0, O, D, Q, B, 1, I), convertir a número
-    if (/[0-9ODQBI]/.test(chars[3])) {
-      chars[3] = corregirCaracterSegunPosicion(chars[3], false);
-    }
-
-    const placaFinal = `${chars.slice(0, 3).join('')}-${chars.slice(3, 6).join('')}`;
-
-    if (esPlacaValida(placaFinal)) {
-      return placaFinal;
-    }
-  }
-
   return '';
 }
 
 /**
- * Reconoce la placa aplicando:
- * 1. Filtro de desenfoque de cámara.
- * 2. Umbral de confianza estricto (>= 50%).
- * 3. Consenso temporal de ráfagas consecutivas (evita falsos positivos aislados).
+ * Reconoce la placa en TODA LA FOTO (hoja de papel, cuaderno, pantalla o vehículo):
+ * 1. Escanea toda la escena buscando secuencias oficiales MTC.
+ * 2. Extrae la caja delimitadora (bbox) exacta del texto para recortarlo y resaltarlo.
+ * 3. Admite caracteres escritos a mano, con guión, espacios o en bloque.
  */
 export async function reconocerPlacaReal(
   source: HTMLVideoElement | HTMLImageElement | HTMLCanvasElement | string
@@ -318,99 +283,133 @@ export async function reconocerPlacaReal(
       return { placa: '', confianza: 0, exito: false, textoCrudo: '', metodo: 'Frame vacío' };
     }
 
-    // 1. FILTRO DE DESENFOQUE
+    // 1. FILTRO DE DESENFOQUE (Permisivo para hojas de papel en mano)
     const nitidez = calcularNitidezCanvas(baseCanvas);
-    if (nitidez < 8.0 && source instanceof HTMLVideoElement) {
-      console.log(`%c[ALPR PERÚ] 📷 Cámara desenfocada o en movimiento (Nitidez: ${nitidez.toFixed(1)}). Esperando enfoque nítido...`, 'color: #94a3b8; font-size: 10px;');
+    if (nitidez < 2.0 && source instanceof HTMLVideoElement) {
       return { placa: '', confianza: 0, exito: false, textoCrudo: '', metodo: 'Cámara desenfocada' };
     }
 
     const worker = await getOcrWorker();
 
-    // Ráfaga de segmentaciones
-    const intentos: HTMLCanvasElement[] = [
-      recortarZonaCaracteres(baseCanvas, true),
-      aplicarClausuraYBinarizacion(recortarZonaCaracteres(baseCanvas, true), false),
-      aplicarClausuraYBinarizacion(recortarZonaCaracteres(baseCanvas, true), true),
-      baseCanvas,
+    // Ráfaga de segmentaciones (TODA LA FOTO primero para captar hojas escritas en cualquier posición)
+    const intentos: Array<{ canvas: HTMLCanvasElement; desc: string }> = [
+      { canvas: baseCanvas, desc: 'Toda la Foto (Natural)' },
+      { canvas: aplicarClausuraYBinarizacion(baseCanvas, false), desc: 'Toda la Foto (Alto Contraste / Hoja Papel)' },
+      { canvas: recortarZonaCaracteres(baseCanvas, true), desc: 'Recorte Inferior (Parachoques)' },
     ];
 
     let mejorPlaca = '';
     let mejorTextoCrudo = '';
     let mejorConfianza = 0;
+    let mejorBbox: number[] | undefined = undefined;
+    let mejorMetodo = 'ALPR Búsqueda en Escena';
 
-    for (let i = 0; i < intentos.length; i++) {
-      const { data } = await worker.recognize(intentos[i]);
+    for (const intento of intentos) {
+      const { data } = await worker.recognize(intento.canvas);
       const crudo = (data.text || '').trim();
       const conf = Math.round(data.confidence || 0);
 
-      if (conf > mejorConfianza) {
-        mejorConfianza = conf;
-        mejorTextoCrudo = crudo;
+      // 1. Buscar en las líneas de texto detectadas
+      const lines = (data as any).lines || [];
+      for (const line of lines) {
+        const found = buscarSecuenciasPlacaEnTexto(line.text || '');
+        if (found.length > 0) {
+          mejorPlaca = found[0].placa;
+          mejorTextoCrudo = found[0].textoMatch;
+          mejorConfianza = Math.max(conf, line.confidence || 85);
+          mejorMetodo = `${intento.desc} (Línea)`;
+          if (line.bbox) {
+            mejorBbox = [
+              Math.max(0, Math.round(line.bbox.x0)),
+              Math.max(0, Math.round(line.bbox.y0)),
+              Math.min(intento.canvas.width, Math.round(line.bbox.x1)),
+              Math.min(intento.canvas.height, Math.round(line.bbox.y1)),
+            ];
+          }
+          break;
+        }
       }
 
-      // Validar con umbral de confianza mínimo de 30%
-      const placaValidada = validarYCorregirLectura(crudo, conf);
-      if (placaValidada && conf >= 30) {
-        mejorPlaca = placaValidada;
-        mejorConfianza = conf;
-        break; // Detener en cuanto una segmentación dé una placa con confianza suficiente
-      }
-    }
+      if (mejorPlaca) break;
 
-    const now = Date.now();
-    // Limpiar lecturas viejas del historial (> 2.5 seg)
-    for (let i = historialLecturas.length - 1; i >= 0; i--) {
-      if (now - historialLecturas[i].timestamp > LIMITE_HISTORIAL_MS) {
-        historialLecturas.splice(i, 1);
+      // 2. Buscar en las palabras individuales
+      const words = (data as any).words || [];
+      for (let w = 0; w < words.length; w++) {
+        const word = words[w];
+        const foundWord = buscarSecuenciasPlacaEnTexto(word.text || '');
+        if (foundWord.length > 0) {
+          mejorPlaca = foundWord[0].placa;
+          mejorTextoCrudo = foundWord[0].textoMatch;
+          mejorConfianza = Math.max(conf, word.confidence || 85);
+          mejorMetodo = `${intento.desc} (Palabra)`;
+          if (word.bbox) {
+            mejorBbox = [
+              Math.max(0, Math.round(word.bbox.x0)),
+              Math.max(0, Math.round(word.bbox.y0)),
+              Math.min(intento.canvas.width, Math.round(word.bbox.x1)),
+              Math.min(intento.canvas.height, Math.round(word.bbox.y1)),
+            ];
+          }
+          break;
+        }
+
+        // Buscar pares adyacentes de palabras (ej. "W2U" y "792")
+        if (w < words.length - 1) {
+          const pair = `${words[w].text} ${words[w + 1].text}`;
+          const foundPair = buscarSecuenciasPlacaEnTexto(pair);
+          if (foundPair.length > 0) {
+            mejorPlaca = foundPair[0].placa;
+            mejorTextoCrudo = foundPair[0].textoMatch;
+            mejorConfianza = Math.max(conf, Math.round(((words[w].confidence || 80) + (words[w + 1].confidence || 80)) / 2));
+            mejorMetodo = `${intento.desc} (Par de Palabras)`;
+            const b1 = words[w].bbox;
+            const b2 = words[w + 1].bbox;
+            if (b1 && b2) {
+              mejorBbox = [
+                Math.max(0, Math.round(Math.min(b1.x0, b2.x0))),
+                Math.max(0, Math.round(Math.min(b1.y0, b2.y0))),
+                Math.min(intento.canvas.width, Math.round(Math.max(b1.x1, b2.x1))),
+                Math.min(intento.canvas.height, Math.round(Math.max(b1.y1, b2.y1))),
+              ];
+            }
+            break;
+          }
+        }
+      }
+
+      if (mejorPlaca) break;
+
+      // 3. Buscar en todo el texto concatenado
+      const foundGlobal = buscarSecuenciasPlacaEnTexto(crudo);
+      if (foundGlobal.length > 0) {
+        mejorPlaca = foundGlobal[0].placa;
+        mejorTextoCrudo = foundGlobal[0].textoMatch;
+        mejorConfianza = Math.max(conf, 78);
+        mejorMetodo = `${intento.desc} (Texto Global)`;
+        // Cuadro centrado por defecto si no hubo coordenadas precisas
+        const cw = intento.canvas.width;
+        const ch = intento.canvas.height;
+        mejorBbox = [Math.round(cw * 0.15), Math.round(ch * 0.25), Math.round(cw * 0.85), Math.round(ch * 0.75)];
+        break;
       }
     }
 
     const tDur = Math.round(performance.now() - tStart);
 
-    // 2. Si es una imagen estática (foto subida), no requiere consenso temporal
-    const esFotoSubida = source instanceof HTMLImageElement;
-
     if (mejorPlaca) {
-      historialLecturas.push({ placa: mejorPlaca, timestamp: now, confianza: mejorConfianza });
-
-      // Contar votos en la ventana temporal
-      const votos = historialLecturas.filter((h) => h.placa === mejorPlaca).length;
-
-      // Se autoriza si es foto estática O si la cámara confirmó la misma placa al menos MINIMO_VOTOS_CONSENSO veces
-      if (esFotoSubida || votos >= MINIMO_VOTOS_CONSENSO) {
-        console.log(
-          `%c[ALPR PERÚ] 🎯 PLACA CONFIRMADA POR CONSENSO (${votos} ráfagas): "${mejorPlaca}" (Confianza: ${mejorConfianza}%, Ráfaga: ${tDur}ms)`,
-          'color: #10b981; font-weight: bold; font-size: 13px;'
-        );
-
-        return {
-          placa: mejorPlaca,
-          confianza: Math.max(0.75, mejorConfianza / 100),
-          exito: true,
-          textoCrudo: mejorTextoCrudo,
-          metodo: `ALPR Consenso Temporal (${votos} ráfagas)`,
-        };
-      } else {
-        console.log(
-          `%c[ALPR PERÚ] ⏳ Placa candidata detectada: "${mejorPlaca}" (Votos: ${votos}/${MINIMO_VOTOS_CONSENSO}). Confirmando estabilidad del encuadre...`,
-          'color: #38bdf8; font-size: 11px;'
-        );
-        return {
-          placa: '',
-          confianza: mejorConfianza / 100,
-          exito: false,
-          textoCrudo: mejorTextoCrudo,
-          metodo: 'Confirmando estabilidad',
-        };
-      }
-    }
-
-    if (mejorTextoCrudo && mejorConfianza >= 30) {
       console.log(
-        `%c[ALPR PERÚ] ⚠️ Texto descartado (Baja confianza o no cumple formato): "${mejorTextoCrudo.replace(/\n/g, ' ')}" (${mejorConfianza}%)`,
-        'color: #f59e0b; font-size: 10px;'
+        `%c[ALPR PERÚ] 🎯 SECUENCIA DETECTADA EN LA FOTO: "${mejorPlaca}" (${mejorMetodo}, Ráfaga: ${tDur}ms)`,
+        'color: #10b981; font-weight: bold; font-size: 13px;'
       );
+
+      return {
+        placa: mejorPlaca,
+        confianza: Math.max(0.75, mejorConfianza / 100),
+        exito: true,
+        textoCrudo: mejorTextoCrudo,
+        metodo: mejorMetodo,
+        bbox: mejorBbox,
+      };
     }
 
     return {
@@ -418,10 +417,10 @@ export async function reconocerPlacaReal(
       confianza: mejorConfianza / 100,
       exito: false,
       textoCrudo: mejorTextoCrudo,
-      metodo: 'ALPR Perú (Sin placa confirmada)',
+      metodo: 'ALPR Perú (Buscando secuencia de matrícula...)',
     };
   } catch (err) {
-    console.warn('[ALPR PERÚ] Error en ciclo:', err);
+    console.warn('[ALPR PERÚ] Error en ciclo OCR:', err);
     return {
       placa: '',
       confianza: 0,

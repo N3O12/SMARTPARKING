@@ -12,6 +12,7 @@ import {
   Eye,
   FileCheck,
   Layers,
+  Loader2,
   Lock,
   Maximize2,
   Play,
@@ -21,6 +22,7 @@ import {
   ShieldCheck,
   Sparkles,
   SwitchCamera,
+  Trash2,
   Unlock,
   Upload,
   Video,
@@ -100,6 +102,8 @@ export const AlprTrainingStation: React.FC<AlprTrainingStationProps> = ({
   const [isTrainingRunning, setIsTrainingRunning] = useState<boolean>(false);
   const [trainingProgress, setTrainingProgress] = useState<EstadoEntrenamientoYOLO | null>(null);
   const [trainingEpochs, setTrainingEpochs] = useState<number>(10);
+  const [isResetModalOpen, setIsResetModalOpen] = useState<boolean>(false);
+  const [isResetting, setIsResetting] = useState<boolean>(false);
 
   // Filtros visuales y zoom opcional (por defecto 1.0x = Toda la Foto Completa)
   const [highContrast, setHighContrast] = useState<boolean>(false);
@@ -393,7 +397,8 @@ export const AlprTrainingStation: React.FC<AlprTrainingStationProps> = ({
             recortarRegionPlaca(frameBase64, res.bbox);
           }
 
-          if (res.placa) {
+          // Solo congelar y presentar placa si la confianza es real (mínimo 35%)
+          if (res.placa && res.confianza >= 35) {
             const placaNormalizada = normalizarPlaca(res.placa);
             setDetectedPlate(placaNormalizada);
             setDetectedRaw(res.textoCrudo || res.placa);
@@ -416,9 +421,9 @@ export const AlprTrainingStation: React.FC<AlprTrainingStationProps> = ({
               soundManager.playScanBeep();
             }
           } else {
-            // No se detectó placa en este cuadro
-            if (!detectedPlate) {
-              setDetectedRaw(res?.textoCrudo || 'Buscando placa en todo el campo visual...');
+            // No se detectó placa con confianza suficiente en este cuadro
+            if (!isValidationFrozen) {
+              setDetectedRaw('Buscando placa válida en el vehículo...');
             }
           }
         }
@@ -808,6 +813,30 @@ export const AlprTrainingStation: React.FC<AlprTrainingStationProps> = ({
         tipo: 'info',
         texto: 'Dataset consolidado con éxito en disco para entrenamiento local.',
       });
+    }
+  };
+
+  /**
+   * ACCIÓN 4: Limpiar y reiniciar la base de datos de entrenamiento
+   */
+  const handleLimpiarDataset = async () => {
+    setIsResetting(true);
+    try {
+      const res = await parkingApi.limpiarDatasetEntrenamiento();
+      soundManager.playSuccessChime();
+      setActionFeedbackMsg({
+        tipo: 'success',
+        texto: res.mensaje || 'Base de datos de muestras reiniciada con éxito.',
+      });
+      await cargarEstadisticas();
+      setIsResetModalOpen(false);
+    } catch (err: any) {
+      setActionFeedbackMsg({
+        tipo: 'info',
+        texto: 'Error reiniciando la base de datos de auto-entrenamiento.',
+      });
+    } finally {
+      setIsResetting(false);
     }
   };
 
@@ -1475,13 +1504,26 @@ export const AlprTrainingStation: React.FC<AlprTrainingStationProps> = ({
                 <Database className="w-4 h-4 text-emerald-400" />
                 <h3 className="font-bold text-white text-xs">Métricas de Auto-Entrenamiento</h3>
               </div>
-              <button
-                onClick={cargarEstadisticas}
-                className="text-slate-400 hover:text-slate-200 text-[11px] flex items-center gap-1"
-              >
-                <RefreshCw className="w-3 h-3" />
-                Actualizar
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={cargarEstadisticas}
+                  className="text-slate-400 hover:text-slate-200 text-[11px] flex items-center gap-1 transition-colors"
+                  title="Recargar estadísticas del dataset"
+                >
+                  <RefreshCw className="w-3 h-3" />
+                  Actualizar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsResetModalOpen(true)}
+                  className="px-2 py-0.5 rounded bg-rose-950/40 hover:bg-rose-900/60 border border-rose-500/30 text-rose-300 hover:text-white text-[10px] font-mono flex items-center gap-1 transition-colors"
+                  title="Limpiar y reiniciar todas las muestras para comenzar de cero"
+                >
+                  <Trash2 className="w-3 h-3 text-rose-400" />
+                  Limpiar BD
+                </button>
+              </div>
             </div>
 
             {/* Contadores */}
@@ -1593,15 +1635,25 @@ export const AlprTrainingStation: React.FC<AlprTrainingStationProps> = ({
               </span>
             </button>
 
-            {/* Historial Breve de Correcciones */}
+            {/* Historial Breve de Correcciones: Ordenado por más recientes primero */}
             {Object.keys(trainingStats.correcciones || {}).length > 0 && (
               <div className="space-y-1.5 pt-1">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                  Últimas Matrículas Aprendidas:
-                </span>
-                <div className="max-h-24 overflow-y-auto space-y-1 pr-1 font-mono text-[11px]">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                    Últimas Matrículas Aprendidas (Más Recientes):
+                  </span>
+                  <span className="text-[10px] text-slate-500 font-mono">
+                    {Object.keys(trainingStats.correcciones).length} placas
+                  </span>
+                </div>
+                <div className="max-h-36 overflow-y-auto space-y-1 pr-1 font-mono text-[11px]">
                   {Object.entries(trainingStats.correcciones)
-                    .slice(0, 5)
+                    .sort(([, a], [, b]) => {
+                      const tA = new Date(a.ultima_interaccion || 0).getTime();
+                      const tB = new Date(b.ultima_interaccion || 0).getTime();
+                      return tB - tA;
+                    })
+                    .slice(0, 10)
                     .map(([placa, info]) => (
                       <div
                         key={placa}
@@ -1619,6 +1671,45 @@ export const AlprTrainingStation: React.FC<AlprTrainingStationProps> = ({
           </div>
         </div>
       </div>
+
+      {/* MODAL DE CONFIRMACIÓN: REINICIAR / LIMPIAR BASE DE DATOS DE MUESTRAS */}
+      {isResetModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-rose-500/40 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 animate-scale-in">
+            <div className="flex items-center gap-3">
+              <div className="p-3 rounded-full bg-rose-500/10 border border-rose-500/30 text-rose-400">
+                <Trash2 className="w-6 h-6" />
+              </div>
+              <div>
+                <h3 className="font-bold text-white text-base">Limpiar Base de Datos</h3>
+                <p className="text-xs text-slate-400">¿Reiniciar todas las muestras de auto-entrenamiento?</p>
+              </div>
+            </div>
+            <p className="text-xs text-slate-300 leading-relaxed">
+              Esta acción eliminará las <strong className="text-rose-400 font-bold">{trainingStats.total_muestras} muestras</strong> acumuladas (imágenes, etiquetas y registros de calibración en <code className="text-cyan-300">dataset_autoentrenamiento/</code>) para que puedas comenzar a capturar y entrenar placas nuevas y limpias.
+            </p>
+            <div className="flex items-center justify-end gap-2.5 pt-2">
+              <button
+                type="button"
+                onClick={() => setIsResetModalOpen(false)}
+                disabled={isResetting}
+                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleLimpiarDataset}
+                disabled={isResetting}
+                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold flex items-center gap-2 transition-colors disabled:opacity-50 shadow-lg shadow-rose-900/30"
+              >
+                {isResetting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                <span>{isResetting ? 'Limpiando...' : 'Sí, Limpiar Base de Datos'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -712,6 +712,31 @@ class ParkingApiService {
       mensaje: 'Modo local sin backend',
     };
   }
+
+  /**
+   * Limpia y reinicia la base de datos de muestras de auto-entrenamiento
+   */
+  public async limpiarDatasetEntrenamiento(): Promise<{ exito: boolean; mensaje: string }> {
+    if (this.isBackendOnline && !this.preferLocal) {
+      try {
+        const res = await fetch(`${this.backendUrl}/api/feedback-dataset/limpiar`, {
+          method: 'POST',
+        });
+        if (res.ok) {
+          localStorage.removeItem('smartparking_feedback_dataset');
+          return await res.json();
+        }
+      } catch (e) {
+        console.warn('Error limpiando dataset en backend:', e);
+      }
+    }
+
+    localStorage.removeItem('smartparking_feedback_dataset');
+    return {
+      exito: true,
+      mensaje: 'Base de datos de muestras reiniciada. El dataset está listo para nuevas placas.',
+    };
+  }
 }
 
 export const parkingApi = new ParkingApiService();

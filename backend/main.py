@@ -143,18 +143,54 @@ def get_yolo_detector():
     return yolo_detector
 
 
+PALABRAS_PROHIBIDAS_UI = {
+    "COM", "ROBOFLOW", "UNIVERSE", "BILLY", "SOPLIN", "HTTP", "HTTPS", 
+    "WWW", "ANDROID", "GOOGLE", "FIREFOX", "CHROME", "CAMERA", "BATTERY", "WIFI"
+}
+
 def limpiar_texto_placa(texto: str) -> str:
-    """Normaliza y extrae un patrón típico de matrícula vehicular (ej. ABC-123 o W1X-942)"""
+    """
+    Normaliza y extrae un patrón estricto de matrícula vehicular peruana (MTC):
+    - Estándar autos: 3 alfanuméricos + 3 dígitos (ej: ABC-123, A1B-234, X71-962, AEF-710)
+    - Motos / Especiales: 2 alfanuméricos + 4 dígitos (ej: AB-1234, 12-3456)
+    - Descartar totalmente cadenas sin números (ej: COO-WCM de barras de navegador) o palabras de UI.
+    """
     if not texto:
         return ""
     limpio = re.sub(r'[^A-Z0-9]', '', texto.upper())
-    # Búsqueda de patrones 3 letras/números + 3 o 4 letras/números
-    match = re.search(r'([A-Z0-9]{3})([A-Z0-9]{3,4})', limpio)
-    if match:
-        return f"{match.group(1)}-{match.group(2)}"
-    if len(limpio) >= 6:
-        return f"{limpio[:3]}-{limpio[3:7]}"
-    return limpio
+    
+    # 1. Descartar si contiene palabras de URL o interfaz
+    for palabra in PALABRAS_PROHIBIDAS_UI:
+        if palabra in limpio:
+            return ""
+
+    # Longitud mínima de matrícula peruana
+    if len(limpio) < 5 or len(limpio) > 8:
+        return ""
+
+    # 2. Formato estándar MTC: 3 alfanuméricos + 3 dígitos obligatorios (ej. A1B-234, X71-962)
+    match_std = re.search(r'([A-Z0-9]{3})([0-9]{3})', limpio)
+    if match_std:
+        p1, p2 = match_std.group(1), match_std.group(2)
+        # Asegurar que el primer bloque no sea ruido de 3 ceros o letras idénticas de UI
+        if p1 != "000" and p1 != "OOO":
+            return f"{p1}-{p2}"
+
+    # 3. Formato moto/especial: 2 alfanuméricos + 4 dígitos (ej. AB-1234)
+    match_moto = re.search(r'([A-Z0-9]{2})([0-9]{4})', limpio)
+    if match_moto:
+        return f"{match_moto.group(1)}-{match_moto.group(2)}"
+
+    # 4. Formato de 6 caracteres con guión (exige al menos 2 números en la matrícula)
+    match_6 = re.search(r'([A-Z0-9]{3})([A-Z0-9]{3})', limpio)
+    if match_6:
+        cand = f"{match_6.group(1)}-{match_6.group(2)}"
+        total_digitos = sum(c.isdigit() for c in cand)
+        # Una placa vehicular peruana NUNCA es 100% letras (ej. COO-WCM es falso positivo)
+        if total_digitos >= 2:
+            return cand
+
+    return ""
 
 
 def decodificar_imagen_base64(imagen_base64: str) -> Optional[np.ndarray]:
@@ -284,8 +320,13 @@ def preprocesar_y_leer_placa(img: np.ndarray) -> dict:
                 cx, cy, cw, ch = cv2.boundingRect(c)
                 aspect = cw / float(ch) if ch > 0 else 0
                 area = cw * ch
-                # Aspect ratio oficial de placa peruana (2.0 a 5.0) y tamaño razonable
-                if 2.0 <= aspect <= 5.2 and 40 <= cw <= int(w * 0.7) and 15 <= ch <= int(h * 0.4) and area >= 800:
+                
+                # Descartar franjas pegadas al borde superior extremo (barras de URL, iconos de batería/wifi)
+                if cy < int(h * 0.12):
+                    continue
+
+                # Aspect ratio oficial de placa peruana (2.0 a 3.9) y tamaño razonable
+                if 2.0 <= aspect <= 3.9 and 45 <= cw <= int(w * 0.75) and 16 <= ch <= int(h * 0.35) and area >= 800:
                     candidatos_contornos.append((area, [cx, cy, cx + cw, cy + ch]))
             
             if candidatos_contornos:
@@ -334,10 +375,11 @@ def preprocesar_y_leer_placa(img: np.ndarray) -> dict:
     clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(6, 6))
     gray_clahe = clahe.apply(sharpened)
 
-    # 4. Lectura OCR de alta precisión con EasyOCR
+    # 4. Lectura OCR con EasyOCR y FILTRO ESTRICTO DE CONFIANZA
     reader = get_easyocr_reader()
     texto_detectado = ""
     confianza = 0.0
+    MIN_CONFIANZA_ACEPTABLE = 0.35  # Umbral mínimo: nunca aceptar ruidos espurios o detecciones de 1%
 
     if reader is not None:
         try:
@@ -352,20 +394,19 @@ def preprocesar_y_leer_placa(img: np.ndarray) -> dict:
             candidatos = []
             for (bbox, text, conf) in resultados:
                 placa_cand = limpiar_texto_placa(text)
-                if len(re.sub(r'[^A-Z0-9]', '', placa_cand)) >= 4:
-                    candidatos.append((placa_cand, float(conf)))
+                c_val = float(conf)
+                # Exigir formato de placa peruana válido y confianza >= 35%
+                if placa_cand and c_val >= MIN_CONFIANZA_ACEPTABLE:
+                    candidatos.append((placa_cand, c_val))
             
             if candidatos:
                 candidatos.sort(key=lambda x: x[1], reverse=True)
                 texto_detectado = candidatos[0][0]
                 confianza = candidatos[0][1]
-            elif resultados:
-                texto_detectado = limpiar_texto_placa(resultados[0][1])
-                confianza = float(resultados[0][2])
         except Exception as e:
             logger.error(f"Error en lectura EasyOCR: {e}")
 
-    # Si EasyOCR no leyó en la imagen ecualizada, prueba una única pasada en color
+    # Si EasyOCR no leyó en la imagen ecualizada, prueba una pasada en color con el mismo filtro estricto
     if not texto_detectado and reader is not None:
         try:
             resultados_color = reader.readtext(
@@ -377,9 +418,10 @@ def preprocesar_y_leer_placa(img: np.ndarray) -> dict:
             )
             for (bbox, text, conf) in resultados_color:
                 placa_cand = limpiar_texto_placa(text)
-                if len(re.sub(r'[^A-Z0-9]', '', placa_cand)) >= 4:
+                c_val = float(conf)
+                if placa_cand and c_val >= MIN_CONFIANZA_ACEPTABLE:
                     texto_detectado = placa_cand
-                    confianza = float(conf)
+                    confianza = c_val
                     break
         except Exception:
             pass
@@ -396,7 +438,7 @@ def preprocesar_y_leer_placa(img: np.ndarray) -> dict:
         "frame_height": h,
         "metodo": f"{metodo} ({duracion_ms}ms)",
         "latencia_ms": duracion_ms,
-        "exito": bool(texto_detectado)
+        "exito": bool(texto_detectado and confianza >= MIN_CONFIANZA_ACEPTABLE)
     }
 
 
@@ -678,13 +720,84 @@ def get_feedback_stats():
         except Exception:
             pass
 
+    # Ordenar las matrículas aprendidas por fecha más reciente primero
+    correcciones_ordenadas = dict(
+        sorted(
+            correcciones_data.items(),
+            key=lambda item: item[1].get("ultima_interaccion", ""),
+            reverse=True
+        )
+    )
+
     return {
         "total_muestras": len(imagenes),
         "total_confirmadas": len(confirmadas),
         "total_corregidas": len(corregidas),
-        "correcciones": correcciones_data,
+        "correcciones": correcciones_ordenadas,
         "modelo_actual": "YOLOv8 Placas Perú (dataset roboflow + auto-entrenamiento)",
         "listo_para_reentrenar": len(imagenes) >= 3
+    }
+
+
+@app.post("/api/feedback-dataset/limpiar")
+@app.delete("/api/feedback-dataset/limpiar")
+def limpiar_dataset_entrenamiento():
+    """
+    Limpia completamente el dataset de auto-entrenamiento recolectado:
+    - Borra imágenes de dataset_autoentrenamiento/images/
+    - Borra etiquetas de dataset_autoentrenamiento/labels/
+    - Vacía correcciones.json a {}
+    - Elimina archivos *.cache
+    Permite al usuario reiniciar la base de datos de aprendizaje y agregar nuevas placas limpias.
+    """
+    base_dir = os.path.abspath("dataset_autoentrenamiento")
+    img_dir = os.path.join(base_dir, "images")
+    lbl_dir = os.path.join(base_dir, "labels")
+
+    total_borradas = 0
+    if os.path.exists(img_dir):
+        for f in os.listdir(img_dir):
+            if f.endswith(('.jpg', '.png', '.jpeg')):
+                try:
+                    os.remove(os.path.join(img_dir, f))
+                    total_borradas += 1
+                except Exception:
+                    pass
+
+    if os.path.exists(lbl_dir):
+        for f in os.listdir(lbl_dir):
+            if f.endswith('.txt'):
+                try:
+                    os.remove(os.path.join(lbl_dir, f))
+                except Exception:
+                    pass
+
+    # Borrar archivos .cache
+    if os.path.exists(base_dir):
+        for root, _, files in os.walk(base_dir):
+            for file in files:
+                if file.endswith(".cache"):
+                    try:
+                        os.remove(os.path.join(root, file))
+                    except Exception:
+                        pass
+
+    # Vaciar correcciones.json
+    cache_path = os.path.join(base_dir, "correcciones.json")
+    try:
+        with open(cache_path, "w", encoding="utf-8") as f:
+            json.dump({}, f, indent=2)
+    except Exception:
+        pass
+
+    logger.info(f"🗑️ Base de datos de auto-entrenamiento reiniciada: {total_borradas} imágenes eliminadas.")
+    return {
+        "exito": True,
+        "mensaje": f"Base de datos de muestras reiniciada. Se eliminaron {total_borradas} muestras anteriores. Listo para capturar nuevas placas.",
+        "total_muestras": 0,
+        "total_confirmadas": 0,
+        "total_corregidas": 0,
+        "correcciones": {}
     }
 
 

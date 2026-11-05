@@ -60,6 +60,8 @@ export interface OCRResultado {
   placa: string;
   confianza: number;
   bbox?: number[];
+  frame_width?: number;
+  frame_height?: number;
   metodo?: string;
   exito?: boolean;
   textoCrudo?: string;

@@ -261,19 +261,53 @@ def preprocesar_y_leer_placa(img: np.ndarray) -> dict:
                 if (plate_y2 - plate_y1) >= 18 and (plate_x2 - plate_x1) >= 40:
                     roi_img = img[plate_y1:plate_y2, plate_x1:plate_x2]
                     bbox_detectado = [plate_x1, plate_y1, plate_x2, plate_y2]
-                    metodo = "Vehículo a Distancia (Zona Parachoques)"
+                    metodo = "Vehículo Detectado (Zona Parachoques)"
         except Exception as e:
             logger.warning(f"Aviso en detección multi-distancia YOLO: {e}")
 
-    # Fallback si no hay detección: encuadre central donde enfoca el operador
+    # 1.B Búsqueda morfológica global en TODA la foto si YOLO no encontró caja
     if roi_img is None or roi_img.size == 0:
-        cx1 = int(w * 0.12)
-        cy1 = int(h * 0.25)
-        cx2 = int(w * 0.88)
-        cy2 = int(h * 0.82)
-        roi_img = img[cy1:cy2, cx1:cx2]
-        bbox_detectado = [cx1, cy1, cx2, cy2]
-        metodo = "Enfoque Retícula Central"
+        try:
+            gray_full = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+            # Detección de bordes verticales típicos de caracteres de placa
+            sobelx = cv2.Sobel(gray_full, cv2.CV_8U, 1, 0, ksize=3)
+            _, thresh_full = cv2.threshold(sobelx, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+            # Clausura horizontal para agrupar caracteres de la placa
+            kernel_morph = cv2.getStructuringElement(cv2.MORPH_RECT, (17, 3))
+            closed = cv2.morphologyEx(thresh_full, cv2.MORPH_CLOSE, kernel_morph)
+            
+            contours, _ = cv2.findContours(closed, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            candidatos_contornos = []
+            for c in contours:
+                cx, cy, cw, ch = cv2.boundingRect(c)
+                aspect = cw / float(ch) if ch > 0 else 0
+                area = cw * ch
+                # Aspect ratio oficial de placa peruana (2.0 a 5.0) y tamaño razonable
+                if 2.0 <= aspect <= 5.2 and 40 <= cw <= int(w * 0.7) and 15 <= ch <= int(h * 0.4) and area >= 800:
+                    candidatos_contornos.append((area, [cx, cy, cx + cw, cy + ch]))
+            
+            if candidatos_contornos:
+                # Tomar el candidato con mayor probabilidad
+                candidatos_contornos.sort(key=lambda x: x[0], reverse=True)
+                bx1, by1, bx2, by2 = candidatos_contornos[0][1]
+                # Pequeño padding
+                px = int((bx2 - bx1) * 0.08)
+                py = int((by2 - by1) * 0.08)
+                bx1 = max(0, bx1 - px)
+                by1 = max(0, by1 - py)
+                bx2 = min(w, bx2 + px)
+                by2 = min(h, by2 + py)
+                roi_img = img[by1:by2, bx1:bx2]
+                bbox_detectado = [bx1, by1, bx2, by2]
+                metodo = "OpenCV Morfología Global (Toda la Foto)"
+        except Exception as e:
+            logger.warning(f"Aviso en búsqueda morfológica global: {e}")
+
+    # Si aún no se encontró ninguna región candidata en toda la foto
+    if roi_img is None or roi_img.size == 0:
+        roi_img = img
+        bbox_detectado = [0, 0, w, h]
+        metodo = "Foto Completa"
 
     # 2. SUPER-RESOLUCIÓN Y RESTAURACIÓN PARA PLACAS LEJANAS
     # Si la placa mide menos de 80px de alto, aplicamos Super-Resolución Cúbica + Unsharp Masking
@@ -356,6 +390,8 @@ def preprocesar_y_leer_placa(img: np.ndarray) -> dict:
         "placa": texto_detectado,
         "confianza": round(float(confianza), 2),
         "bbox": bbox_detectado,
+        "frame_width": w,
+        "frame_height": h,
         "metodo": f"{metodo} ({duracion_ms}ms)",
         "latencia_ms": duracion_ms,
         "exito": bool(texto_detectado)

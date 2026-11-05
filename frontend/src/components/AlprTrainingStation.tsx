@@ -66,6 +66,7 @@ export const AlprTrainingStation: React.FC<AlprTrainingStationProps> = ({
   const [lastFrameImage, setLastFrameImage] = useState<string | null>(null);
   const [plateCropImage, setPlateCropImage] = useState<string | null>(null);
   const [lastBbox, setLastBbox] = useState<number[] | undefined>(undefined);
+  const [detectedFrameDims, setDetectedFrameDims] = useState<{ width: number; height: number }>({ width: 640, height: 480 });
 
   // Modo corrección manual (Human-in-the-loop)
   const [isCorrectionOpen, setIsCorrectionOpen] = useState<boolean>(false);
@@ -86,9 +87,9 @@ export const AlprTrainingStation: React.FC<AlprTrainingStationProps> = ({
   });
   const [isTrainingRunning, setIsTrainingRunning] = useState<boolean>(false);
 
-  // Filtros visuales y zoom teleobjetivo para cámara lejana (1 auto de distancia)
+  // Filtros visuales y zoom opcional (por defecto 1.0x = Toda la Foto Completa)
   const [highContrast, setHighContrast] = useState<boolean>(false);
-  const [zoomLevel, setZoomLevel] = useState<number>(2.0); // 2.0x predeterminado para distancia de vehículo
+  const [zoomLevel, setZoomLevel] = useState<number>(1.0); // 1.0x = 100% Campo Visual Completo
 
   const cambiarZoom = (nivel: number) => {
     setZoomLevel(nivel);
@@ -215,7 +216,7 @@ export const AlprTrainingStation: React.FC<AlprTrainingStationProps> = ({
   };
 
   /**
-   * Captura el fotograma actual con Teleobjetivo / Recorte Óptico Central para cámaras lejanas
+   * Captura el 100% de la foto completa capturada por la cámara (sin recortar bordes)
    */
   const capturarFrameActual = (): string | null => {
     const video = videoRef.current;
@@ -225,28 +226,25 @@ export const AlprTrainingStation: React.FC<AlprTrainingStationProps> = ({
     const vw = video.videoWidth || 640;
     const vh = video.videoHeight || 480;
 
-    // Cuando la cámara está a distancia (1 o más autos), se recorta ópticamente
-    // el centro del sensor a resolución nativa, magnificando la placa sin pixelación
-    const z = zoomLevel > 1.0 ? zoomLevel : 1.0;
-    const cropW = vw / z;
-    const cropH = vh / z;
-    const startX = (vw - cropW) / 2;
-    const startY = (vh - cropH) / 2;
+    // Captura TODO el campo de visión completo de la cámara sin descartar ninguna esquina
+    const maxDim = 960;
+    const scale = Math.min(1.0, maxDim / Math.max(vw, vh));
 
-    const targetW = Math.min(800, Math.round(cropW));
-    const targetH = Math.min(600, Math.round(cropH));
+    const targetW = Math.round(vw * scale);
+    const targetH = Math.round(vh * scale);
 
     canvas.width = targetW;
     canvas.height = targetH;
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
     if (!ctx) return null;
 
-    ctx.drawImage(video, startX, startY, cropW, cropH, 0, 0, targetW, targetH);
-    return canvas.toDataURL('image/jpeg', 0.80);
+    ctx.drawImage(video, 0, 0, targetW, targetH);
+    setDetectedFrameDims({ width: targetW, height: targetH });
+    return canvas.toDataURL('image/jpeg', 0.82);
   };
 
   /**
-   * Recorta la región de interés (bounding box de la placa)
+   * Recorta la región exacta de la placa identificada en la foto completa
    */
   const recortarRegionPlaca = (imageSrc: string, bbox?: number[]) => {
     const img = new Image();
@@ -261,20 +259,22 @@ export const AlprTrainingStation: React.FC<AlprTrainingStationProps> = ({
       let w = img.width;
       let h = img.height;
 
-      if (bbox && bbox.length === 4) {
-        [x, y, w, h] = [bbox[0], bbox[1], bbox[2] - bbox[0], bbox[3] - bbox[1]];
-      } else {
-        // Enfoque central si no hay bbox explícito
-        x = img.width * 0.15;
-        y = img.height * 0.45;
-        w = img.width * 0.7;
-        h = img.height * 0.45;
+      if (bbox && bbox.length === 4 && bbox[2] > bbox[0] && bbox[3] > bbox[1]) {
+        // Recortar la matrícula localizada por el detector en cualquier posición de la foto
+        const bw = bbox[2] - bbox[0];
+        const bh = bbox[3] - bbox[1];
+        const padX = Math.round(bw * 0.08);
+        const padY = Math.round(bh * 0.08);
+        x = Math.max(0, bbox[0] - padX);
+        y = Math.max(0, bbox[1] - padY);
+        w = Math.min(img.width - x, bw + padX * 2);
+        h = Math.min(img.height - y, bh + padY * 2);
       }
 
-      offCanvas.width = Math.max(10, w);
+      offCanvas.width = Math.max(20, w);
       offCanvas.height = Math.max(10, h);
       ctx.drawImage(img, x, y, w, h, 0, 0, offCanvas.width, offCanvas.height);
-      setPlateCropImage(offCanvas.toDataURL('image/jpeg', 0.9));
+      setPlateCropImage(offCanvas.toDataURL('image/jpeg', 0.92));
     };
     img.src = imageSrc;
   };
@@ -355,23 +355,31 @@ export const AlprTrainingStation: React.FC<AlprTrainingStationProps> = ({
           }
         }
 
-        if (res && res.placa) {
-          const placaNormalizada = normalizarPlaca(res.placa);
-          setDetectedPlate(placaNormalizada);
-          setDetectedRaw(res.textoCrudo || res.placa);
-          setDetectedConfidence(res.confianza);
-          setDetectedMethod(res.metodo || 'FE-Schrift Perú OCR');
-          setLastBbox(res.bbox);
-          recortarRegionPlaca(frameBase64, res.bbox);
-
-          // Si la confianza es alta, emitir beep suave
-          if (res.confianza >= 65) {
-            soundManager.playScanBeep();
+        if (res) {
+          if (res.frame_width && res.frame_height) {
+            setDetectedFrameDims({ width: res.frame_width, height: res.frame_height });
           }
-        } else {
-          // No se detectó placa en este cuadro
-          if (!detectedPlate) {
-            setDetectedRaw(res?.textoCrudo || 'Sin texto legible');
+          if (res.bbox && res.bbox.length === 4 && res.bbox[2] > res.bbox[0]) {
+            setLastBbox(res.bbox);
+            recortarRegionPlaca(frameBase64, res.bbox);
+          }
+
+          if (res.placa) {
+            const placaNormalizada = normalizarPlaca(res.placa);
+            setDetectedPlate(placaNormalizada);
+            setDetectedRaw(res.textoCrudo || res.placa);
+            setDetectedConfidence(res.confianza);
+            setDetectedMethod(res.metodo || 'FE-Schrift Perú OCR');
+
+            // Si la confianza es alta, emitir beep suave
+            if (res.confianza >= 65) {
+              soundManager.playScanBeep();
+            }
+          } else {
+            // No se detectó placa en este cuadro
+            if (!detectedPlate) {
+              setDetectedRaw(res?.textoCrudo || 'Buscando placa en todo el campo visual...');
+            }
           }
         }
       } catch (err) {
@@ -717,14 +725,14 @@ export const AlprTrainingStation: React.FC<AlprTrainingStationProps> = ({
                 highContrast ? 'contrast-150 saturate-50 brightness-110' : ''
               }`}
             >
-              {/* Elemento de video HTML5 real con magnificación teleobjetivo */}
+              {/* Elemento de video HTML5 real con magnificación teleobjetivo y vista completa */}
               <video
                 ref={videoRef}
                 playsInline
                 muted
                 autoPlay
                 style={{ transform: `scale(${zoomLevel})`, transformOrigin: 'center center' }}
-                className={`w-full h-full object-cover transition-transform duration-300 ${!isCameraActive && !lastFrameImage ? 'hidden' : ''}`}
+                className={`w-full h-full object-contain transition-transform duration-300 ${!isCameraActive && !lastFrameImage ? 'hidden' : ''}`}
               />
 
               {/* Canvas oculto para capturas y análisis de nitidez */}
@@ -762,32 +770,80 @@ export const AlprTrainingStation: React.FC<AlprTrainingStationProps> = ({
                 </div>
               )}
 
-              {/* Retícula de Guía de Placa Peruana (Ratio 2.1:1) */}
+              {/* OVERLAY DE ESCANEO DE CAMPO COMPLETO (TODA LA FOTO) */}
               {(isCameraActive || lastFrameImage) && (
-                <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-                  <div className="w-[72%] max-w-[420px] aspect-[2.1/1] border-2 border-cyan-400/80 rounded-lg relative shadow-[0_0_20px_rgba(6,182,212,0.35)]">
-                    {/* Esquinas de Mira */}
-                    <div className="absolute -top-1 -left-1 w-4 h-4 border-t-4 border-l-4 border-cyan-300" />
-                    <div className="absolute -top-1 -right-1 w-4 h-4 border-t-4 border-r-4 border-cyan-300" />
-                    <div className="absolute -bottom-1 -left-1 w-4 h-4 border-b-4 border-l-4 border-cyan-300" />
-                    <div className="absolute -bottom-1 -right-1 w-4 h-4 border-b-4 border-r-4 border-cyan-300" />
+                <div className="absolute inset-0 pointer-events-none">
+                  {/* 4 Esquinas de Marco Global (Abarca el 100% de la foto tomada por la cámara) */}
+                  <div className="absolute top-3 left-3 w-6 h-6 border-t-2 border-l-2 border-cyan-400/80" />
+                  <div className="absolute top-3 right-3 w-6 h-6 border-t-2 border-r-2 border-cyan-400/80" />
+                  <div className="absolute bottom-3 left-3 w-6 h-6 border-b-2 border-l-2 border-cyan-400/80" />
+                  <div className="absolute bottom-3 right-3 w-6 h-6 border-b-2 border-r-2 border-cyan-400/80" />
 
-                    {/* Barra superior que simula el área de 'PERU' */}
-                    <div className="absolute top-0 inset-x-0 h-4 bg-amber-500/20 border-b border-amber-400/40 flex items-center justify-center">
-                      <span className="text-[9px] font-bold text-amber-300 tracking-widest uppercase">
-                        PERÚ • ZONA SUPERIOR OMITIDA
-                      </span>
-                    </div>
+                  {/* Escáner Láser que barre TODA la pantalla */}
+                  {isScanning && (
+                    <div className="absolute inset-x-0 h-1 bg-gradient-to-r from-transparent via-cyan-400 to-transparent animate-laser-scan shadow-[0_0_14px_#22d3ee]" />
+                  )}
 
-                    {/* Escáner Láser Animado */}
-                    {isScanning && (
-                      <div className="absolute inset-x-0 h-1 bg-gradient-to-r from-transparent via-cyan-400 to-transparent animate-laser-scan shadow-[0_0_12px_#22d3ee]" />
+                  {/* CAJA DINÁMICA DE DETECCIÓN (BOUNDING BOX EN CUALQUIER LUGAR DE LA FOTO) */}
+                  {lastBbox &&
+                    lastBbox.length === 4 &&
+                    lastBbox[2] > lastBbox[0] &&
+                    lastBbox[3] > lastBbox[1] &&
+                    detectedFrameDims.width > 0 &&
+                    detectedFrameDims.height > 0 &&
+                    !(
+                      lastBbox[0] <= 2 &&
+                      lastBbox[1] <= 2 &&
+                      lastBbox[2] >= detectedFrameDims.width - 4 &&
+                      lastBbox[3] >= detectedFrameDims.height - 4
+                    ) && (
+                      <div
+                        className="absolute border-2 border-emerald-400 bg-emerald-500/15 rounded pointer-events-none transition-all duration-200 shadow-[0_0_18px_rgba(16,185,129,0.7)]"
+                        style={{
+                          left: `${Math.max(0, Math.min(98, (lastBbox[0] / detectedFrameDims.width) * 100))}%`,
+                          top: `${Math.max(0, Math.min(98, (lastBbox[1] / detectedFrameDims.height) * 100))}%`,
+                          width: `${Math.max(3, Math.min(100, ((lastBbox[2] - lastBbox[0]) / detectedFrameDims.width) * 100))}%`,
+                          height: `${Math.max(3, Math.min(100, ((lastBbox[3] - lastBbox[1]) / detectedFrameDims.height) * 100))}%`,
+                        }}
+                      >
+                        {/* Esquinas de Mira de Alta Precisión */}
+                        <div className="absolute -top-1 -left-1 w-3 h-3 border-t-2 border-l-2 border-emerald-300" />
+                        <div className="absolute -top-1 -right-1 w-3 h-3 border-t-2 border-r-2 border-emerald-300" />
+                        <div className="absolute -bottom-1 -left-1 w-3 h-3 border-b-2 border-l-2 border-emerald-300" />
+                        <div className="absolute -bottom-1 -right-1 w-3 h-3 border-b-2 border-r-2 border-emerald-300" />
+
+                        {/* Etiqueta flotante anclada a la caja de la placa */}
+                        <div className="absolute -top-7 left-0 bg-emerald-950/95 border border-emerald-500/70 text-emerald-300 px-2 py-0.5 rounded text-[10px] font-mono font-bold flex items-center gap-1.5 whitespace-nowrap shadow-lg">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                          <span>PLACA: {detectedPlate || 'LOCALIZADA'}</span>
+                          {detectedConfidence > 0 && (
+                            <span className="text-white font-extrabold">({detectedConfidence}%)</span>
+                          )}
+                        </div>
+
+                        {/* Coordenadas de recorte */}
+                        <div className="absolute -bottom-5 right-0 bg-black/85 text-emerald-400 px-1.5 py-0.2 rounded text-[8px] font-mono whitespace-nowrap border border-emerald-900/60">
+                          [{Math.round(lastBbox[0])},{Math.round(lastBbox[1])}] {Math.round(lastBbox[2] - lastBbox[0])}x{Math.round(lastBbox[3] - lastBbox[1])}px
+                        </div>
+                      </div>
                     )}
 
-                    <div className="absolute bottom-1 inset-x-0 text-center">
-                      <span className="px-2 py-0.5 rounded bg-black/60 text-[10px] text-cyan-200 font-mono">
-                        Encuadre Matrícula FE-Schrift
-                      </span>
+                  {/* Banner de Estado Inferior: Confirmación de análisis de foto completa */}
+                  <div className="absolute bottom-3 inset-x-0 flex justify-center">
+                    <div className="px-3 py-1 rounded-full bg-slate-950/90 border border-cyan-500/40 text-[11px] font-mono text-cyan-300 flex items-center gap-2 shadow-lg backdrop-blur">
+                      <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+                      {lastBbox &&
+                      lastBbox.length === 4 &&
+                      lastBbox[2] > lastBbox[0] &&
+                      detectedPlate ? (
+                        <span>
+                          🎯 Placa identificada en coordenadas • OCR aplicado exclusivamente al recorte
+                        </span>
+                      ) : (
+                        <span>
+                          🌐 Análisis 100% Campo Completo • La IA busca la placa en cualquier lugar de la foto
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -795,12 +851,12 @@ export const AlprTrainingStation: React.FC<AlprTrainingStationProps> = ({
 
               {/* Badge de detección flotante sobre el video */}
               {detectedPlate && (
-                <div className="absolute top-3 left-3 bg-black/85 backdrop-blur border border-emerald-500/50 rounded-lg px-3 py-1.5 flex items-center gap-2 shadow-xl">
+                <div className="absolute top-3 left-3 bg-black/90 backdrop-blur border border-emerald-500/60 rounded-lg px-3 py-1.5 flex items-center gap-2 shadow-xl">
                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
                   <span className="font-mono font-black text-sm text-emerald-300 tracking-wider">
                     {detectedPlate}
                   </span>
-                  <span className="text-[11px] font-mono text-emerald-400/80 bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-800">
+                  <span className="text-[11px] font-mono text-emerald-400/90 bg-emerald-950/80 px-1.5 py-0.5 rounded border border-emerald-800">
                     {detectedConfidence}%
                   </span>
                 </div>
@@ -812,20 +868,20 @@ export const AlprTrainingStation: React.FC<AlprTrainingStationProps> = ({
               <div className="flex items-center gap-2">
                 <span className="text-[11px] font-bold text-cyan-400 font-mono flex items-center gap-1.5">
                   <Scan className="w-3.5 h-3.5" />
-                  DISTANCIA VEHÍCULO:
+                  MODO DE TOMA:
                 </span>
                 {zoomLevel > 1.0 && (
                   <span className="px-1.5 py-0.5 rounded bg-cyan-950 border border-cyan-500/40 text-cyan-300 text-[10px] font-mono">
-                    Teleobjetivo {zoomLevel}x Activo
+                    Zoom {zoomLevel}x Activo
                   </span>
                 )}
               </div>
 
               <div className="flex items-center gap-1.5">
                 {[
-                  { label: '1.0x Normal', val: 1.0, desc: 'Cerca' },
-                  { label: '1.8x Medio', val: 1.8, desc: '3-4m' },
-                  { label: '2.5x Auto Lejos (Recomendado)', val: 2.5, desc: '1 Auto' },
+                  { label: '1.0x Toda la Foto (Recomendado)', val: 1.0, desc: 'Campo Completo' },
+                  { label: '1.8x Zoom Medio', val: 1.8, desc: '3-4m' },
+                  { label: '2.5x Auto Lejos', val: 2.5, desc: '1 Auto' },
                   { label: '3.5x Teleobjetivo', val: 3.5, desc: '2 Autos' },
                 ].map((item) => (
                   <button
@@ -836,7 +892,7 @@ export const AlprTrainingStation: React.FC<AlprTrainingStationProps> = ({
                         ? 'bg-cyan-500 text-slate-950 border-cyan-400 shadow-md shadow-cyan-500/25 scale-105'
                         : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border-slate-700'
                     }`}
-                    title={`Ajustar zoom para autos a ${item.desc}`}
+                    title={`Ajustar modo a ${item.desc}`}
                   >
                     {item.label}
                   </button>

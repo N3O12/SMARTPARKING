@@ -262,6 +262,8 @@ class ParkingApiService {
             placa: normalizarPlaca(data.placa || ''),
             confianza: confPercent,
             bbox: data.bbox || [80, 120, 320, 220],
+            frame_width: data.frame_width,
+            frame_height: data.frame_height,
             metodo: data.metodo || 'YOLOv8 + EasyOCR',
             exito: Boolean(data.exito ?? (data.placa && data.placa.length >= 4)),
             textoCrudo: data.texto_crudo || data.placa || '',

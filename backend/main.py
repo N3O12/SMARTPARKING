@@ -674,6 +674,8 @@ def preprocesar_y_leer_placa(img: np.ndarray) -> dict:
                     texto_detectado = candidatos[0][0]
                     confianza = candidatos[0][1]
         except Exception as e:
+            logger.warning(f"Error en OCR rápido: {e}")
+
     # 5. Comprobar si el texto leído o fragmento coincide con la memoria de auto-entrenamiento
     if texto_detectado:
         mem_check = consultar_memoria_aprendizaje(texto_detectado)

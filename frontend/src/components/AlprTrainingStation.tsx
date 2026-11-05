@@ -35,7 +35,7 @@ import { FeedbackStats, OCRResultado, EstadoEntrenamientoYOLO } from '../types';
 import { parkingApi } from '../services/api';
 import { normalizarPlaca } from '../utils/parkingRules';
 import { soundManager } from '../utils/audioAlarm';
-import { reconocerPlacaReal } from '../utils/realOcr';
+import { reconocerPlacaReal, guardarEnMemoriaAprendizajeCliente } from '../utils/realOcr';
 
 interface AlprTrainingStationProps {
   onProcesarOCR: (imageBase64: string) => Promise<OCRResultado>;
@@ -708,6 +708,7 @@ export const AlprTrainingStation: React.FC<AlprTrainingStationProps> = ({
 
     try {
       soundManager.playSuccessChime();
+      guardarEnMemoriaAprendizajeCliente(placaAConfirmar, placaAConfirmar);
       const res = await parkingApi.enviarFeedbackEntrenamiento({
         imageBase64: frameToSend,
         placaCorrecta: placaAConfirmar,
@@ -811,6 +812,7 @@ export const AlprTrainingStation: React.FC<AlprTrainingStationProps> = ({
 
     try {
       soundManager.playScanBeep();
+      guardarEnMemoriaAprendizajeCliente(placaCorregida, placaOriginal);
       const res = await parkingApi.enviarFeedbackEntrenamiento({
         imageBase64: frameToSend,
         placaCorrecta: placaCorregida,

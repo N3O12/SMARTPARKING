@@ -273,6 +273,75 @@ export function realzarTintaLapiceroEnPapel(inputCanvas: HTMLCanvasElement): HTM
   return canvas;
 }
 
+/**
+ * Guarda una placa confirmada o corregida en la Memoria de Aprendizaje Activo del cliente (localStorage)
+ */
+export function guardarEnMemoriaAprendizajeCliente(
+  placaCorrecta: string,
+  detectadoPrevio?: string
+): void {
+  try {
+    const raw = localStorage.getItem('SGE_ALPR_MEMORIA_ACTIVA') || '{}';
+    const memoria: Record<string, { timestamp: number; detectadoPrevio?: string; count: number }> = JSON.parse(raw);
+    const norm = normalizarPlaca(placaCorrecta);
+    if (!norm) return;
+
+    memoria[norm] = {
+      timestamp: Date.now(),
+      detectadoPrevio: detectadoPrevio ? normalizarPlaca(detectadoPrevio) || detectadoPrevio : '',
+      count: (memoria[norm]?.count || 0) + 1,
+    };
+
+    localStorage.setItem('SGE_ALPR_MEMORIA_ACTIVA', JSON.stringify(memoria));
+    console.log(`%c[Aprendizaje Activo] 🧠 Placa [${norm}] guardada en memoria viva.`, 'color: #10b981; font-weight: bold;');
+  } catch (e) {
+    console.warn('Aviso guardando en memoria de aprendizaje cliente:', e);
+  }
+}
+
+/**
+ * Consulta la memoria de aprendizaje activo para aplicar correcciones y reconocimientos inmediatos
+ */
+export function consultarMemoriaAprendizajeCliente(texto: string): { placa: string; metodo: string } | null {
+  if (!texto) return null;
+  try {
+    const raw = localStorage.getItem('SGE_ALPR_MEMORIA_ACTIVA') || '{}';
+    const memoria: Record<string, { timestamp: number; detectadoPrevio?: string; count: number }> = JSON.parse(raw);
+
+    const limpio = texto.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    if (limpio.length < 4) return null;
+
+    for (const [placa, info] of Object.entries(memoria)) {
+      const placaLimpia = placa.replace(/[^A-Z0-9]/g, '');
+      const previoLimpio = (info.detectadoPrevio || '').replace(/[^A-Z0-9]/g, '');
+
+      // 1. Coincidencia con error previo corregido
+      if (previoLimpio && (limpio.includes(previoLimpio) || previoLimpio.includes(limpio))) {
+        return { placa, metodo: `Memoria Viva: Corrección de '${info.detectadoPrevio}'` };
+      }
+
+      // 2. Coincidencia exacta con placa confirmada
+      if (limpio === placaLimpia) {
+        return { placa, metodo: 'Memoria Viva: Placa Confirmada' };
+      }
+
+      // 3. Similitud difusa (Levenshtein 1 carácter)
+      if (limpio.length === 6 && placaLimpia.length === 6) {
+        let diff = 0;
+        for (let i = 0; i < 6; i++) {
+          if (limpio[i] !== placaLimpia[i]) diff++;
+        }
+        if (diff <= 1) {
+          return { placa, metodo: `Memoria Viva: Ajuste por similitud con '${placa}'` };
+        }
+      }
+    }
+  } catch (e) {
+    console.warn('Aviso consultando memoria de aprendizaje cliente:', e);
+  }
+  return null;
+}
+
 export interface ResultadoOCRReal {
   placa: string;
   confianza: number;
@@ -295,10 +364,40 @@ export function validarYCorregirLectura(textoCrudo: string, confianza: number = 
 }
 
 /**
+ * Realce para pantallas de celular, monitores y condiciones de luz baja/reflejos:
+ * Aplica corrección gamma suave y estiramiento de contraste dinámico para neutralizar el brillo
+ * de las pantallas y moiré.
+ */
+export function realcePantallaCelularYLuzBaja(inputCanvas: HTMLCanvasElement): HTMLCanvasElement {
+  const canvas = document.createElement('canvas');
+  canvas.width = inputCanvas.width;
+  canvas.height = inputCanvas.height;
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  if (!ctx) return inputCanvas;
+
+  ctx.drawImage(inputCanvas, 0, 0);
+  const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const d = imgData.data;
+
+  for (let i = 0; i < d.length; i += 4) {
+    const gray = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+    const gamma = Math.pow(gray / 255.0, 0.75) * 255;
+    const v = gamma < 135 ? Math.max(0, gamma * 0.65) : Math.min(255, gamma * 1.25);
+    d[i] = v;
+    d[i + 1] = v;
+    d[i + 2] = v;
+  }
+
+  ctx.putImageData(imgData, 0, 0);
+  return canvas;
+}
+
+/**
  * Reconoce la placa en TODA LA FOTO (hoja de papel, cuaderno, pantalla o vehículo):
  * 1. Escanea toda la escena buscando secuencias oficiales MTC.
  * 2. Extrae la caja delimitadora (bbox) exacta del texto para recortarlo y resaltarlo.
  * 3. Admite caracteres escritos a mano, con guión, espacios o en bloque.
+ * 4. Consulta de inmediato la Memoria de Aprendizaje Activo (Active Learning).
  */
 export async function reconocerPlacaReal(
   source: HTMLVideoElement | HTMLImageElement | HTMLCanvasElement | string
@@ -333,10 +432,11 @@ export async function reconocerPlacaReal(
 
     const worker = await getOcrWorker();
 
-    // Ráfaga de segmentaciones (TODA LA FOTO primero para captar hojas escritas en cualquier posición)
+    // Ráfaga multi-escenario: Papel / Cuaderno, Pantallas Celular, Autos Reales y Alto Contraste
     const intentos: Array<{ canvas: HTMLCanvasElement; desc: string }> = [
       { canvas: baseCanvas, desc: 'Toda la Foto (Natural)' },
       { canvas: realzarTintaLapiceroEnPapel(baseCanvas), desc: 'Toda la Foto (Realce Tinta/Lapicero)' },
+      { canvas: realcePantallaCelularYLuzBaja(baseCanvas), desc: 'Toda la Foto (Pantallas/Luz Baja)' },
       { canvas: aplicarClausuraYBinarizacion(baseCanvas, false), desc: 'Toda la Foto (Alto Contraste)' },
       { canvas: recortarZonaCaracteres(baseCanvas, true), desc: 'Recorte Inferior (Parachoques)' },
     ];
@@ -453,6 +553,14 @@ export async function reconocerPlacaReal(
         }
         break;
       }
+    }
+
+    // 4. Consultar Memoria de Aprendizaje Activo (Active Learning)
+    const memMatch = consultarMemoriaAprendizajeCliente(mejorPlaca || mejorTextoCrudo);
+    if (memMatch) {
+      mejorPlaca = memMatch.placa;
+      mejorConfianza = 99;
+      mejorMetodo = memMatch.metodo;
     }
 
     const tDur = Math.round(performance.now() - tStart);

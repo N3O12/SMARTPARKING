@@ -222,16 +222,91 @@ def corregir_fe_schrift_posicional(s: str) -> str:
         chars[3] = p_num_map[chars[3]]
     return "".join(chars)
 
+def distancia_levenshtein(s1: str, s2: str) -> int:
+    """Calcula la distancia de edición de Levenshtein entre dos cadenas de texto"""
+    if s1 == s2:
+        return 0
+    if len(s1) < len(s2):
+        return distancia_levenshtein(s2, s1)
+    if len(s2) == 0:
+        return len(s1)
+    previous_row = list(range(len(s2) + 1))
+    for i, c1 in enumerate(s1):
+        current_row = [i + 1]
+        for j, c2 in enumerate(s2):
+            insertions = previous_row[j + 1] + 1
+            deletions = current_row[j] + 1
+            substitutions = previous_row[j] + (c1 != c2)
+            current_row.append(min(insertions, deletions, substitutions))
+        previous_row = current_row
+    return previous_row[-1]
+
+def consultar_memoria_aprendizaje(texto: str) -> Optional[tuple]:
+    """
+    Motor de Aprendizaje Activo (Active Learning Memory):
+    Consulta dataset_autoentrenamiento/correcciones.json para aplicar de inmediato
+    las placas confirmadas y las correcciones ingresadas por el usuario.
+    Si el OCR lee un texto que coincide o tiene distancia Levenshtein <= 1 con una placa aprendida,
+    resuelve inmediatamente con la placa correcta con máxima confianza.
+    """
+    if not texto:
+        return None
+    cache_path = "dataset_autoentrenamiento/correcciones.json"
+    if not os.path.exists(cache_path):
+        return None
+    try:
+        with open(cache_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        if not data:
+            return None
+        
+        texto_clean = re.sub(r'[^A-Z0-9]', '', texto.upper())
+        if len(texto_clean) < 4:
+            return None
+
+        # 1. Búsqueda exacta de coincidencia con placa aprendida o error previo corregido
+        for placa_aprendida, info in data.items():
+            placa_clean = re.sub(r'[^A-Z0-9]', '', placa_aprendida.upper())
+            det_previo = (info.get("detectado_previo") or "").upper()
+            det_previo_clean = re.sub(r'[^A-Z0-9]', '', det_previo)
+
+            # Si el texto coincide con lo que antes se detectaba erróneamente:
+            if det_previo_clean and det_previo_clean == texto_clean:
+                return (placa_aprendida, 0.98, f"Aprendizaje Activo: Corrección memorizada de '{det_previo}'")
+
+            # Si coincide directamente con una placa confirmada en el dataset:
+            if placa_clean == texto_clean:
+                return (placa_aprendida, 0.99, "Aprendizaje Activo: Placa Confirmada en Memoria")
+
+        # 2. Búsqueda difusa por distancia de Levenshtein (<= 1) para corregir pequeñas variaciones de OCR
+        if len(texto_clean) == 6:
+            for placa_aprendida in data.keys():
+                placa_clean = re.sub(r'[^A-Z0-9]', '', placa_aprendida.upper())
+                if len(placa_clean) == 6:
+                    dist = distancia_levenshtein(texto_clean, placa_clean)
+                    if dist <= 1:
+                        return (placa_aprendida, 0.96, f"Aprendizaje Activo: Ajuste por similitud con '{placa_aprendida}'")
+
+    except Exception as e:
+        logger.warning(f"Aviso en consulta de memoria de aprendizaje: {e}")
+    return None
+
 def limpiar_texto_placa(texto: str) -> str:
     """
     Normaliza y extrae un patrón estricto de matrícula vehicular peruana (MTC):
     - Estándar autos y camionetas: 3 alfanuméricos + 3 dígitos (ej: W2U-792, ABC-123, A1B-234, X71-962, AEF-710, 206-371)
     - Motos y trimóviles: 3 alfanuméricos + 2 dígitos + 1 letra (ej: 206-37F, 123-45M)
     - Motos serie 2+4: 2 alfanuméricos + 4 dígitos (ej: 20-6371, AB-1234)
+    - Consulta la memoria activa de correcciones y auto-entrenamiento
     - Descarta alucinaciones y ruidos de interfaz
     """
     if not texto:
         return ""
+    
+    # 0. Consultar primero la Memoria Activa de Aprendizaje
+    mem_res = consultar_memoria_aprendizaje(texto)
+    if mem_res:
+        return mem_res[0]
     
     # 1. Descartar si contiene palabras de URL o interfaz
     for palabra in PALABRAS_PROHIBIDAS_UI:
@@ -599,7 +674,13 @@ def preprocesar_y_leer_placa(img: np.ndarray) -> dict:
                     texto_detectado = candidatos[0][0]
                     confianza = candidatos[0][1]
         except Exception as e:
-            logger.error(f"Error en lectura EasyOCR: {e}")
+    # 5. Comprobar si el texto leído o fragmento coincide con la memoria de auto-entrenamiento
+    if texto_detectado:
+        mem_check = consultar_memoria_aprendizaje(texto_detectado)
+        if mem_check:
+            texto_detectado = mem_check[0]
+            confianza = max(confianza, mem_check[1])
+            metodo = mem_check[2]
 
     duracion_ms = round((time.time() - t_start) * 1000, 1)
     if texto_detectado:

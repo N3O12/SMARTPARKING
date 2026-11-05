@@ -622,10 +622,8 @@ def registrar_feedback_y_autoentrenar(payload: FeedbackEntrenamientoRequest):
         x_center, y_center, bw, bh = 0.5, 0.6, 0.6, 0.35
 
     with open(lbl_path, "w", encoding="utf-8") as f:
+        # Formato YOLO puro estricto: <class_id> <x_center> <y_center> <width> <height>
         f.write(f"0 {x_center:.6f} {y_center:.6f} {bw:.6f} {bh:.6f}\n")
-        f.write(f"# REAL: {placa_real}\n")
-        f.write(f"# DETECTADO_PREVIO: {payload.placa_detectada or 'NINGUNO'}\n")
-        f.write(f"# ES_CORRECTA: {payload.es_correcta}\n")
 
     # Guardar en memoria de auto-entrenamiento rápido (Cache local de correcciones)
     cache_path = "dataset_autoentrenamiento/correcciones.json"
@@ -705,17 +703,83 @@ estado_entrenamiento = {
 }
 
 
+def sanear_etiquetas_yolo():
+    """
+    Sanea todas las etiquetas existentes en dataset_autoentrenamiento/labels/.
+    YOLOv8 exige estrictamente formato puramente numérico:
+    <class_id> <x_center> <y_center> <width> <height>
+    Cualquier comentario (# REAL...) o línea con texto causa que Ultralytics descarte
+    la imagen como corrupta ('inhomogeneous shape').
+    Elimina además los archivos *.cache antiguos para forzar la reindexación limpia.
+    """
+    base_dir = os.path.abspath("dataset_autoentrenamiento")
+    lbl_dir = os.path.join(base_dir, "labels")
+    
+    if os.path.exists(lbl_dir):
+        total_saneadas = 0
+        for fname in os.listdir(lbl_dir):
+            if fname.endswith(".txt"):
+                fpath = os.path.join(lbl_dir, fname)
+                try:
+                    with open(fpath, "r", encoding="utf-8") as f:
+                        lineas = f.readlines()
+                    
+                    lineas_validas = []
+                    for l in lineas:
+                        l = l.strip()
+                        if not l or l.startswith("#"):
+                            continue
+                        partes = l.split()
+                        if len(partes) == 5:
+                            try:
+                                cls_id = int(partes[0])
+                                xc = max(0.0, min(1.0, float(partes[1])))
+                                yc = max(0.0, min(1.0, float(partes[2])))
+                                w = max(0.001, min(1.0, float(partes[3])))
+                                h = max(0.001, min(1.0, float(partes[4])))
+                                lineas_validas.append(f"{cls_id} {xc:.6f} {yc:.6f} {w:.6f} {h:.6f}\n")
+                            except ValueError:
+                                continue
+                    
+                    # Si no había línea numérica válida, generar caja por defecto
+                    if not lineas_validas:
+                        lineas_validas = ["0 0.500000 0.600000 0.600000 0.350000\n"]
+                    
+                    with open(fpath, "w", encoding="utf-8") as f:
+                        f.writelines(lineas_validas)
+                    total_saneadas += 1
+                except Exception as e:
+                    logger.warning(f"Aviso saneando {fname}: {e}")
+        
+        logger.info(f"🧹 [Auto-Entrenamiento] {total_saneadas} archivos de etiquetas normalizados a formato YOLO puro.")
+
+    # Eliminar cualquier archivo *.cache antiguo para obligar a YOLO a regenerar el índice limpio
+    if os.path.exists(base_dir):
+        for root, _, files in os.walk(base_dir):
+            for file in files:
+                if file.endswith(".cache"):
+                    cache_file_path = os.path.join(root, file)
+                    try:
+                        os.remove(cache_file_path)
+                        logger.info(f"🗑️ [Caché YOLO] Archivo de índice corrupto eliminado: {cache_file_path}")
+                    except Exception as e:
+                        logger.warning(f"No se pudo eliminar {cache_file_path}: {e}")
+
+
 def preparar_dataset_autoentrenamiento() -> str:
     """
     Construye el archivo data_autoentrenamiento.yaml compatible con YOLOv8,
     apuntando a las fotos recolectadas por feedback de la cámara.
-    Normaliza rutas para Windows con forward-slashes.
+    Normaliza rutas para Windows con forward-slashes y sanea etiquetas.
     """
     dataset_dir = os.path.abspath("dataset_autoentrenamiento")
     img_dir = os.path.join(dataset_dir, "images")
     lbl_dir = os.path.join(dataset_dir, "labels")
     os.makedirs(img_dir, exist_ok=True)
     os.makedirs(lbl_dir, exist_ok=True)
+
+    # 1. Saneamiento obligatorio de etiquetas y purga de cachés corruptos
+    sanear_etiquetas_yolo()
 
     # Ruta absoluta normalizada para evitar errores de barras invertidas en Windows YAML
     abs_path_clean = dataset_dir.replace("\\", "/")
@@ -745,7 +809,7 @@ def _hilo_entrenamiento_yolo(total_epocas=10):
         estado_entrenamiento["loss"] = None
         estado_entrenamiento["fecha_inicio"] = datetime.now().isoformat()
         estado_entrenamiento["error"] = None
-        estado_entrenamiento["mensaje"] = "Preparando dataset y arquitectura YOLOv8..."
+        estado_entrenamiento["mensaje"] = "Saneando etiquetas y preparando arquitectura YOLOv8..."
         
         yaml_path = preparar_dataset_autoentrenamiento()
         
@@ -776,12 +840,14 @@ def _hilo_entrenamiento_yolo(total_epocas=10):
 
         # Iniciar entrenamiento real de YOLOv8
         # batch pequeño (4) e imgsz 416 para velocidad y estabilidad en CPU o GPU local
+        # workers=0 para máxima compatibilidad con Windows y cache=False para evitar desincronización
         model.train(
             data=yaml_path,
             epochs=total_epocas,
             imgsz=416,
             batch=4,
-            workers=1,
+            workers=0,
+            cache=False,
             project="runs/detect",
             name="train_auto",
             exist_ok=True,

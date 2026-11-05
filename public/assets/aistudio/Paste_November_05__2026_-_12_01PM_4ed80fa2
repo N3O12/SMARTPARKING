@@ -1,0 +1,213 @@
+NFO:     127.0.0.1:52874 - "GET /api/movimientos?estado=TODOS HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64637 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64466 - "GET /api/estado HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64466 - "GET /api/movimientos?estado=TODOS HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58556 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52874 - "GET /api/estado HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52874 - "GET /api/movimientos?estado=TODOS HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64637 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64466 - "GET /api/estado HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64466 - "GET /api/movimientos?estado=TODOS HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58556 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52874 - "GET /api/estado HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52874 - "GET /api/movimientos?estado=TODOS HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64466 - "OPTIONS /api/feedback-entrenamiento HTTP/1.1" 200 OK
+2026-11-05 12:00:31,462 [INFO] Auto-entrenamiento: Muestra guardada (corregida) para placa A1B-B23. Total acumulado: 27
+INFO:     127.0.0.1:64466 - "POST /api/feedback-entrenamiento HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64466 - "GET /api/feedback-stats HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64466 - "POST /api/ocr HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64466 - "POST /api/ocr HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64466 - "POST /api/ocr HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64466 - "POST /api/ocr HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64637 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64466 - "GET /api/estado HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64466 - "GET /api/movimientos?estado=TODOS HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64466 - "POST /api/ocr HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52874 - "GET /api/estado HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52874 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52874 - "GET /api/movimientos?estado=TODOS HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64466 - "POST /api/ocr HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64466 - "POST /api/entrenar-yolo?epocas=10 HTTP/1.1" 200 OK
+2026-11-05 12:00:35,925 [INFO] 📁 Configuración de dataset YOLOv8 generada en: D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\data_autoentrenamiento.yaml
+2026-11-05 12:00:35,925 [INFO] 🚀 [AUTO-ENTRENAMIENTO] Iniciando entrenamiento YOLOv8 con 10 épocas...
+2026-11-05 12:00:35,925 [INFO]    Modelo base: 'best.pt' | Dataset: 'D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\data_autoentrenamiento.yaml'
+INFO:     127.0.0.1:64466 - "POST /api/ocr HTTP/1.1" 200 OK
+Ultralytics 8.4.202  Python-3.13.3 torch-2.15.0+cpu CPU (12th Gen Intel Core i5-12450H)
+engine\trainer: agnostic_nms=False, amp=True, angle=1.0, augment=False, auto_augment=randaugment, batch=4, bgr=0.0, box=7.5, cache=False, cfg=None, channels_last=None, classes=None, close_mosaic=10, cls=0.5, cls_pw=0.0, cls_remap=True, compile=False, conf=None, copy_paste=0.0, copy_paste_mode=flip, cos_lr=False, cutmix=0.0, data=D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\data_autoentrenamiento.yaml, degrees=0.0, deterministic=True, device=, dfl=1.5, dgrad=0.5, dis=6.0,distill_model=None, dlam=1.0, dlog=1.0, dnn=False, dropout=0.0, dynamic=False, embed=None, epochs=10, erasing=0.4, exist_ok=True, fliplr=0.5, flipud=0.0, format=torchscript, fraction=1.0, freeze=None, hsv_h=0.015, hsv_s=0.7, hsv_v=0.4, imgsz=416, iou=0.7, kobj=1.0, line_width=None, lr0=0.01, lrf=0.01, mask_ratio=4, max_det=300, mixup=0.0, mode=train, model=best.pt, momentum=0.937, mosaic=1.0, multi_scale=0.0, name=train_auto, nbs=64, nms=None, opset=None, optimize=False, optimizer=auto, overlap_mask=True, patience=100, perspective=0.0, plots=True, pose=12.0, pretrained=True, profile=False, project=runs/detect, quantize=None, rect=False, resume=False, retina_masks=False, rle=1.0, save=True, save_conf=False, save_crop=False, save_dir=D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\runs\detect\runs\detect\train_auto, save_frames=False, save_json=False, save_period=-1, save_txt=False, scale=0.5, seed=0, shear=0.0, show=False, show_boxes=True, show_conf=True, show_labels=True, simplify=True, single_cls=False, source=None, split=val, stream_buffer=False, task=detect, time=None, tracker=tracktrack.yaml, translate=0.1, val=True, verbose=False, vid_stride=1, visualize=False, warmup_bias_lr=0.1, warmup_epochs=3.0, warmup_momentum=0.8, weight_decay=0.0005, workers=1, workspace=None
+INFO:     127.0.0.1:64466 - "POST /api/ocr HTTP/1.1" 200 OK
+
+                   from  n    params  module                                       arguments   
+
+  0                  -1  1       464  ultralytics.nn.modules.conv.Conv             [3, 16, 3, 2]
+  1                  -1  1      4672  ultralytics.nn.modules.conv.Conv             [16, 32, 3,2]
+  2                  -1  1      7360  ultralytics.nn.modules.block.C2f             [32, 32, 1,True]
+  3                  -1  1     18560  ultralytics.nn.modules.conv.Conv             [32, 64, 3,2]
+  4                  -1  2     49664  ultralytics.nn.modules.block.C2f             [64, 64, 2,True]
+  5                  -1  1     73984  ultralytics.nn.modules.conv.Conv             [64, 128, 3, 2]
+  6                  -1  2    197632  ultralytics.nn.modules.block.C2f             [128, 128, 2, True]
+  7                  -1  1    295424  ultralytics.nn.modules.conv.Conv             [128, 256, 3, 2]
+  8                  -1  1    460288  ultralytics.nn.modules.block.C2f             [256, 256, 1, True]
+  9                  -1  1    164608  ultralytics.nn.modules.block.SPPF            [256, 256, 5]
+ 10                  -1  1         0  torch.nn.modules.upsampling.Upsample         [None, 2, 'nearest']
+ 11             [-1, 6]  1         0  ultralytics.nn.modules.conv.Concat           [1]         
+
+ 12                  -1  1    148224  ultralytics.nn.modules.block.C2f             [384, 128, 1]
+ 13                  -1  1         0  torch.nn.modules.upsampling.Upsample         [None, 2, 'nearest']
+ 14             [-1, 4]  1         0  ultralytics.nn.modules.conv.Concat           [1]         
+
+ 15                  -1  1     37248  ultralytics.nn.modules.block.C2f             [192, 64, 1]
+
+ 16                  -1  1     36992  ultralytics.nn.modules.conv.Conv             [64, 64, 3,2]
+ 17            [-1, 12]  1         0  ultralytics.nn.modules.conv.Concat           [1]         
+
+ 18                  -1  1    123648  ultralytics.nn.modules.block.C2f             [192, 128, 1]
+ 19                  -1  1    147712  ultralytics.nn.modules.conv.Conv             [128, 128, 3, 2]
+ 20             [-1, 9]  1         0  ultralytics.nn.modules.conv.Concat           [1]         
+
+ 21                  -1  1    493056  ultralytics.nn.modules.block.C2f             [384, 256, 1]
+ 22        [15, 18, 21]  1    751507  ultralytics.nn.modules.head.Detect           [1, 16, None, [64, 128, 256]]
+INFO:     127.0.0.1:64466 - "GET /api/entrenar-yolo/estado HTTP/1.1" 200 OK
+Model summary: 129 layers, 3,011,043 parameters, 3,011,027 gradients, 8.2 GFLOPs
+
+Transferred 355/355 items from pretrained weights
+Freezing layer 'model.22.dfl.conv.weight'
+WARNING train: Slow image access detected (ping: 0.2±0.2 ms, read: 7.0±3.0 MB/s, size: 62.5 KB). Use local storage instead of remote/mounted storage for better performance. See https://docs.ultralytics.com/guides/model-training-tips
+train: Scanning D:\2026\UDH\2026-2\IOT\SMARTPARKING\b…: 100% ━━━━━━━━━━━━ 27/27 389.0it/s 0.1s 
+train: D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\dataset_autoentrenamiento\images\correcta_A1A001_20261104_213526_586290.jpg: ignoring corrupt image/label: setting an array element with asequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (4,) + inhomogeneous part.
+train: D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\dataset_autoentrenamiento\images\correcta_A1B234_20261104_203734_550617.jpg: ignoring corrupt image/label: setting an array element with asequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (4,) + inhomogeneous part.
+train: D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\dataset_autoentrenamiento\images\correcta_A1B234_20261104_214159_625678.jpg: ignoring corrupt image/label: setting an array element with asequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (4,) + inhomogeneous part.
+train: D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\dataset_autoentrenamiento\images\correcta_AEF710_20261104_203120_208128.jpg: ignoring corrupt image/label: setting an array element with asequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (4,) + inhomogeneous part.
+train: D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\dataset_autoentrenamiento\images\correcta_AKM344_20261104_203843_927346.jpg: ignoring corrupt image/label: setting an array element with asequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (4,) + inhomogeneous part.
+train: D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\dataset_autoentrenamiento\images\correcta_AKM344_20261104_213751_322154.jpg: ignoring corrupt image/label: setting an array element with asequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (4,) + inhomogeneous part.
+train: D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\dataset_autoentrenamiento\images\correcta_F5U597_20261104_203723_457470.jpg: ignoring corrupt image/label: setting an array element with asequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (4,) + inhomogeneous part.
+train: D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\dataset_autoentrenamiento\images\correcta_F5U597_20261104_213739_426014.jpg: ignoring corrupt image/label: setting an array element with asequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (4,) + inhomogeneous part.
+train: D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\dataset_autoentrenamiento\images\correcta_P4D047_20261104_213645_234503.jpg: ignoring corrupt image/label: setting an array element with asequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (4,) + inhomogeneous part.
+train: D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\dataset_autoentrenamiento\images\correcta_TGY750_20261104_211614_568338.jpg: ignoring corrupt image/label: setting an array element with asequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (4,) + inhomogeneous part.
+train: D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\dataset_autoentrenamiento\images\correcta_X71962_20261104_203031_470810.jpg: ignoring corrupt image/label: setting an array element with asequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (4,) + inhomogeneous part.
+train: D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\dataset_autoentrenamiento\images\correcta_X71962_20261104_203037_919292.jpg: ignoring corrupt image/label: setting an array element with asequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (4,) + inhomogeneous part.
+train: D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\dataset_autoentrenamiento\images\correcta_X71962_20261104_212827_306459.jpg: ignoring corrupt image/label: setting an array element with asequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (4,) + inhomogeneous part.
+train: D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\dataset_autoentrenamiento\images\correcta_Z4K464_20261104_211440_550676.jpg: ignoring corrupt image/label: setting an array element with asequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (4,) + inhomogeneous part.
+train: D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\dataset_autoentrenamiento\images\correcta_Z4K464_20261104_211452_578913.jpg: ignoring corrupt image/label: setting an array element with asequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (4,) + inhomogeneous part.
+train: D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\dataset_autoentrenamiento\images\corregida_A1A123_20261104_212855_425807.jpg: ignoring corrupt image/label: setting an array element with a sequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (4,) + inhomogeneous part.
+train: D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\dataset_autoentrenamiento\images\corregida_A1BB23_20261105_120031_430639.jpg: ignoring corrupt image/label: setting an array element with a sequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (4,) + inhomogeneous part.
+train: D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\dataset_autoentrenamiento\images\corregida_A7V510_20261104_212714_272984.jpg: ignoring corrupt image/label: setting an array element with a sequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (4,) + inhomogeneous part.
+train: D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\dataset_autoentrenamiento\images\corregida_AEF717_20261104_212647_057658.jpg: ignoring corrupt image/label: setting an array element with a sequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (4,) + inhomogeneous part.
+train: D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\dataset_autoentrenamiento\images\corregida_AFE710_20261104_213716_408936.jpg: ignoring corrupt image/label: setting an array element with a sequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (4,) + inhomogeneous part.
+train: D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\dataset_autoentrenamiento\images\corregida_F5J043_20261104_212557_825447.jpg: ignoring corrupt image/label: setting an array element with a sequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (4,) + inhomogeneous part.
+train: D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\dataset_autoentrenamiento\images\corregida_F5U597_20261104_212520_402484.jpg: ignoring corrupt image/label: setting an array element with a sequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (4,) + inhomogeneous part.
+train: D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\dataset_autoentrenamiento\images\corregida_T1A123_20261104_203659_391857.jpg: ignoring corrupt image/label: setting an array element with a sequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (4,) + inhomogeneous part.
+train: D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\dataset_autoentrenamiento\images\corregida_TGY750_20261104_211603_849111.jpg: ignoring corrupt image/label: setting an array element with a sequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (4,) + inhomogeneous part.
+train: D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\dataset_autoentrenamiento\images\corregida_VUS123_20261104_212202_437725.jpg: ignoring corrupt image/label: setting an array element with a sequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (4,) + inhomogeneous part.
+train: D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\dataset_autoentrenamiento\images\corregida_X2C746_20261104_212446_001996.jpg: ignoring corrupt image/label: setting an array element with a sequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (4,) + inhomogeneous part.
+train: D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\dataset_autoentrenamiento\images\corregida_Z4K464_20261104_211303_650014.jpg: ignoring corrupt image/label: setting an array element with a sequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (4,) + inhomogeneous part.
+INFO:     127.0.0.1:64466 - "POST /api/ocr HTTP/1.1" 200 OK
+2026-11-05 12:00:37,824 [ERROR] ❌ Error durante auto-entrenamiento YOLOv8: No valid images found in D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\dataset_autoentrenamiento\labels.cache.      
+  train: D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\dataset_autoentrenamiento\images\correcta_A1A001_20261104_213526_586290.jpg: ignoring corrupt image/label: setting an array element witha sequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (4,) + inhomogeneous part.
+  train: D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\dataset_autoentrenamiento\images\correcta_A1B234_20261104_203734_550617.jpg: ignoring corrupt image/label: setting an array element witha sequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (4,) + inhomogeneous part.
+  train: D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\dataset_autoentrenamiento\images\correcta_A1B234_20261104_214159_625678.jpg: ignoring corrupt image/label: setting an array element witha sequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (4,) + inhomogeneous part.
+  train: D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\dataset_autoentrenamiento\images\correcta_AEF710_20261104_203120_208128.jpg: ignoring corrupt image/label: setting an array element witha sequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (4,) + inhomogeneous part.
+  train: D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\dataset_autoentrenamiento\images\correcta_AKM344_20261104_203843_927346.jpg: ignoring corrupt image/label: setting an array element witha sequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (4,) + inhomogeneous part.
+  train: D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\dataset_autoentrenamiento\images\correcta_AKM344_20261104_213751_322154.jpg: ignoring corrupt image/label: setting an array element witha sequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (4,) + inhomogeneous part.
+  train: D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\dataset_autoentrenamiento\images\correcta_F5U597_20261104_203723_457470.jpg: ignoring corrupt image/label: setting an array element witha sequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (4,) + inhomogeneous part.
+  train: D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\dataset_autoentrenamiento\images\correcta_F5U597_20261104_213739_426014.jpg: ignoring corrupt image/label: setting an array element witha sequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (4,) + inhomogeneous part.
+  train: D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\dataset_autoentrenamiento\images\correcta_P4D047_20261104_213645_234503.jpg: ignoring corrupt image/label: setting an array element witha sequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (4,) + inhomogeneous part.
+  train: D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\dataset_autoentrenamiento\images\correcta_TGY750_20261104_211614_568338.jpg: ignoring corrupt image/label: setting an array element witha sequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (4,) + inhomogeneous part.
+  train: D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\dataset_autoentrenamiento\images\correcta_X71962_20261104_203031_470810.jpg: ignoring corrupt image/label: setting an array element witha sequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (4,) + inhomogeneous part.
+  train: D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\dataset_autoentrenamiento\images\correcta_X71962_20261104_203037_919292.jpg: ignoring corrupt image/label: setting an array element witha sequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (4,) + inhomogeneous part.
+  train: D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\dataset_autoentrenamiento\images\correcta_X71962_20261104_212827_306459.jpg: ignoring corrupt image/label: setting an array element witha sequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (4,) + inhomogeneous part.
+  train: D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\dataset_autoentrenamiento\images\correcta_Z4K464_20261104_211440_550676.jpg: ignoring corrupt image/label: setting an array element witha sequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (4,) + inhomogeneous part.
+  train: D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\dataset_autoentrenamiento\images\correcta_Z4K464_20261104_211452_578913.jpg: ignoring corrupt image/label: setting an array element witha sequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (4,) + inhomogeneous part.
+  train: D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\dataset_autoentrenamiento\images\corregida_A1A123_20261104_212855_425807.jpg: ignoring corrupt image/label: setting an array element with a sequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (4,) + inhomogeneous part.
+  train: D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\dataset_autoentrenamiento\images\corregida_A1BB23_20261105_120031_430639.jpg: ignoring corrupt image/label: setting an array element with a sequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (4,) + inhomogeneous part.
+  train: D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\dataset_autoentrenamiento\images\corregida_A7V510_20261104_212714_272984.jpg: ignoring corrupt image/label: setting an array element with a sequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (4,) + inhomogeneous part.
+  train: D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\dataset_autoentrenamiento\images\corregida_AEF717_20261104_212647_057658.jpg: ignoring corrupt image/label: setting an array element with a sequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (4,) + inhomogeneous part.
+  train: D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\dataset_autoentrenamiento\images\corregida_AFE710_20261104_213716_408936.jpg: ignoring corrupt image/label: setting an array element with a sequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (4,) + inhomogeneous part.
+  train: D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\dataset_autoentrenamiento\images\corregida_F5J043_20261104_212557_825447.jpg: ignoring corrupt image/label: setting an array element with a sequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (4,) + inhomogeneous part.
+  train: D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\dataset_autoentrenamiento\images\corregida_F5U597_20261104_212520_402484.jpg: ignoring corrupt image/label: setting an array element with a sequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (4,) + inhomogeneous part.
+  train: D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\dataset_autoentrenamiento\images\corregida_T1A123_20261104_203659_391857.jpg: ignoring corrupt image/label: setting an array element with a sequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (4,) + inhomogeneous part.
+  train: D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\dataset_autoentrenamiento\images\corregida_TGY750_20261104_211603_849111.jpg: ignoring corrupt image/label: setting an array element with a sequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (4,) + inhomogeneous part.
+  train: D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\dataset_autoentrenamiento\images\corregida_VUS123_20261104_212202_437725.jpg: ignoring corrupt image/label: setting an array element with a sequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (4,) + inhomogeneous part.
+  train: D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\dataset_autoentrenamiento\images\corregida_X2C746_20261104_212446_001996.jpg: ignoring corrupt image/label: setting an array element with a sequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (4,) + inhomogeneous part.
+  train: D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\dataset_autoentrenamiento\images\corregida_Z4K464_20261104_211303_650014.jpg: ignoring corrupt image/label: setting an array element with a sequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (4,) + inhomogeneous part.
+See https://docs.ultralytics.com/datasets for dataset formatting guidance.
+Traceback (most recent call last):
+  File "D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\main.py", line 779, in _hilo_entrenamiento_yolo
+    model.train(
+    ~~~~~~~~~~~^
+        data=yaml_path,
+        ^^^^^^^^^^^^^^^
+    ...<7 lines>...
+        verbose=False
+        ^^^^^^^^^^^^^
+    )
+    ^
+  File "D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\venv\Lib\site-packages\ultralytics\engine\model.py", line 901, in train
+    self.trainer.train()
+    ~~~~~~~~~~~~~~~~~~^^
+  File "D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\venv\Lib\site-packages\ultralytics\engine\trainer.py", line 263, in train
+    self._do_train()
+    ~~~~~~~~~~~~~~^^
+  File "D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\venv\Lib\site-packages\ultralytics\engine\trainer.py", line 473, in _do_train
+    self._setup_train()
+    ~~~~~~~~~~~~~~~~~^^
+  File "D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\venv\Lib\site-packages\ultralytics\engine\trainer.py", line 454, in _setup_train
+    self._build_train_pipeline()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\venv\Lib\site-packages\ultralytics\models\yolo\detect\train.py", line 207, in _build_train_pipeline
+    super()._build_train_pipeline()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\venv\Lib\site-packages\ultralytics\engine\trainer.py", line 307, in _build_train_pipeline
+    self.train_loader = self.get_dataloader(
+                        ~~~~~~~~~~~~~~~~~~~^
+        self.data["train"], batch_size=batch_size, rank=LOCAL_RANK, mode="train"
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\venv\Lib\site-packages\ultralytics\models\yolo\detect\train.py", line 90, in get_dataloader
+    dataset = self.build_dataset(dataset_path, mode, batch_size)
+  File "D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\venv\Lib\site-packages\ultralytics\models\yolo\detect\train.py", line 74, in build_dataset
+    return build_yolo_dataset(self.args, img_path, batch, self.data, mode=mode, rect=mode == "val", stride=gs)
+  File "D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\venv\Lib\site-packages\ultralytics\data\build.py", line 286, in build_yolo_dataset
+    return dataset(
+        img_path=img_path,
+    ...<13 lines>...
+        fraction=fraction,
+    )
+  File "D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\venv\Lib\site-packages\ultralytics\data\dataset.py", line 121, in __init__
+    super().__init__(*args, channels=self.data.get("channels", 3), **kwargs)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\venv\Lib\site-packages\ultralytics\data\base.py", line 155, in __init__
+    self.labels = self.get_labels()
+                  ~~~~~~~~~~~~~~~^^
+  File "D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\venv\Lib\site-packages\ultralytics\data\dataset.py", line 321, in get_labels
+    raise RuntimeError(f"No valid images found in {cache_path}.\n  {issues}\n{HELP_URL}")      
+RuntimeError: No valid images found in D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\dataset_autoentrenamiento\labels.cache.
+  train: D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\dataset_autoentrenamiento\images\correcta_A1A001_20261104_213526_586290.jpg: ignoring corrupt image/label: setting an array element witha sequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (4,) + inhomogeneous part.
+  train: D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\dataset_autoentrenamiento\images\correcta_A1B234_20261104_203734_550617.jpg: ignoring corrupt image/label: setting an array element witha sequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (4,) + inhomogeneous part.
+  train: D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\dataset_autoentrenamiento\images\correcta_A1B234_20261104_214159_625678.jpg: ignoring corrupt image/label: setting an array element witha sequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (4,) + inhomogeneous part.
+  train: D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\dataset_autoentrenamiento\images\correcta_AEF710_20261104_203120_208128.jpg: ignoring corrupt image/label: setting an array element witha sequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (4,) + inhomogeneous part.
+  train: D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\dataset_autoentrenamiento\images\correcta_AKM344_20261104_203843_927346.jpg: ignoring corrupt image/label: setting an array element witha sequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (4,) + inhomogeneous part.
+  train: D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\dataset_autoentrenamiento\images\correcta_AKM344_20261104_213751_322154.jpg: ignoring corrupt image/label: setting an array element witha sequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (4,) + inhomogeneous part.
+  train: D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\dataset_autoentrenamiento\images\correcta_F5U597_20261104_203723_457470.jpg: ignoring corrupt image/label: setting an array element witha sequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (4,) + inhomogeneous part.
+  train: D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\dataset_autoentrenamiento\images\correcta_F5U597_20261104_213739_426014.jpg: ignoring corrupt image/label: setting an array element witha sequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (4,) + inhomogeneous part.
+  train: D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\dataset_autoentrenamiento\images\correcta_P4D047_20261104_213645_234503.jpg: ignoring corrupt image/label: setting an array element witha sequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (4,) + inhomogeneous part.
+  train: D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\dataset_autoentrenamiento\images\correcta_TGY750_20261104_211614_568338.jpg: ignoring corrupt image/label: setting an array element witha sequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (4,) + inhomogeneous part.
+  train: D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\dataset_autoentrenamiento\images\correcta_X71962_20261104_203031_470810.jpg: ignoring corrupt image/label: setting an array element witha sequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (4,) + inhomogeneous part.
+  train: D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\dataset_autoentrenamiento\images\correcta_X71962_20261104_203037_919292.jpg: ignoring corrupt image/label: setting an array element witha sequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (4,) + inhomogeneous part.
+  train: D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\dataset_autoentrenamiento\images\correcta_X71962_20261104_212827_306459.jpg: ignoring corrupt image/label: setting an array element witha sequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (4,) + inhomogeneous part.
+  train: D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\dataset_autoentrenamiento\images\correcta_Z4K464_20261104_211440_550676.jpg: ignoring corrupt image/label: setting an array element witha sequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (4,) + inhomogeneous part.
+  train: D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\dataset_autoentrenamiento\images\correcta_Z4K464_20261104_211452_578913.jpg: ignoring corrupt image/label: setting an array element witha sequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (4,) + inhomogeneous part.
+  train: D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\dataset_autoentrenamiento\images\corregida_A1A123_20261104_212855_425807.jpg: ignoring corrupt image/label: setting an array element with a sequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (4,) + inhomogeneous part.
+  train: D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\dataset_autoentrenamiento\images\corregida_A1BB23_20261105_120031_430639.jpg: ignoring corrupt image/label: setting an array element with a sequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (4,) + inhomogeneous part.
+  train: D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\dataset_autoentrenamiento\images\corregida_A7V510_20261104_212714_272984.jpg: ignoring corrupt image/label: setting an array element with a sequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (4,) + inhomogeneous part.
+  train: D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\dataset_autoentrenamiento\images\corregida_AEF717_20261104_212647_057658.jpg: ignoring corrupt image/label: setting an array element with a sequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (4,) + inhomogeneous part.
+  train: D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\dataset_autoentrenamiento\images\corregida_AFE710_20261104_213716_408936.jpg: ignoring corrupt image/label: setting an array element with a sequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (4,) + inhomogeneous part.
+  train: D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\dataset_autoentrenamiento\images\corregida_F5J043_20261104_212557_825447.jpg: ignoring corrupt image/label: setting an array element with a sequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (4,) + inhomogeneous part.
+  train: D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\dataset_autoentrenamiento\images\corregida_F5U597_20261104_212520_402484.jpg: ignoring corrupt image/label: setting an array element with a sequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (4,) + inhomogeneous part.
+  train: D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\dataset_autoentrenamiento\images\corregida_T1A123_20261104_203659_391857.jpg: ignoring corrupt image/label: setting an array element with a sequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (4,) + inhomogeneous part.
+  train: D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\dataset_autoentrenamiento\images\corregida_TGY750_20261104_211603_849111.jpg: ignoring corrupt image/label: setting an array element with a sequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (4,) + inhomogeneous part.
+  train: D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\dataset_autoentrenamiento\images\corregida_VUS123_20261104_212202_437725.jpg: ignoring corrupt image/label: setting an array element with a sequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (4,) + inhomogeneous part.
+  train: D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\dataset_autoentrenamiento\images\corregida_X2C746_20261104_212446_001996.jpg: ignoring corrupt image/label: setting an array element with a sequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (4,) + inhomogeneous part.
+  train: D:\2026\UDH\2026-2\IOT\SMARTPARKING\backend\dataset_autoentrenamiento\images\corregida_Z4K464_20261104_211303_650014.jpg: ignoring corrupt image/label: setting an array element with a sequence. The requested array has an inhomogeneous shape after 1 dimensions. The detected shape was (4,) + inhomogeneous part.
+See https://docs.ultralytics.com/datasets for dataset formatting guidance.
+INFO:     127.0.0.1:64466 - "POST /api/ocr HTTP/1.1" 200 OK

@@ -195,10 +195,28 @@ def preprocesar_y_leer_placa(img: np.ndarray) -> dict:
                 for box in boxes:
                     cls_id = int(box.cls[0])
                     conf = float(box.conf[0])
-                    # Clases de vehículos en COCO: 2 (car), 3 (motorcycle), 5 (bus), 7 (truck)
+                    
+                    # CASO A: Modelo entrenado con Roboflow (Clase 0 = 'placa')
+                    # Detecta directamente la matrícula con máxima precisión milimétrica
+                    if cls_id == 0 and conf > 0.30:
+                        x1, y1, x2, y2 = map(int, box.xyxy[0])
+                        # Pequeño margen de seguridad del 5%
+                        pad_x = int((x2 - x1) * 0.05)
+                        pad_y = int((y2 - y1) * 0.05)
+                        x1_p = max(0, x1 - pad_x)
+                        y1_p = max(0, y1 - pad_y)
+                        x2_p = min(w, x2 + pad_x)
+                        y2_p = min(h, y2 + pad_y)
+                        
+                        roi_img = img[y1_p:y2_p, x1_p:x2_p]
+                        bbox_detectado = [x1_p, y1_p, x2_p, y2_p]
+                        metodo = "YOLOv8 Placas Perú + EasyOCR"
+                        logger.info(f"YOLO detectó placa directamente (confianza: {conf:.2f}, bbox: {bbox_detectado})")
+                        break
+
+                    # CASO B: Modelo COCO genérico (Vehículos: 2 car, 3 motorcycle, 5 bus, 7 truck)
                     if cls_id in [2, 3, 5, 7] and conf > 0.35:
                         x1, y1, x2, y2 = map(int, box.xyxy[0])
-                        # La placa suele estar en el tercio inferior del vehículo
                         vh = y2 - y1
                         vw = x2 - x1
                         plate_y1 = max(0, int(y1 + vh * 0.55))
@@ -209,7 +227,7 @@ def preprocesar_y_leer_placa(img: np.ndarray) -> dict:
                         if (plate_y2 - plate_y1) > 20 and (plate_x2 - plate_x1) > 50:
                             roi_img = img[plate_y1:plate_y2, plate_x1:plate_x2]
                             bbox_detectado = [plate_x1, plate_y1, plate_x2, plate_y2]
-                            metodo = "YOLOv8 + EasyOCR"
+                            metodo = "YOLOv8 Vehículo + EasyOCR"
                             break
         except Exception as e:
             logger.warning(f"Excepción en inferencia YOLO: {e}")

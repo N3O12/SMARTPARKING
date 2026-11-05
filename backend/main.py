@@ -172,11 +172,11 @@ def decodificar_imagen_base64(imagen_base64: str) -> Optional[np.ndarray]:
 
 def preprocesar_y_leer_placa(img: np.ndarray) -> dict:
     """
-    Pipeline ALPR de ALTA VELOCIDAD (<100ms por fotograma):
-    1. YOLOv8 con imgsz=384 (inferencia 4x más rápida en CPU).
-    2. Recorte de la ROI de la matrícula escalada a altura óptima (~75px).
-    3. Normalización rápida con CLAHE (Adaptive Histogram Equalization) en lugar de filtros lentos.
-    4. Invocación única de EasyOCR con allowlist alfanumérica y batch optimizado.
+    Pipeline ALPR de ALTA VELOCIDAD con soporte para LARGA DISTANCIA (<100ms):
+    1. Multi-scale YOLO con umbral bajo (conf=0.18) para capturar placas pequeñas y lejanas.
+    2. Si el vehículo está lejos (1 o 2 autos de distancia), aísla la zona del parachoques frontal.
+    3. Super-resolución cúbica + Unsharp Masking (enfoque de bordes tenues) para placas de baja resolución.
+    4. Ecualización adaptativa CLAHE y lectura EasyOCR con allowlist de caracteres oficiales.
     """
     import cv2
     import time
@@ -185,113 +185,126 @@ def preprocesar_y_leer_placa(img: np.ndarray) -> dict:
     h, w = img.shape[:2]
     bbox_detectado = [0, 0, w, h]
     roi_img = None
-    metodo = "Fast-ALPR Perú"
+    metodo = "Fast-ALPR Larga Distancia"
 
-    # Si la imagen es muy grande (>800px ancho), reducir para acelerar inferencia
-    if w > 800:
-        scale_input = 800.0 / w
-        img_infer = cv2.resize(img, (800, int(h * scale_input)), interpolation=cv2.INTER_LINEAR)
-        h_inf, w_inf = img_infer.shape[:2]
+    # Si la imagen es muy grande (>1000px ancho), reducir ligeramente pero manteniendo detalle fino
+    if w > 1000:
+        scale_input = 1000.0 / w
+        img_infer = cv2.resize(img, (1000, int(h * scale_input)), interpolation=cv2.INTER_LINEAR)
     else:
         img_infer = img
         scale_input = 1.0
-        h_inf, w_inf = h, w
 
-    # 1. Inferencia ultrarrápida con YOLO (imgsz=384, conf=0.25)
+    # 1. Inferencia multi-escala con YOLO (conf=0.18 para detectar placas pequeñas a distancia)
     yolo = get_yolo_detector()
     if yolo is not None:
         try:
-            results = yolo(img_infer, imgsz=384, conf=0.25, verbose=False)
+            results = yolo(img_infer, imgsz=416, conf=0.18, verbose=False)
+            candidatos_placas = []
+            candidatos_vehiculos = []
+
             for r in results:
-                boxes = r.boxes
-                for box in boxes:
+                for box in r.boxes:
                     cls_id = int(box.cls[0])
                     conf = float(box.conf[0])
+                    x1, y1, x2, y2 = map(int, box.xyxy[0])
                     
-                    # CASO A: Modelo Roboflow (Clase 0 = 'placa')
-                    if cls_id == 0 and conf > 0.25:
-                        x1, y1, x2, y2 = map(int, box.xyxy[0])
-                        # Desescalar coordenadas al tamaño original si hubo resize
-                        if scale_input != 1.0:
-                            x1 = int(x1 / scale_input)
-                            y1 = int(y1 / scale_input)
-                            x2 = int(x2 / scale_input)
-                            y2 = int(y2 / scale_input)
+                    if scale_input != 1.0:
+                        x1 = int(x1 / scale_input)
+                        y1 = int(y1 / scale_input)
+                        x2 = int(x2 / scale_input)
+                        y2 = int(y2 / scale_input)
 
-                        # Margen de seguridad del 6%
-                        pad_x = int((x2 - x1) * 0.06)
-                        pad_y = int((y2 - y1) * 0.06)
-                        x1_p = max(0, x1 - pad_x)
-                        y1_p = max(0, y1 - pad_y)
-                        x2_p = min(w, x2 + pad_x)
-                        y2_p = min(h, y2 + pad_y)
-                        
-                        roi_img = img[y1_p:y2_p, x1_p:x2_p]
-                        bbox_detectado = [x1_p, y1_p, x2_p, y2_p]
-                        metodo = "YOLOv8 Placas Perú (Ultrarrápido)"
-                        break
+                    # PRIORIDAD 1: Clase 0 = 'placa' (incluso placas diminutas a distancia w > 28px)
+                    if cls_id == 0 and conf >= 0.16 and (x2 - x1) >= 25:
+                        candidatos_placas.append((conf, [x1, y1, x2, y2]))
 
-                    # CASO B: Vehículo genérico (detectar tercio inferior frontal)
-                    if cls_id in [2, 3, 5, 7] and conf > 0.35:
-                        x1, y1, x2, y2 = map(int, box.xyxy[0])
-                        if scale_input != 1.0:
-                            x1 = int(x1 / scale_input)
-                            y1 = int(y1 / scale_input)
-                            x2 = int(x2 / scale_input)
-                            y2 = int(y2 / scale_input)
+                    # PRIORIDAD 2: Vehículos a distancia (car:2, motorcycle:3, bus:5, truck:7)
+                    elif cls_id in [2, 3, 5, 7] and conf >= 0.22:
+                        candidatos_vehiculos.append((conf, [x1, y1, x2, y2]))
 
-                        vh = y2 - y1
-                        vw = x2 - x1
-                        plate_y1 = max(0, int(y1 + vh * 0.52))
-                        plate_y2 = min(h, y2)
-                        plate_x1 = max(0, int(x1 + vw * 0.12))
-                        plate_x2 = min(w, int(x2 - vw * 0.12))
-                        
-                        if (plate_y2 - plate_y1) > 20 and (plate_x2 - plate_x1) > 50:
-                            roi_img = img[plate_y1:plate_y2, plate_x1:plate_x2]
-                            bbox_detectado = [plate_x1, plate_y1, plate_x2, plate_y2]
-                            metodo = "YOLOv8 Vehículo + Fast-ROI"
-                            break
-                if roi_img is not None:
-                    break
+            # Si detectó la placa directamente
+            if candidatos_placas:
+                candidatos_placas.sort(key=lambda x: x[0], reverse=True)
+                _, best_box = candidatos_placas[0]
+                x1, y1, x2, y2 = best_box
+                
+                # Margen de seguridad adaptativo (más amplio si la placa es pequeña)
+                box_w = x2 - x1
+                pad_pct = 0.12 if box_w < 100 else 0.06
+                pad_x = int(box_w * pad_pct)
+                pad_y = int((y2 - y1) * pad_pct)
+                
+                x1_p = max(0, x1 - pad_x)
+                y1_p = max(0, y1 - pad_y)
+                x2_p = min(w, x2 + pad_x)
+                y2_p = min(h, y2 + pad_y)
+                
+                roi_img = img[y1_p:y2_p, x1_p:x2_p]
+                bbox_detectado = [x1_p, y1_p, x2_p, y2_p]
+                metodo = f"YOLOv8 Placa {'(Lejana)' if box_w < 80 else ''}"
+
+            # Si no detectó placa directa pero sí el vehículo lejano: recortar parachoques
+            elif candidatos_vehiculos:
+                candidatos_vehiculos.sort(key=lambda x: x[0], reverse=True)
+                _, vbox = candidatos_vehiculos[0]
+                vx1, vy1, vx2, vy2 = vbox
+                vh = vy2 - vy1
+                vw = vx2 - vx1
+                
+                # Zona de matrícula: mitad inferior del vehículo, franja central
+                plate_y1 = max(0, int(vy1 + vh * 0.48))
+                plate_y2 = min(h, int(vy2 + vh * 0.04))
+                plate_x1 = max(0, int(vx1 + vw * 0.10))
+                plate_x2 = min(w, int(vx2 - vw * 0.10))
+                
+                if (plate_y2 - plate_y1) >= 18 and (plate_x2 - plate_x1) >= 40:
+                    roi_img = img[plate_y1:plate_y2, plate_x1:plate_x2]
+                    bbox_detectado = [plate_x1, plate_y1, plate_x2, plate_y2]
+                    metodo = "Vehículo a Distancia (Zona Parachoques)"
         except Exception as e:
-            logger.warning(f"Aviso en inferencia rápida YOLO: {e}")
+            logger.warning(f"Aviso en detección multi-distancia YOLO: {e}")
 
-    # Si YOLO no ubicó la placa, enfocar el tercio central donde apunta la retícula
+    # Fallback si no hay detección: encuadre central donde enfoca el operador
     if roi_img is None or roi_img.size == 0:
-        cx1 = int(w * 0.15)
-        cy1 = int(h * 0.30)
-        cx2 = int(w * 0.85)
-        cy2 = int(h * 0.78)
+        cx1 = int(w * 0.12)
+        cy1 = int(h * 0.25)
+        cx2 = int(w * 0.88)
+        cy2 = int(h * 0.82)
         roi_img = img[cy1:cy2, cx1:cx2]
         bbox_detectado = [cx1, cy1, cx2, cy2]
-        metodo = "Retícula Central Directa"
+        metodo = "Enfoque Retícula Central"
 
-    # 2. Normalización de escala óptima para OCR (~75px de altura)
-    # Esto reduce los píxeles a procesar en un 95%, haciendo el OCR instantáneo
+    # 2. SUPER-RESOLUCIÓN Y RESTAURACIÓN PARA PLACAS LEJANAS
+    # Si la placa mide menos de 80px de alto, aplicamos Super-Resolución Cúbica + Unsharp Masking
     roi_h, roi_w = roi_img.shape[:2]
+    target_h = 80
     if roi_h > 0 and roi_w > 0:
-        target_h = 75
-        scale_roi = target_h / float(roi_h)
-        target_w = max(40, int(roi_w * scale_roi))
-        roi_optima = cv2.resize(roi_img, (target_w, target_h), interpolation=cv2.INTER_LINEAR)
+        scale_roi = max(1.0, target_h / float(roi_h))
+        target_w = max(50, int(roi_w * scale_roi))
+        # Interpolación cúbica para evitar bordes pixelados en distancias
+        roi_optima = cv2.resize(roi_img, (target_w, target_h), interpolation=cv2.INTER_CUBIC)
     else:
         roi_optima = roi_img
 
-    # 3. Mejora de contraste de alta velocidad (CLAHE)
+    # 3. ENFOQUE Y REALCE DE CONTRASTE (Unsharp Masking + CLAHE)
     gray = cv2.cvtColor(roi_optima, cv2.COLOR_BGR2GRAY)
-    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(4, 4))
-    gray_clahe = clahe.apply(gray)
+    
+    # Unsharp Mask para recuperar bordes difuminados de caracteres lejanos
+    blurred = cv2.GaussianBlur(gray, (0, 0), sigmaX=1.8, sigmaY=1.8)
+    sharpened = cv2.addWeighted(gray, 2.2, blurred, -1.2, 0)
+    
+    # CLAHE para rescatar caracteres oscuros sobre fondo blanco/amarillo reflectante
+    clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(6, 6))
+    gray_clahe = clahe.apply(sharpened)
 
-    # 4. Invocación ÚNICA y ultra-optimizada de EasyOCR
+    # 4. Lectura OCR de alta precisión con EasyOCR
     reader = get_easyocr_reader()
     texto_detectado = ""
     confianza = 0.0
 
     if reader is not None:
         try:
-            # allowlist restringe el vocabulario únicamente a caracteres de placa
-            # detail=1, paragraph=False, batch_size=1
             resultados = reader.readtext(
                 gray_clahe,
                 allowlist='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-',
@@ -314,7 +327,7 @@ def preprocesar_y_leer_placa(img: np.ndarray) -> dict:
                 texto_detectado = limpiar_texto_placa(resultados[0][1])
                 confianza = float(resultados[0][2])
         except Exception as e:
-            logger.error(f"Error en lectura EasyOCR rápida: {e}")
+            logger.error(f"Error en lectura EasyOCR: {e}")
 
     # Si EasyOCR no leyó en la imagen ecualizada, prueba una única pasada en color
     if not texto_detectado and reader is not None:

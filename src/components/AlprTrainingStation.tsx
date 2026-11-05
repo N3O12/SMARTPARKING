@@ -86,8 +86,23 @@ export const AlprTrainingStation: React.FC<AlprTrainingStationProps> = ({
   });
   const [isTrainingRunning, setIsTrainingRunning] = useState<boolean>(false);
 
-  // Filtros visuales
+  // Filtros visuales y zoom teleobjetivo para cámara lejana (1 auto de distancia)
   const [highContrast, setHighContrast] = useState<boolean>(false);
+  const [zoomLevel, setZoomLevel] = useState<number>(2.0); // 2.0x predeterminado para distancia de vehículo
+
+  const cambiarZoom = (nivel: number) => {
+    setZoomLevel(nivel);
+    if (videoRef.current?.srcObject) {
+      const stream = videoRef.current.srcObject as MediaStream;
+      const track = stream.getVideoTracks()[0];
+      if (track) {
+        const capabilities = (track as any).getCapabilities?.() || {};
+        if (capabilities.zoom) {
+          track.applyConstraints({ advanced: [{ zoom: nivel }] } as any).catch(() => {});
+        }
+      }
+    }
+  };
 
   // Referencias DOM
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -200,26 +215,34 @@ export const AlprTrainingStation: React.FC<AlprTrainingStationProps> = ({
   };
 
   /**
-   * Captura el fotograma actual desde la cámara de forma ultraligera (<30KB)
+   * Captura el fotograma actual con Teleobjetivo / Recorte Óptico Central para cámaras lejanas
    */
   const capturarFrameActual = (): string | null => {
     const video = videoRef.current;
     const canvas = canvasRef.current;
     if (!video || !canvas || video.readyState < 2) return null;
 
-    // Escalar a ancho óptimo de 640px para transmisión instantánea por red
     const vw = video.videoWidth || 640;
     const vh = video.videoHeight || 480;
-    const maxW = 640;
-    const scale = Math.min(1.0, maxW / vw);
 
-    canvas.width = Math.round(vw * scale);
-    canvas.height = Math.round(vh * scale);
+    // Cuando la cámara está a distancia (1 o más autos), se recorta ópticamente
+    // el centro del sensor a resolución nativa, magnificando la placa sin pixelación
+    const z = zoomLevel > 1.0 ? zoomLevel : 1.0;
+    const cropW = vw / z;
+    const cropH = vh / z;
+    const startX = (vw - cropW) / 2;
+    const startY = (vh - cropH) / 2;
+
+    const targetW = Math.min(800, Math.round(cropW));
+    const targetH = Math.min(600, Math.round(cropH));
+
+    canvas.width = targetW;
+    canvas.height = targetH;
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
     if (!ctx) return null;
 
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    return canvas.toDataURL('image/jpeg', 0.72);
+    ctx.drawImage(video, startX, startY, cropW, cropH, 0, 0, targetW, targetH);
+    return canvas.toDataURL('image/jpeg', 0.80);
   };
 
   /**
@@ -694,13 +717,14 @@ export const AlprTrainingStation: React.FC<AlprTrainingStationProps> = ({
                 highContrast ? 'contrast-150 saturate-50 brightness-110' : ''
               }`}
             >
-              {/* Elemento de video HTML5 real */}
+              {/* Elemento de video HTML5 real con magnificación teleobjetivo */}
               <video
                 ref={videoRef}
                 playsInline
                 muted
                 autoPlay
-                className={`w-full h-full object-cover ${!isCameraActive && !lastFrameImage ? 'hidden' : ''}`}
+                style={{ transform: `scale(${zoomLevel})`, transformOrigin: 'center center' }}
+                className={`w-full h-full object-cover transition-transform duration-300 ${!isCameraActive && !lastFrameImage ? 'hidden' : ''}`}
               />
 
               {/* Canvas oculto para capturas y análisis de nitidez */}
@@ -781,6 +805,43 @@ export const AlprTrainingStation: React.FC<AlprTrainingStationProps> = ({
                   </span>
                 </div>
               )}
+            </div>
+
+            {/* BARRA DE DISTANCIA DE CÁMARA (TELEOBJETIVO / LARGA DISTANCIA) */}
+            <div className="bg-slate-950/95 px-4 py-2 border-t border-slate-800 flex flex-wrap items-center justify-between gap-2 text-xs">
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-bold text-cyan-400 font-mono flex items-center gap-1.5">
+                  <Scan className="w-3.5 h-3.5" />
+                  DISTANCIA VEHÍCULO:
+                </span>
+                {zoomLevel > 1.0 && (
+                  <span className="px-1.5 py-0.5 rounded bg-cyan-950 border border-cyan-500/40 text-cyan-300 text-[10px] font-mono">
+                    Teleobjetivo {zoomLevel}x Activo
+                  </span>
+                )}
+              </div>
+
+              <div className="flex items-center gap-1.5">
+                {[
+                  { label: '1.0x Normal', val: 1.0, desc: 'Cerca' },
+                  { label: '1.8x Medio', val: 1.8, desc: '3-4m' },
+                  { label: '2.5x Auto Lejos (Recomendado)', val: 2.5, desc: '1 Auto' },
+                  { label: '3.5x Teleobjetivo', val: 3.5, desc: '2 Autos' },
+                ].map((item) => (
+                  <button
+                    key={item.val}
+                    onClick={() => cambiarZoom(item.val)}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-mono font-bold transition-all border ${
+                      zoomLevel === item.val
+                        ? 'bg-cyan-500 text-slate-950 border-cyan-400 shadow-md shadow-cyan-500/25 scale-105'
+                        : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border-slate-700'
+                    }`}
+                    title={`Ajustar zoom para autos a ${item.desc}`}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Barra de Controles Rápidos de la Cámara */}
@@ -873,18 +934,15 @@ export const AlprTrainingStation: React.FC<AlprTrainingStationProps> = ({
             </div>
           )}
 
-          {/* Consejos de encuadre para placas peruanas */}
+          {/* Consejos de encuadre para placas peruanas y larga distancia */}
           <div className="bg-slate-900/60 border border-slate-800 rounded-xl p-3 text-xs text-slate-400 flex items-start gap-3">
             <Scan className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
             <div>
-              <p className="text-slate-300 font-semibold">Consejos para máxima precisión de lectura:</p>
+              <p className="text-slate-300 font-semibold">Cámaras a Distancia (1 o 2 autos de separación):</p>
               <ul className="list-disc list-inside space-y-0.5 mt-1 text-[11px] text-slate-400">
-                <li>Ubique la placa dentro del recuadro cyan a unos 30-80 cm de distancia.</li>
-                <li>
-                  El indicador de nitidez debe estar en <span className="text-emerald-400 font-bold">ALTA</span> (evite
-                  sacudidas).
-                </li>
-                <li>Si la cámara confunde 'I' con '1', usa el botón de corrección para auto-entrenar el OCR.</li>
+                <li>Usa los botones de distancia <span className="text-cyan-300 font-bold">2.5x o 3.5x</span>: amplían el centro del sensor sin perder calidad óptica.</li>
+                <li>El algoritmo aplica <span className="text-emerald-400 font-bold">Super-Resolución Cúbica + Unsharp Mask</span> para enfocar caracteres apenas visibles.</li>
+                <li>Si la cámara confunde 'I' con '1' o 'O' con '0', pulsa Rechazar / Corregir para auto-entrenar el modelo con esa distancia.</li>
               </ul>
             </div>
           </div>

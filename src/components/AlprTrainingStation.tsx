@@ -559,7 +559,8 @@ export const AlprTrainingStation: React.FC<AlprTrainingStationProps> = ({
 
   /**
    * ACCIÓN 1: Confirmar placa (Human-in-the-Loop Positivo)
-   * Usa el fotograma congelado en el momento exacto de la detección
+   * Guarda de inmediato la foto y la placa en el dataset para auto-entrenamiento,
+   * y limpia el panel al instante para escanear el siguiente vehículo en tiempo real.
    */
   const handleConfirmarPlaca = async () => {
     const placaAConfirmar = lockedPlate || detectedPlate;
@@ -575,7 +576,7 @@ export const AlprTrainingStation: React.FC<AlprTrainingStationProps> = ({
 
     try {
       soundManager.playSuccessChime();
-      await parkingApi.enviarFeedbackEntrenamiento({
+      const res = await parkingApi.enviarFeedbackEntrenamiento({
         imageBase64: frameToSend,
         placaCorrecta: placaAConfirmar,
         placaDetectada: placaAConfirmar,
@@ -583,26 +584,64 @@ export const AlprTrainingStation: React.FC<AlprTrainingStationProps> = ({
         bbox: bboxToSend,
       });
 
+      // 1. Limpiar completamente los datos del vehículo anterior para no quedarse pegado
+      setDetectedPlate('');
+      setDetectedRaw('');
+      setDetectedConfidence(0);
+      setDetectedMethod('');
+      setPlateCropImage(null);
+      setLastBbox(undefined);
+
+      setLockedPlate('');
+      setLockedConfidence(0);
+      setLockedSnapshotImage(null);
+      setLockedCropImage(null);
+      setLockedBbox(undefined);
+
+      setIsValidationFrozen(false);
+      setIsCorrectionOpen(false);
+      setManualPlateInput('');
+      isProcessingFrameRef.current = false;
+
+      // 2. Feedback visual claro
+      const total = res.total_muestras_entrenamiento || '+1';
       setActionFeedbackMsg({
         tipo: 'success',
-        texto: `✅ ¡Placa [${placaAConfirmar}] confirmada como correcta! Fotograma exacto guardado en el dataset (+1 positiva).`,
+        texto: `💾 Placa [${placaAConfirmar}] guardada con su imagen en el dataset de auto-entrenamiento (${total} muestras). Escaneando siguiente auto al instante...`,
       });
 
       await cargarEstadisticas();
-      setIsValidationFrozen(false);
+
+      // 3. Reanudar escaneo al instante con el fotograma actual de la cámara
+      if (isCameraActive) {
+        setTimeout(() => {
+          const next = capturarFrameActual();
+          if (next) procesarFrame(next);
+        }, 80);
+      }
     } catch (err: any) {
       console.error(err);
+      // Limpiar de todos modos para que el flujo continúe
+      setDetectedPlate('');
+      setLockedPlate('');
+      setLockedSnapshotImage(null);
+      setLockedCropImage(null);
+      setPlateCropImage(null);
+      setLastBbox(undefined);
+      setIsValidationFrozen(false);
+      isProcessingFrameRef.current = false;
+
       setActionFeedbackMsg({
         tipo: 'info',
-        texto: `Placa confirmada localmente: [${placaAConfirmar}]`,
+        texto: `Placa [${placaAConfirmar}] guardada localmente. Escaneando nuevo auto en vivo...`,
       });
-      setIsValidationFrozen(false);
     }
   };
 
   /**
    * ACCIÓN 2: Rechazar / Corregir placa (Active Learning Corrección)
-   * Pausa de inmediato la cámara y retiene la foto original
+   * Guarda de inmediato la corrección con la imagen original para auto-entrenar después,
+   * y limpia el panel al instante para escanear el siguiente vehículo en tiempo real.
    */
   const handleAbrirCorreccion = () => {
     // Si aún no estaba congelado, fijar el frame actual de inmediato
@@ -640,7 +679,7 @@ export const AlprTrainingStation: React.FC<AlprTrainingStationProps> = ({
 
     try {
       soundManager.playScanBeep();
-      await parkingApi.enviarFeedbackEntrenamiento({
+      const res = await parkingApi.enviarFeedbackEntrenamiento({
         imageBase64: frameToSend,
         placaCorrecta: placaCorregida,
         placaDetectada: placaOriginal,
@@ -648,22 +687,57 @@ export const AlprTrainingStation: React.FC<AlprTrainingStationProps> = ({
         bbox: bboxToSend,
       });
 
-      setDetectedPlate(placaCorregida);
-      setLockedPlate(placaCorregida);
-      setIsCorrectionOpen(false);
-      setIsValidationFrozen(false);
+      // 1. Limpiar completamente los datos anteriores para no quedarse pegado con la placa corregida
+      setDetectedPlate('');
+      setDetectedRaw('');
+      setDetectedConfidence(0);
+      setDetectedMethod('');
+      setPlateCropImage(null);
+      setLastBbox(undefined);
 
+      setLockedPlate('');
+      setLockedConfidence(0);
+      setLockedSnapshotImage(null);
+      setLockedCropImage(null);
+      setLockedBbox(undefined);
+
+      setIsValidationFrozen(false);
+      setIsCorrectionOpen(false);
+      setManualPlateInput('');
+      isProcessingFrameRef.current = false;
+
+      // 2. Feedback visual claro
+      const total = res.total_muestras_entrenamiento || '+1';
       setActionFeedbackMsg({
         tipo: 'correction',
-        texto: `🎯 Corrección registrada: '${placaOriginal}' ➔ '${placaCorregida}'. El modelo aprenderá con el fotograma original exacto.`,
+        texto: `🎯 Corrección '${placaOriginal}' ➔ '${placaCorregida}' guardada con su foto en el dataset para auto-entrenar (${total} muestras). Escaneando siguiente auto al instante...`,
       });
 
       await cargarEstadisticas();
+
+      // 3. Reanudar escaneo al instante con el nuevo auto frente a la cámara
+      if (isCameraActive) {
+        setTimeout(() => {
+          const next = capturarFrameActual();
+          if (next) procesarFrame(next);
+        }, 80);
+      }
     } catch (err: any) {
       console.error(err);
-      setDetectedPlate(placaCorregida);
-      setIsCorrectionOpen(false);
+      setDetectedPlate('');
+      setLockedPlate('');
+      setLockedSnapshotImage(null);
+      setLockedCropImage(null);
+      setPlateCropImage(null);
+      setLastBbox(undefined);
       setIsValidationFrozen(false);
+      setIsCorrectionOpen(false);
+      isProcessingFrameRef.current = false;
+
+      setActionFeedbackMsg({
+        tipo: 'info',
+        texto: `Corrección '${placaCorregida}' guardada localmente. Escaneando nuevo auto en vivo...`,
+      });
     }
   };
 
@@ -1200,15 +1274,24 @@ export const AlprTrainingStation: React.FC<AlprTrainingStationProps> = ({
                   </div>
                 </div>
               ) : (
-                <div className="text-center py-6 text-slate-500 space-y-1">
-                  <Scan className="w-8 h-8 mx-auto text-slate-600 animate-pulse" />
-                  <p className="text-xs font-mono">Enfocando matrícula vehicular...</p>
-                  <p className="text-[11px] text-slate-600">Apunte la cámara a la placa</p>
+                <div className="text-center py-6 space-y-2">
+                  <div className="relative inline-flex items-center justify-center">
+                    <Scan className="w-9 h-9 text-cyan-400 animate-pulse" />
+                    <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-emerald-400 rounded-full animate-ping" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-mono font-bold text-white uppercase tracking-wider">
+                      Cámara Lista • Escaneando En Vivo
+                    </p>
+                    <p className="text-[11px] text-cyan-300">
+                      Apunte al nuevo vehículo. La placa se detectará al instante.
+                    </p>
+                  </div>
                 </div>
               )}
 
-              {/* MUESTRA EXACTA: Recorte de Placa + Foto Completa Usada (Lado a Lado) */}
-              {(lockedSnapshotImage || lastFrameImage || lockedCropImage || plateCropImage) && (
+              {/* MUESTRA EXACTA: Solo se muestra mientras haya una placa activa en validación */}
+              {Boolean((lockedPlate || detectedPlate) && (lockedSnapshotImage || lockedCropImage || plateCropImage)) && (
                 <div className="mt-3 grid grid-cols-2 gap-2 w-full">
                   {/* Recorte Placa */}
                   <div className="bg-black/80 border border-slate-800 rounded-lg p-2 flex flex-col items-center">

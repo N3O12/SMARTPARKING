@@ -47,7 +47,7 @@ async function getOcrWorker(): Promise<Worker> {
     const worker = await createWorker('eng');
     await worker.setParameters({
       tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789- ',
-      tessedit_pageseg_mode: '7' as any, // Tratar como una sola línea de texto
+      tessedit_pageseg_mode: '6' as any, // Tratar como bloque uniforme de texto (soporta cabecera PERU + caracteres)
     });
     ocrWorker = worker;
     console.log('%c[ALPR PERÚ] Motor listo y validado.', 'color: #34d399; font-weight: bold;');

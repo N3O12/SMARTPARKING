@@ -40,6 +40,8 @@ from sqlalchemy.orm import Session, sessionmaker
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("sge_pro")
 
+MIN_CONFIANZA_ACEPTABLE = 0.20
+
 # ---------------------------------------------------------
 # 1. BASE DE DATOS SQLITE CON SQLALCHEMY
 # ---------------------------------------------------------
@@ -148,10 +150,34 @@ PALABRAS_PROHIBIDAS_UI = {
     "WWW", "ANDROID", "GOOGLE", "FIREFOX", "CHROME", "CAMERA", "BATTERY", "WIFI"
 }
 
+LETRAS_INICIALES_VALIDAS_MTC = set("ABCDEFHLMPSTUVWXYZ")
+
+def corregir_fe_schrift_posicional(s: str) -> str:
+    """Corrige confusiones OCR en matrículas peruanas según su posición oficial MTC"""
+    if len(s) != 6:
+        return s
+    chars = list(s)
+    # Posición 0: siempre letra geográfica (A, B, C, D, F, H, L, M, P, S, T, U, V, W, X, Y, Z)
+    p0_map = {'0': 'O', '1': 'I', '8': 'B', '5': 'S', '2': 'Z'}
+    if chars[0] in p0_map:
+        chars[0] = p0_map[chars[0]]
+    if chars[0] not in LETRAS_INICIALES_VALIDAS_MTC:
+        return ""
+    # Posición 4 y 5: siempre dígitos en placas peruanas de 6 caracteres
+    p_num_map = {'O': '0', 'Q': '0', 'D': '0', 'I': '1', 'L': '1', 'Z': '2', 'B': '8', 'S': '5', 'G': '6'}
+    if chars[4] in p_num_map:
+        chars[4] = p_num_map[chars[4]]
+    if chars[5] in p_num_map:
+        chars[5] = p_num_map[chars[5]]
+    # Posición 3: usualmente dígito (ej: W2U-792, ABC-123)
+    if chars[3] in p_num_map:
+        chars[3] = p_num_map[chars[3]]
+    return "".join(chars)
+
 def limpiar_texto_placa(texto: str) -> str:
     """
     Normaliza y extrae un patrón estricto de matrícula vehicular peruana (MTC):
-    - Estándar autos: 3 alfanuméricos + 3 dígitos (ej: W2U-792, ABC-123, A1B-234, X71-962, AEF-710)
+    - Estándar autos y camionetas: 3 alfanuméricos + 3 dígitos (ej: W2U-792, ABC-123, A1B-234, X71-962, AEF-710)
     - Motos / Especiales: 2 alfanuméricos + 4 dígitos (ej: AB-1234, 12-3456)
     - Filtra 'PERU', 'PERÚ', 'MTC' impresos en la parte superior de las placas oficiales
     - Descarta ruidos de interfaz web o cadenas sin dígitos
@@ -167,32 +193,38 @@ def limpiar_texto_placa(texto: str) -> str:
     # 2. Remover cabeceras oficiales impresas en la chapa (ej. "PERU", "MTC")
     t = re.sub(r'\b(PERU|PERÚ|MTC|AUTO|TAXI|CHILE)\b', '', texto.upper())
     limpio = re.sub(r'[^A-Z0-9]', '', t)
-    # Limpiar si venía pegado sin espacios (ej. "PERUW2U792" -> "W2U792")
     limpio = limpio.replace("PERU", "").replace("PERÚ", "").replace("MTC", "")
 
     if len(limpio) < 5:
         return ""
 
-    # 3. Formato estándar MTC: 3 alfanuméricos + 3 dígitos obligatorios (ej. W2U-792, A1B-234, X71-962)
+    # 3. Extraer candidatos de 6 caracteres con corrección FE-Schrift
+    candidatos_raw = []
+    if len(limpio) == 6:
+        candidatos_raw.append(limpio)
+    elif len(limpio) > 6:
+        for i in range(len(limpio) - 5):
+            candidatos_raw.append(limpio[i:i+6])
+
+    for cand in candidatos_raw:
+        cand_corregido = corregir_fe_schrift_posicional(cand)
+        if cand_corregido and len(cand_corregido) == 6:
+            p1, p2 = cand_corregido[:3], cand_corregido[3:]
+            num_digitos = sum(c.isdigit() for c in cand_corregido)
+            if num_digitos >= 2 and p1 not in ("000", "OOO"):
+                return f"{p1}-{p2}"
+
+    # 4. Formato estándar MTC directo: 3 alfanuméricos + 3 dígitos (ej. W2U-792, A1B-234)
     match_std = re.search(r'([A-Z0-9]{3})([0-9]{3})', limpio)
     if match_std:
         p1, p2 = match_std.group(1), match_std.group(2)
-        # Asegurar que el primer bloque no sea ruido de 3 ceros o letras idénticas de UI
-        if p1 not in ("000", "OOO"):
+        if p1 not in ("000", "OOO") and p1[0] in LETRAS_INICIALES_VALIDAS_MTC:
             return f"{p1}-{p2}"
 
-    # 4. Formato moto/especial: 2 alfanuméricos + 4 dígitos (ej. AB-1234)
+    # 5. Formato moto/especial: 2 alfanuméricos + 4 dígitos (ej. AB-1234)
     match_moto = re.search(r'([A-Z0-9]{2})([0-9]{4})', limpio)
     if match_moto:
         return f"{match_moto.group(1)}-{match_moto.group(2)}"
-
-    # 5. Formato de 6 caracteres con guión (exige al menos 2 números en la matrícula)
-    match_6 = re.search(r'([A-Z0-9]{3})([A-Z0-9]{3})', limpio)
-    if match_6:
-        cand = f"{match_6.group(1)}-{match_6.group(2)}"
-        total_digitos = sum(c.isdigit() for c in cand)
-        if total_digitos >= 2:
-            return cand
 
     return ""
 
@@ -356,30 +388,29 @@ def preprocesar_y_leer_placa(img: np.ndarray) -> dict:
         bbox_detectado = [0, 0, w, h]
         metodo = "Foto Completa"
 
-    # 2. SUPER-RESOLUCIÓN Y RESTAURACIÓN PARA PLACAS LEJANAS
-    # Si la placa mide menos de 80px de alto, aplicamos Super-Resolución Cúbica + Unsharp Masking
+    # 2. ESCALADO ÓPTIMO PARA OCR (Altura mínima 160px para CRAFT neural detector)
     roi_h, roi_w = roi_img.shape[:2]
-    target_h = 80
+    target_h = 160
     if roi_h > 0 and roi_w > 0:
         scale_roi = max(1.0, target_h / float(roi_h))
-        target_w = max(50, int(roi_w * scale_roi))
-        # Interpolación cúbica para evitar bordes pixelados en distancias
+        target_w = max(80, int(roi_w * scale_roi))
         roi_optima = cv2.resize(roi_img, (target_w, target_h), interpolation=cv2.INTER_CUBIC)
     else:
         roi_optima = roi_img
 
-    # 3. ENFOQUE Y REALCE DE CONTRASTE (Unsharp Masking + CLAHE)
-    gray = cv2.cvtColor(roi_optima, cv2.COLOR_BGR2GRAY)
-    
-    # Unsharp Mask para recuperar bordes difuminados de caracteres lejanos
-    blurred = cv2.GaussianBlur(gray, (0, 0), sigmaX=1.8, sigmaY=1.8)
-    sharpened = cv2.addWeighted(gray, 2.2, blurred, -1.2, 0)
-    
-    # CLAHE para rescatar caracteres oscuros sobre fondo blanco/amarillo reflectante
-    clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(6, 6))
-    gray_clahe = clahe.apply(sharpened)
+    # Sub-región de sólo caracteres: omitir el 28% superior de la placa (donde dice PERU)
+    # Esto elimina ruidos de cabecera y deja únicamente los caracteres grandes (ej. "W2U-792")
+    h_opt, w_opt = roi_optima.shape[:2]
+    y_chars = int(h_opt * 0.26)
+    roi_caracteres = roi_optima[y_chars:, :]
 
-    def extraer_candidatos_ocr(resultados_ocr, min_conf=0.28):
+    # 3. ENFOQUE Y REALCE DE CONTRASTE (CLAHE adaptativo)
+    gray = cv2.cvtColor(roi_optima, cv2.COLOR_BGR2GRAY)
+    clahe = cv2.createCLAHE(clipLimit=2.5, tileGridSize=(6, 6))
+    gray_clahe = clahe.apply(gray)
+    gray_chars = gray_clahe[y_chars:, :]
+
+    def extraer_candidatos_ocr(resultados_ocr, min_conf=0.16):
         cands = []
         if not resultados_ocr:
             return cands
@@ -412,33 +443,44 @@ def preprocesar_y_leer_placa(img: np.ndarray) -> dict:
                     
         return cands
 
-    # 4. Lectura OCR multi-pasada: Pasada 1 en color natural, Pasada 2 en CLAHE ecualizado
+    # 4. Lectura OCR multi-pasada: Pasada 1 zona de caracteres, Pasada 2 placa completa, Pasada 3 CLAHE
     reader = get_easyocr_reader()
     texto_detectado = ""
     confianza = 0.0
 
     if reader is not None:
         try:
-            # Pasada 1: Imagen en color natural (ideal para placas amarillas peruanas y texto reflectante)
-            res_color = reader.readtext(
-                roi_optima,
+            # Pasada 1: Zona de caracteres sin la cabecera PERU (ideal para placas amarillas peruanas)
+            res_chars = reader.readtext(
+                roi_caracteres,
                 allowlist='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789- ',
                 detail=1,
                 paragraph=False,
                 batch_size=1
             )
-            candidatos = extraer_candidatos_ocr(res_color, min_conf=0.28)
+            candidatos = extraer_candidatos_ocr(res_chars, min_conf=0.16)
 
-            # Pasada 2: Si no hubo candidatos, probar con CLAHE ecualizado y enfocado
+            # Pasada 2: Si no hubo candidatos, probar con la placa completa en color
             if not candidatos:
-                res_clahe = reader.readtext(
-                    gray_clahe,
+                res_color = reader.readtext(
+                    roi_optima,
                     allowlist='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789- ',
                     detail=1,
                     paragraph=False,
                     batch_size=1
                 )
-                candidatos = extraer_candidatos_ocr(res_clahe, min_conf=0.28)
+                candidatos = extraer_candidatos_ocr(res_color, min_conf=0.16)
+
+            # Pasada 3: Si aún no hay candidatos, probar en escala de grises con CLAHE
+            if not candidatos:
+                res_clahe = reader.readtext(
+                    gray_chars,
+                    allowlist='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789- ',
+                    detail=1,
+                    paragraph=False,
+                    batch_size=1
+                )
+                candidatos = extraer_candidatos_ocr(res_clahe, min_conf=0.16)
             
             if candidatos:
                 candidatos.sort(key=lambda x: x[1], reverse=True)

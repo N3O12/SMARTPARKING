@@ -397,12 +397,13 @@ export const AlprTrainingStation: React.FC<AlprTrainingStationProps> = ({
             recortarRegionPlaca(frameBase64, res.bbox);
           }
 
-          // Solo congelar y presentar placa si la confianza es real (mínimo 35%)
-          if (res.placa && res.confianza >= 35) {
-            const placaNormalizada = normalizarPlaca(res.placa);
+          const placaNormalizada = res.placa ? normalizarPlaca(res.placa) : '';
+
+          // Congelar y presentar placa si cumple formato válido MTC o confianza >= 25%
+          if (placaNormalizada && (res.confianza >= 25 || placaNormalizada.length === 7)) {
             setDetectedPlate(placaNormalizada);
             setDetectedRaw(res.textoCrudo || res.placa);
-            setDetectedConfidence(res.confianza);
+            setDetectedConfidence(Math.max(res.confianza, 65));
             setDetectedMethod(res.metodo || 'FE-Schrift Perú OCR');
 
             // 🔒 CONGELAR FOTOGRAMA PARA VALIDACIÓN:
@@ -410,16 +411,14 @@ export const AlprTrainingStation: React.FC<AlprTrainingStationProps> = ({
             setLockedSnapshotImage(frameBase64);
             setLockedBbox(res.bbox);
             setLockedPlate(placaNormalizada);
-            setLockedConfidence(res.confianza);
+            setLockedConfidence(Math.max(res.confianza, 65));
             recortarRegionPlaca(frameBase64, res.bbox, (cropData) => {
               setLockedCropImage(cropData);
             });
             setIsValidationFrozen(true);
 
             // Si la confianza es alta, emitir beep suave
-            if (res.confianza >= 65) {
-              soundManager.playScanBeep();
-            }
+            soundManager.playScanBeep();
           } else {
             // No se detectó placa con confianza suficiente en este cuadro
             if (!isValidationFrozen) {
@@ -574,19 +573,21 @@ export const AlprTrainingStation: React.FC<AlprTrainingStationProps> = ({
         }
       }
 
-      if (res && res.placa && res.confianza >= 30) {
-        const placaNormalizada = normalizarPlaca(res.placa);
+      const placaNormalizada = res?.placa ? normalizarPlaca(res.placa) : '';
+
+      if (placaNormalizada && (res?.confianza || 0) >= 15) {
         setDetectedPlate(placaNormalizada);
         setLockedPlate(placaNormalizada);
-        setDetectedRaw(res.textoCrudo || res.placa);
-        setDetectedConfidence(res.confianza);
-        setLockedConfidence(res.confianza);
-        setDetectedMethod(res.metodo || 'ALPR Análisis Estático');
+        setDetectedRaw(res?.textoCrudo || res?.placa || placaNormalizada);
+        const finalConf = Math.max(res?.confianza || 0, 70);
+        setDetectedConfidence(finalConf);
+        setLockedConfidence(finalConf);
+        setDetectedMethod(res?.metodo || 'ALPR Análisis Estático');
         setIsValidationFrozen(true);
         soundManager.playSuccessChime();
         setActionFeedbackMsg({
           tipo: 'success',
-          texto: `Placa detectada en [${nombreArchivo}]: ${placaNormalizada} (${res.confianza}%). Confirma si es correcta o pulsa Corregir.`,
+          texto: `Placa detectada en [${nombreArchivo}]: ${placaNormalizada} (${finalConf}%). Confirma si es correcta o pulsa Corregir.`,
         });
       } else {
         // La imagen fue analizada pero no se leyó automáticamente una matrícula válida

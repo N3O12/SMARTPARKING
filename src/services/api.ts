@@ -8,6 +8,7 @@ import {
   ValidacionSalidaResultado,
   FeedbackEntrenamientoPayload,
   FeedbackStats,
+  EstadoEntrenamientoYOLO,
 } from '../types';
 import {
   CAJONES_INICIALES,
@@ -665,10 +666,12 @@ class ParkingApiService {
   /**
    * Llama al re-entrenamiento del modelo con los datos recolectados
    */
-  public async ejecutarAutoEntrenamiento(): Promise<{ exito: boolean; mensaje: string }> {
+  public async ejecutarAutoEntrenamiento(
+    epocas: number = 10
+  ): Promise<{ exito: boolean; mensaje: string; total_epocas?: number }> {
     if (this.isBackendOnline && !this.preferLocal) {
       try {
-        const res = await fetch(`${this.backendUrl}/api/entrenar-yolo`, {
+        const res = await fetch(`${this.backendUrl}/api/entrenar-yolo?epocas=${epocas}`, {
           method: 'POST',
         });
         if (res.ok) {
@@ -685,7 +688,32 @@ class ParkingApiService {
       mensaje: `Ciclo de calibración completado con éxito. Se consolidaron ${stats.total_muestras} muestras etiquetadas para el dataset de placas Perú.`,
     };
   }
+
+  /**
+   * Consulta el progreso en tiempo real del entrenamiento YOLOv8
+   */
+  public async consultarEstadoEntrenamiento(): Promise<EstadoEntrenamientoYOLO> {
+    if (this.isBackendOnline && !this.preferLocal) {
+      try {
+        const res = await fetch(`${this.backendUrl}/api/entrenar-yolo/estado`);
+        if (res.ok) {
+          return await res.json();
+        }
+      } catch (e) {
+        console.warn('Error consultando estado de entrenamiento:', e);
+      }
+    }
+
+    return {
+      en_progreso: false,
+      epoca_actual: 0,
+      total_epocas: 10,
+      progreso_pct: 0,
+      mensaje: 'Modo local sin backend',
+    };
+  }
 }
 
 export const parkingApi = new ParkingApiService();
+
 

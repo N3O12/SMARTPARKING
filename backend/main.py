@@ -13,6 +13,8 @@ import math
 import os
 import random
 import re
+import shutil
+import threading
 from datetime import datetime
 from typing import List, Optional
 
@@ -688,42 +690,171 @@ def get_feedback_stats():
     }
 
 
-@app.post("/api/entrenar-yolo")
-def ejecutar_entrenamiento_yolo():
+# Estado global en memoria del proceso de auto-entrenamiento YOLOv8
+estado_entrenamiento = {
+    "en_progreso": False,
+    "epoca_actual": 0,
+    "total_epocas": 10,
+    "progreso_pct": 0,
+    "loss": None,
+    "mensaje": "Listo para entrenar",
+    "fecha_inicio": None,
+    "fecha_fin": None,
+    "exito": None,
+    "error": None
+}
+
+
+def preparar_dataset_autoentrenamiento() -> str:
     """
-    Ejecuta el entrenamiento/reentrenamiento de YOLOv8 sobre el dataset Roboflow
-    combinado con las muestras recolectadas por feedback de la cámara
+    Construye el archivo data_autoentrenamiento.yaml compatible con YOLOv8,
+    apuntando a las fotos recolectadas por feedback de la cámara.
+    Normaliza rutas para Windows con forward-slashes.
     """
+    dataset_dir = os.path.abspath("dataset_autoentrenamiento")
+    img_dir = os.path.join(dataset_dir, "images")
+    lbl_dir = os.path.join(dataset_dir, "labels")
+    os.makedirs(img_dir, exist_ok=True)
+    os.makedirs(lbl_dir, exist_ok=True)
+
+    # Ruta absoluta normalizada para evitar errores de barras invertidas en Windows YAML
+    abs_path_clean = dataset_dir.replace("\\", "/")
+    
+    yaml_target = os.path.abspath("data_autoentrenamiento.yaml")
+    yaml_content = f"""path: {abs_path_clean}
+train: images
+val: images
+
+nc: 1
+names: ['placa']
+"""
+    with open(yaml_target, "w", encoding="utf-8") as f:
+        f.write(yaml_content)
+
+    logger.info(f"📁 Configuración de dataset YOLOv8 generada en: {yaml_target}")
+    return yaml_target
+
+
+def _hilo_entrenamiento_yolo(total_epocas=10):
+    global estado_entrenamiento, yolo_detector
     try:
+        estado_entrenamiento["en_progreso"] = True
+        estado_entrenamiento["epoca_actual"] = 0
+        estado_entrenamiento["total_epocas"] = total_epocas
+        estado_entrenamiento["progreso_pct"] = 0
+        estado_entrenamiento["loss"] = None
+        estado_entrenamiento["fecha_inicio"] = datetime.now().isoformat()
+        estado_entrenamiento["error"] = None
+        estado_entrenamiento["mensaje"] = "Preparando dataset y arquitectura YOLOv8..."
+        
+        yaml_path = preparar_dataset_autoentrenamiento()
+        
         from ultralytics import YOLO
-        logger.info("Iniciando auto-entrenamiento YOLOv8 con dataset peru-license-plate...")
         
-        # Comprobar si existe data.yaml
-        yaml_path = None
-        for cand in ["data.yaml", "../public/assets/aistudio/data_4e3cc1de.yaml", "dataset/data.yaml"]:
-            if os.path.exists(cand):
-                yaml_path = cand
-                break
+        # Seleccionar modelo base existente o yolov8n.pt
+        base_model = "best.pt" if os.path.exists("best.pt") else "yolov8n.pt"
+        logger.info(f"🚀 [AUTO-ENTRENAMIENTO] Iniciando entrenamiento YOLOv8 con {total_epocas} épocas...")
+        logger.info(f"   Modelo base: '{base_model}' | Dataset: '{yaml_path}'")
         
-        if not yaml_path:
-            return {
-                "exito": True,
-                "mensaje": "Dataset recolectado y preprocesado. Coloca el archivo data.yaml en la raíz de backend para completar el ciclo YOLO de 50 épocas.",
-                "total_muestras": len(os.listdir("dataset_autoentrenamiento/images")) if os.path.exists("dataset_autoentrenamiento/images") else 0
-            }
+        model = YOLO(base_model)
+
+        def on_train_epoch_end(trainer):
+            try:
+                ep = trainer.epoch + 1
+                tot = trainer.epochs
+                l = float(trainer.loss.item()) if hasattr(trainer, 'loss') and trainer.loss is not None else 0.0
+                estado_entrenamiento["epoca_actual"] = ep
+                estado_entrenamiento["total_epocas"] = tot
+                estado_entrenamiento["progreso_pct"] = int((ep / float(tot)) * 100)
+                estado_entrenamiento["loss"] = round(l, 4)
+                estado_entrenamiento["mensaje"] = f"Época {ep}/{tot} completada (loss: {l:.4f})"
+                logger.info(f"⚡ [YOLOv8 Entrenando] Época {ep}/{tot} ({estado_entrenamiento['progreso_pct']}%) | Loss: {l:.4f}")
+            except Exception as e:
+                logger.warning(f"Aviso en callback de época: {e}")
+
+        model.add_callback("on_train_epoch_end", on_train_epoch_end)
+
+        # Iniciar entrenamiento real de YOLOv8
+        # batch pequeño (4) e imgsz 416 para velocidad y estabilidad en CPU o GPU local
+        model.train(
+            data=yaml_path,
+            epochs=total_epocas,
+            imgsz=416,
+            batch=4,
+            workers=1,
+            project="runs/detect",
+            name="train_auto",
+            exist_ok=True,
+            verbose=False
+        )
+
+        # Copiar automáticamente los mejores pesos a best.pt en la raíz
+        candidato_best = os.path.join("runs", "detect", "train_auto", "weights", "best.pt")
+        if os.path.exists(candidato_best):
+            shutil.copy(candidato_best, "best.pt")
+            logger.info("🏆 [YOLOv8] Pesos óptimos exportados exitosamente a 'best.pt'")
         
-        return {
-            "exito": True,
-            "mensaje": f"Entrenamiento programado con éxito sobre dataset: {yaml_path}. Los nuevos pesos se guardarán en best.pt",
-            "yaml_usado": yaml_path
-        }
+        # Recargar el detector activo en el backend
+        if os.path.exists("best.pt"):
+            yolo_detector = YOLO("best.pt")
+            logger.info("🎯 [ALPR] Detector en vivo actualizado y listo con el modelo reentrenado.")
+
+        estado_entrenamiento["en_progreso"] = False
+        estado_entrenamiento["exito"] = True
+        estado_entrenamiento["progreso_pct"] = 100
+        estado_entrenamiento["fecha_fin"] = datetime.now().isoformat()
+        estado_entrenamiento["mensaje"] = f"¡Auto-entrenamiento completado con éxito! {total_epocas} épocas finalizadas. El modelo 'best.pt' ya está activo en el ALPR."
+        logger.info("🎉 ¡Ciclo de auto-entrenamiento YOLOv8 concluido exitosamente!")
+
     except Exception as e:
-        logger.warning(f"Aviso durante entrenamiento YOLO: {e}")
+        logger.error(f"❌ Error durante auto-entrenamiento YOLOv8: {e}", exc_info=True)
+        estado_entrenamiento["en_progreso"] = False
+        estado_entrenamiento["exito"] = False
+        estado_entrenamiento["error"] = str(e)
+        estado_entrenamiento["mensaje"] = f"Error en auto-entrenamiento: {str(e)}"
+
+
+@app.post("/api/entrenar-yolo")
+def ejecutar_entrenamiento_yolo(epocas: int = Query(10, ge=1, le=100)):
+    """
+    Dispara el entrenamiento real de YOLOv8 en segundo plano usando las muestras recolectadas.
+    La cámara y el servidor continúan respondiendo normalmente durante el entrenamiento.
+    """
+    global estado_entrenamiento
+    if estado_entrenamiento.get("en_progreso"):
         return {
             "exito": True,
-            "mensaje": f"Dataset de auto-entrenamiento sincronizado ({len(os.listdir('dataset_autoentrenamiento/images')) if os.path.exists('dataset_autoentrenamiento/images') else 0} muestras listas en dataset_autoentrenamiento/).",
-            "detalles": str(e)
+            "mensaje": f"El entrenamiento ya está en curso: Época {estado_entrenamiento.get('epoca_actual')}/{estado_entrenamiento.get('total_epocas')} ({estado_entrenamiento.get('progreso_pct')}%).",
+            "estado": estado_entrenamiento
         }
+
+    dataset_img_dir = "dataset_autoentrenamiento/images"
+    total_imgs = len([f for f in os.listdir(dataset_img_dir) if f.endswith(('.jpg', '.png'))]) if os.path.exists(dataset_img_dir) else 0
+
+    if total_imgs == 0:
+        return {
+            "exito": False,
+            "mensaje": "No hay imágenes en 'dataset_autoentrenamiento/images' para entrenar. Confirma o corrige matrículas con la cámara primero.",
+            "estado": estado_entrenamiento
+        }
+
+    # Iniciar hilo de entrenamiento en segundo plano
+    t = threading.Thread(target=_hilo_entrenamiento_yolo, kwargs={"total_epocas": epocas}, daemon=True)
+    t.start()
+
+    return {
+        "exito": True,
+        "mensaje": f"Auto-entrenamiento YOLOv8 iniciado en segundo plano ({epocas} épocas sobre {total_imgs} imágenes).",
+        "total_muestras": total_imgs,
+        "total_epocas": epocas,
+        "estado": estado_entrenamiento
+    }
+
+
+@app.get("/api/entrenar-yolo/estado")
+def get_estado_entrenamiento():
+    """Retorna el progreso en tiempo real del entrenamiento YOLOv8 (época, loss, % completado)"""
+    return estado_entrenamiento
 
 
 @app.post("/api/entrada")

@@ -100,3 +100,17 @@ export interface FeedbackStats {
   listo_para_reentrenar: boolean;
 }
 
+export interface EstadoEntrenamientoYOLO {
+  en_progreso: boolean;
+  epoca_actual: number;
+  total_epocas: number;
+  progreso_pct: number;
+  loss?: number | null;
+  mensaje: string;
+  fecha_inicio?: string | null;
+  fecha_fin?: string | null;
+  exito?: boolean | null;
+  error?: string | null;
+}
+
+

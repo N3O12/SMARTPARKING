@@ -29,7 +29,7 @@ import {
   XCircle,
   Zap,
 } from 'lucide-react';
-import { FeedbackStats, OCRResultado } from '../types';
+import { FeedbackStats, OCRResultado, EstadoEntrenamientoYOLO } from '../types';
 import { parkingApi } from '../services/api';
 import { normalizarPlaca } from '../utils/parkingRules';
 import { soundManager } from '../utils/audioAlarm';
@@ -98,6 +98,8 @@ export const AlprTrainingStation: React.FC<AlprTrainingStationProps> = ({
     listo_para_reentrenar: false,
   });
   const [isTrainingRunning, setIsTrainingRunning] = useState<boolean>(false);
+  const [trainingProgress, setTrainingProgress] = useState<EstadoEntrenamientoYOLO | null>(null);
+  const [trainingEpochs, setTrainingEpochs] = useState<number>(10);
 
   // Filtros visuales y zoom opcional (por defecto 1.0x = Toda la Foto Completa)
   const [highContrast, setHighContrast] = useState<boolean>(false);
@@ -742,30 +744,70 @@ export const AlprTrainingStation: React.FC<AlprTrainingStationProps> = ({
   };
 
   /**
-   * ACCIÓN 3: Ejecutar Auto-Entrenamiento
+   * ACCIÓN 3: Ejecutar Auto-Entrenamiento YOLOv8 en segundo plano con seguimiento en vivo
    */
   const handleEjecutarEntrenamiento = async () => {
     setIsTrainingRunning(true);
+    setTrainingProgress({
+      en_progreso: true,
+      epoca_actual: 0,
+      total_epocas: trainingEpochs,
+      progreso_pct: 0,
+      mensaje: `Iniciando auto-entrenamiento YOLOv8 (${trainingEpochs} épocas)...`,
+    });
+
     setActionFeedbackMsg({
       tipo: 'info',
-      texto: 'Iniciando ciclo de auto-entrenamiento YOLOv8 con dataset de placas Perú...',
+      texto: `🚀 Iniciando auto-entrenamiento YOLOv8 (${trainingEpochs} épocas). La cámara continuará funcionando en segundo plano.`,
     });
 
     try {
-      const res = await parkingApi.ejecutarAutoEntrenamiento();
-      soundManager.playSuccessChime();
-      setActionFeedbackMsg({
-        tipo: 'success',
-        texto: `🚀 ${res.mensaje}`,
-      });
-      await cargarEstadisticas();
+      const res = await parkingApi.ejecutarAutoEntrenamiento(trainingEpochs);
+      if (!res.exito) {
+        setActionFeedbackMsg({
+          tipo: 'info',
+          texto: res.mensaje,
+        });
+        setIsTrainingRunning(false);
+        setTrainingProgress(null);
+        return;
+      }
+
+      // Iniciar sondeo periódico cada 1.5s para capturar cada época y loss en tiempo real
+      const intervalId = window.setInterval(async () => {
+        try {
+          const estado = await parkingApi.consultarEstadoEntrenamiento();
+          setTrainingProgress(estado);
+
+          if (!estado.en_progreso) {
+            window.clearInterval(intervalId);
+            setIsTrainingRunning(false);
+
+            if (estado.exito) {
+              soundManager.playSuccessChime();
+              setActionFeedbackMsg({
+                tipo: 'success',
+                texto: `🎉 ¡Auto-entrenamiento completado con éxito! El modelo 'best.pt' ya está activo en el ALPR.`,
+              });
+              await cargarEstadisticas();
+            } else if (estado.error) {
+              setActionFeedbackMsg({
+                tipo: 'info',
+                texto: `Aviso en auto-entrenamiento: ${estado.error}`,
+              });
+            }
+          }
+        } catch {
+          // Continuar polling
+        }
+      }, 1500);
     } catch (err: any) {
+      setIsTrainingRunning(false);
+      setTrainingProgress(null);
       setActionFeedbackMsg({
         tipo: 'info',
         texto: 'Dataset consolidado con éxito en disco para entrenamiento local.',
       });
-    } finally {
-      setIsTrainingRunning(false);
     }
   };
 
@@ -1466,6 +1508,73 @@ export const AlprTrainingStation: React.FC<AlprTrainingStationProps> = ({
               </div>
             </div>
 
+            {/* Selector de Épocas de Entrenamiento */}
+            <div className="bg-slate-950 p-2.5 rounded-lg border border-slate-800 space-y-1.5">
+              <div className="flex items-center justify-between text-[11px] font-mono">
+                <span className="text-slate-400">Ciclos de Aprendizaje:</span>
+                <span className="text-cyan-400 font-bold">{trainingEpochs} Épocas</span>
+              </div>
+              <div className="grid grid-cols-3 gap-1.5">
+                {[
+                  { ep: 5, label: '5 Épocas', desc: 'Rápido' },
+                  { ep: 10, label: '10 Épocas', desc: 'Recomendado' },
+                  { ep: 25, label: '25 Épocas', desc: 'Preciso' },
+                ].map((item) => (
+                  <button
+                    key={item.ep}
+                    type="button"
+                    disabled={isTrainingRunning}
+                    onClick={() => setTrainingEpochs(item.ep)}
+                    className={`px-2 py-1 rounded text-[10px] font-mono font-bold transition-all border ${
+                      trainingEpochs === item.ep
+                        ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/60 shadow-sm'
+                        : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-white'
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Visualizador de Progreso en Vivo */}
+            {(isTrainingRunning || trainingProgress?.en_progreso) && (
+              <div className="bg-slate-950 border border-cyan-500/50 rounded-xl p-3.5 space-y-2.5 animate-fade-in shadow-xl">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-bold text-cyan-300 flex items-center gap-1.5 font-mono">
+                    <Brain className="w-4 h-4 text-cyan-400 animate-spin" />
+                    Entrenando Red Neuronal YOLOv8...
+                  </span>
+                  <span className="font-mono font-bold text-white bg-cyan-950 px-2 py-0.5 rounded border border-cyan-500/40">
+                    {trainingProgress?.progreso_pct ?? 0}%
+                  </span>
+                </div>
+
+                {/* Barra de Progreso */}
+                <div className="w-full h-2.5 bg-slate-800 rounded-full overflow-hidden p-0.5 border border-slate-700">
+                  <div
+                    className="h-full bg-gradient-to-r from-cyan-500 to-indigo-500 rounded-full transition-all duration-500 shadow-[0_0_10px_#06b6d4]"
+                    style={{ width: `${Math.max(5, trainingProgress?.progreso_pct ?? 5)}%` }}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between text-[11px] font-mono text-slate-400 pt-0.5">
+                  <span>
+                    Época: <strong className="text-white">{trainingProgress?.epoca_actual ?? 1}</strong> / {trainingProgress?.total_epocas ?? trainingEpochs}
+                  </span>
+                  {trainingProgress?.loss !== undefined && trainingProgress?.loss !== null && (
+                    <span>
+                      Loss: <strong className="text-emerald-400 font-bold">{trainingProgress.loss}</strong>
+                    </span>
+                  )}
+                </div>
+
+                <p className="text-[10px] text-slate-400 italic">
+                  {trainingProgress?.mensaje || 'Ajustando pesos sinápticos con el dataset de placas...'}
+                </p>
+              </div>
+            )}
+
             {/* Botón Disparar Auto-Entrenamiento */}
             <button
               onClick={handleEjecutarEntrenamiento}
@@ -1473,14 +1582,14 @@ export const AlprTrainingStation: React.FC<AlprTrainingStationProps> = ({
               className={`w-full py-2.5 px-3 rounded-lg font-bold text-xs flex items-center justify-center gap-2 transition-all ${
                 isTrainingRunning
                   ? 'bg-slate-800 text-slate-400 cursor-wait'
-                  : 'bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white shadow-lg shadow-cyan-900/20'
+                  : 'bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white shadow-lg shadow-cyan-900/20 hover:scale-[1.01]'
               }`}
             >
               <Brain className={`w-4 h-4 ${isTrainingRunning ? 'animate-spin' : ''}`} />
               <span>
                 {isTrainingRunning
-                  ? 'Entrenando Red Neuronal YOLOv8...'
-                  : 'Consolidar y Auto-Entrenar Modelo Ahora'}
+                  ? `Entrenando YOLOv8 (${trainingProgress?.epoca_actual ?? 1}/${trainingProgress?.total_epocas ?? trainingEpochs})...`
+                  : `Consolidar y Auto-Entrenar (${trainingEpochs} Épocas)`}
               </span>
             </button>
 

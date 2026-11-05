@@ -6,11 +6,13 @@ import {
   Check,
   CheckCircle2,
   ChevronRight,
+  Crop,
   Database,
   Download,
   Eye,
   FileCheck,
   Layers,
+  Lock,
   Maximize2,
   Play,
   RefreshCw,
@@ -19,6 +21,7 @@ import {
   ShieldCheck,
   Sparkles,
   SwitchCamera,
+  Unlock,
   Upload,
   Video,
   VideoOff,
@@ -67,6 +70,15 @@ export const AlprTrainingStation: React.FC<AlprTrainingStationProps> = ({
   const [plateCropImage, setPlateCropImage] = useState<string | null>(null);
   const [lastBbox, setLastBbox] = useState<number[] | undefined>(undefined);
   const [detectedFrameDims, setDetectedFrameDims] = useState<{ width: number; height: number }>({ width: 640, height: 480 });
+
+  // FOTOGRAMA CONGELADO PARA VALIDACIÓN Y CORRECCIÓN:
+  // Garantiza que la imagen exacta que se usó para leer la placa NO cambie ni se pierda mientras el usuario revisa o corrige
+  const [lockedSnapshotImage, setLockedSnapshotImage] = useState<string | null>(null);
+  const [lockedCropImage, setLockedCropImage] = useState<string | null>(null);
+  const [lockedBbox, setLockedBbox] = useState<number[] | undefined>(undefined);
+  const [lockedPlate, setLockedPlate] = useState<string>('');
+  const [lockedConfidence, setLockedConfidence] = useState<number>(0);
+  const [isValidationFrozen, setIsValidationFrozen] = useState<boolean>(false);
 
   // Modo corrección manual (Human-in-the-loop)
   const [isCorrectionOpen, setIsCorrectionOpen] = useState<boolean>(false);
@@ -246,7 +258,11 @@ export const AlprTrainingStation: React.FC<AlprTrainingStationProps> = ({
   /**
    * Recorta la región exacta de la placa identificada en la foto completa
    */
-  const recortarRegionPlaca = (imageSrc: string, bbox?: number[]) => {
+  const recortarRegionPlaca = (
+    imageSrc: string,
+    bbox?: number[],
+    onCropReady?: (cropDataUrl: string) => void
+  ) => {
     const img = new Image();
     img.crossOrigin = 'anonymous';
     img.onload = () => {
@@ -274,7 +290,11 @@ export const AlprTrainingStation: React.FC<AlprTrainingStationProps> = ({
       offCanvas.width = Math.max(20, w);
       offCanvas.height = Math.max(10, h);
       ctx.drawImage(img, x, y, w, h, 0, 0, offCanvas.width, offCanvas.height);
-      setPlateCropImage(offCanvas.toDataURL('image/jpeg', 0.92));
+      const cropUrl = offCanvas.toDataURL('image/jpeg', 0.92);
+      setPlateCropImage(cropUrl);
+      if (onCropReady) {
+        onCropReady(cropUrl);
+      }
     };
     img.src = imageSrc;
   };
@@ -329,9 +349,16 @@ export const AlprTrainingStation: React.FC<AlprTrainingStationProps> = ({
   /**
    * Procesamiento de frame individual (Cámara o Imagen)
    */
+  /**
+   * Procesamiento de frame individual (Cámara o Imagen)
+   */
   const procesarFrame = useCallback(
     async (frameBase64: string) => {
       if (isProcessingFrameRef.current) return;
+      // Si la validación está congelada con una placa pendiente o la corrección está abierta,
+      // no sobreescribir el fotograma analizado
+      if (isCorrectionOpen || isValidationFrozen) return;
+
       isProcessingFrameRef.current = true;
       setIsScanning(true);
       const t0 = performance.now();
@@ -371,6 +398,17 @@ export const AlprTrainingStation: React.FC<AlprTrainingStationProps> = ({
             setDetectedConfidence(res.confianza);
             setDetectedMethod(res.metodo || 'FE-Schrift Perú OCR');
 
+            // 🔒 CONGELAR FOTOGRAMA PARA VALIDACIÓN:
+            // Asegura que la foto exacta y su recorte permanezcan fijados en la tarjeta de validación
+            setLockedSnapshotImage(frameBase64);
+            setLockedBbox(res.bbox);
+            setLockedPlate(placaNormalizada);
+            setLockedConfidence(res.confianza);
+            recortarRegionPlaca(frameBase64, res.bbox, (cropData) => {
+              setLockedCropImage(cropData);
+            });
+            setIsValidationFrozen(true);
+
             // Si la confianza es alta, emitir beep suave
             if (res.confianza >= 65) {
               soundManager.playScanBeep();
@@ -391,11 +429,12 @@ export const AlprTrainingStation: React.FC<AlprTrainingStationProps> = ({
         setIsScanning(false);
       }
     },
-    [onProcesarOCR, detectedPlate]
+    [onProcesarOCR, detectedPlate, isCorrectionOpen, isValidationFrozen]
   );
 
   /**
    * Bucle de escaneo continuo ultrarrápido con la cámara web (220ms)
+   * Se suspende automáticamente mientras haya una placa congelada para validación o corrección
    */
   useEffect(() => {
     if (!isCameraActive || !autoScanEnabled) {
@@ -416,7 +455,14 @@ export const AlprTrainingStation: React.FC<AlprTrainingStationProps> = ({
         fpsCounterRef.current.lastTime = now;
       }
 
-      if (videoRef.current && canvasRef.current && !isProcessingFrameRef.current) {
+      // No capturar nuevos frames si el usuario está validando o corrigiendo una placa
+      if (
+        videoRef.current &&
+        canvasRef.current &&
+        !isProcessingFrameRef.current &&
+        !isValidationFrozen &&
+        !isCorrectionOpen
+      ) {
         evaluarNitidez(canvasRef.current);
         const frame = capturarFrameActual();
         if (frame) {
@@ -431,7 +477,26 @@ export const AlprTrainingStation: React.FC<AlprTrainingStationProps> = ({
         scanIntervalRef.current = null;
       }
     };
-  }, [isCameraActive, autoScanEnabled, procesarFrame]);
+  }, [isCameraActive, autoScanEnabled, procesarFrame, isValidationFrozen, isCorrectionOpen]);
+
+  /**
+   * Descongelar fotograma para continuar escaneando el siguiente vehículo
+   */
+  const handleDescongelar = () => {
+    setIsValidationFrozen(false);
+    setIsCorrectionOpen(false);
+    setDetectedPlate('');
+    setLockedPlate('');
+    setLockedSnapshotImage(null);
+    setLockedCropImage(null);
+    setLockedBbox(undefined);
+    setPlateCropImage(null);
+    setLastBbox(undefined);
+    setActionFeedbackMsg({
+      tipo: 'info',
+      texto: 'Escaneo reanudado. Enfoca el siguiente vehículo.',
+    });
+  };
 
   /**
    * Subir archivo de imagen local (o probar placa de muestra)
@@ -445,6 +510,8 @@ export const AlprTrainingStation: React.FC<AlprTrainingStationProps> = ({
       const base64 = event.target?.result as string;
       if (base64) {
         detenerCamara();
+        setIsValidationFrozen(false);
+        setLockedSnapshotImage(base64);
         procesarFrame(base64);
         setActionFeedbackMsg({
           tipo: 'info',
@@ -466,6 +533,8 @@ export const AlprTrainingStation: React.FC<AlprTrainingStationProps> = ({
       const reader = new FileReader();
       reader.onload = () => {
         const base64 = reader.result as string;
+        setIsValidationFrozen(false);
+        setLockedSnapshotImage(base64);
         procesarFrame(base64);
         setActionFeedbackMsg({
           tipo: 'info',
@@ -476,20 +545,29 @@ export const AlprTrainingStation: React.FC<AlprTrainingStationProps> = ({
     } catch {
       // Fallback directo si no carga por fetch
       setDetectedPlate('X71-962');
+      setLockedPlate('X71-962');
       setDetectedRaw('X71-962 PERU');
       setDetectedConfidence(96);
       setDetectedMethod('Roboflow Dataset Test Asset');
       setLastFrameImage(samplePlateImage);
+      setLockedSnapshotImage(samplePlateImage);
       setPlateCropImage(samplePlateImage);
+      setLockedCropImage(samplePlateImage);
+      setIsValidationFrozen(true);
     }
   };
 
   /**
    * ACCIÓN 1: Confirmar placa (Human-in-the-Loop Positivo)
+   * Usa el fotograma congelado en el momento exacto de la detección
    */
   const handleConfirmarPlaca = async () => {
-    if (!detectedPlate) return;
-    const frameToSend = lastFrameImage || capturarFrameActual();
+    const placaAConfirmar = lockedPlate || detectedPlate;
+    if (!placaAConfirmar) return;
+
+    const frameToSend = lockedSnapshotImage || lastFrameImage || capturarFrameActual();
+    const bboxToSend = lockedBbox || lastBbox;
+
     if (!frameToSend) {
       alert('Enfoca o sube una imagen de la placa primero.');
       return;
@@ -497,34 +575,49 @@ export const AlprTrainingStation: React.FC<AlprTrainingStationProps> = ({
 
     try {
       soundManager.playSuccessChime();
-      const res = await parkingApi.enviarFeedbackEntrenamiento({
+      await parkingApi.enviarFeedbackEntrenamiento({
         imageBase64: frameToSend,
-        placaCorrecta: detectedPlate,
-        placaDetectada: detectedPlate,
+        placaCorrecta: placaAConfirmar,
+        placaDetectada: placaAConfirmar,
         esCorrecta: true,
-        bbox: lastBbox,
+        bbox: bboxToSend,
       });
 
       setActionFeedbackMsg({
         tipo: 'success',
-        texto: `✅ ¡Placa [${detectedPlate}] confirmada como correcta! Muestra agregada al dataset (+1 positiva).`,
+        texto: `✅ ¡Placa [${placaAConfirmar}] confirmada como correcta! Fotograma exacto guardado en el dataset (+1 positiva).`,
       });
 
       await cargarEstadisticas();
+      setIsValidationFrozen(false);
     } catch (err: any) {
       console.error(err);
       setActionFeedbackMsg({
         tipo: 'info',
-        texto: `Placa confirmada localmente: [${detectedPlate}]`,
+        texto: `Placa confirmada localmente: [${placaAConfirmar}]`,
       });
+      setIsValidationFrozen(false);
     }
   };
 
   /**
    * ACCIÓN 2: Rechazar / Corregir placa (Active Learning Corrección)
+   * Pausa de inmediato la cámara y retiene la foto original
    */
   const handleAbrirCorreccion = () => {
-    setManualPlateInput(detectedPlate || '');
+    // Si aún no estaba congelado, fijar el frame actual de inmediato
+    const currentFrame = lockedSnapshotImage || lastFrameImage || capturarFrameActual();
+    if (currentFrame && !lockedSnapshotImage) {
+      setLockedSnapshotImage(currentFrame);
+      setLockedBbox(lastBbox);
+      setLockedPlate(detectedPlate);
+      setLockedConfidence(detectedConfidence);
+      if (plateCropImage) {
+        setLockedCropImage(plateCropImage);
+      }
+    }
+    setIsValidationFrozen(true);
+    setManualPlateInput(lockedPlate || detectedPlate || '');
     setIsCorrectionOpen(true);
   };
 
@@ -535,7 +628,11 @@ export const AlprTrainingStation: React.FC<AlprTrainingStationProps> = ({
       return;
     }
 
-    const frameToSend = lastFrameImage || capturarFrameActual();
+    // Usar estrictamente la foto congelada que originó esta placa
+    const frameToSend = lockedSnapshotImage || lastFrameImage || capturarFrameActual();
+    const bboxToSend = lockedBbox || lastBbox;
+    const placaOriginal = lockedPlate || detectedPlate || detectedRaw || 'NINGUNA';
+
     if (!frameToSend) {
       alert('No hay fotograma para registrar la corrección.');
       return;
@@ -543,20 +640,22 @@ export const AlprTrainingStation: React.FC<AlprTrainingStationProps> = ({
 
     try {
       soundManager.playScanBeep();
-      const res = await parkingApi.enviarFeedbackEntrenamiento({
+      await parkingApi.enviarFeedbackEntrenamiento({
         imageBase64: frameToSend,
         placaCorrecta: placaCorregida,
-        placaDetectada: detectedPlate || detectedRaw || 'NINGUNA',
+        placaDetectada: placaOriginal,
         esCorrecta: false,
-        bbox: lastBbox,
+        bbox: bboxToSend,
       });
 
       setDetectedPlate(placaCorregida);
+      setLockedPlate(placaCorregida);
       setIsCorrectionOpen(false);
+      setIsValidationFrozen(false);
 
       setActionFeedbackMsg({
         tipo: 'correction',
-        texto: `🎯 Corrección registrada: '${detectedPlate || "Sin lectura"}' ➔ '${placaCorregida}'. ¡El modelo aprenderá este caso!`,
+        texto: `🎯 Corrección registrada: '${placaOriginal}' ➔ '${placaCorregida}'. El modelo aprenderá con el fotograma original exacto.`,
       });
 
       await cargarEstadisticas();
@@ -564,6 +663,7 @@ export const AlprTrainingStation: React.FC<AlprTrainingStationProps> = ({
       console.error(err);
       setDetectedPlate(placaCorregida);
       setIsCorrectionOpen(false);
+      setIsValidationFrozen(false);
     }
   };
 
@@ -950,6 +1050,38 @@ export const AlprTrainingStation: React.FC<AlprTrainingStationProps> = ({
                   <Eye className="w-3.5 h-3.5" />
                   Alto Contraste
                 </button>
+
+                {/* Botón para Congelar / Descongelar manualmente */}
+                <button
+                  onClick={() => {
+                    if (isValidationFrozen) {
+                      handleDescongelar();
+                    } else {
+                      const frame = lastFrameImage || capturarFrameActual();
+                      if (frame) {
+                        setLockedSnapshotImage(frame);
+                        setLockedBbox(lastBbox);
+                        setLockedPlate(detectedPlate);
+                        setLockedConfidence(detectedConfidence);
+                        if (plateCropImage) setLockedCropImage(plateCropImage);
+                        setIsValidationFrozen(true);
+                        setActionFeedbackMsg({
+                          tipo: 'info',
+                          texto: 'Fotograma congelado para validación. La imagen no cambiará.',
+                        });
+                      }
+                    }
+                  }}
+                  className={`px-3 py-1.5 rounded-lg border font-medium flex items-center gap-1.5 transition-colors ${
+                    isValidationFrozen
+                      ? 'bg-amber-500/20 border-amber-500/60 text-amber-300'
+                      : 'bg-slate-800 border-slate-700 text-slate-300 hover:text-white'
+                  }`}
+                  title={isValidationFrozen ? 'Reanudar escaneo en vivo' : 'Congelar foto actual para corregirla con calma'}
+                >
+                  {isValidationFrozen ? <Unlock className="w-3.5 h-3.5 text-amber-400" /> : <Lock className="w-3.5 h-3.5" />}
+                  {isValidationFrozen ? 'Descongelar' : 'Congelar Foto'}
+                </button>
               </div>
 
               {/* Botón Subir Imagen / Fotograma */}
@@ -1018,6 +1150,29 @@ export const AlprTrainingStation: React.FC<AlprTrainingStationProps> = ({
               </span>
             </div>
 
+            {/* Banner de Fotograma Congelado (Garantiza que la foto no cambie durante la revisión) */}
+            {isValidationFrozen && (
+              <div className="bg-amber-500/15 border border-amber-500/40 rounded-lg p-2.5 flex items-center justify-between text-xs text-amber-200">
+                <div className="flex items-center gap-2">
+                  <Lock className="w-4 h-4 text-amber-400 shrink-0" />
+                  <div>
+                    <span className="font-bold">Fotograma Congelado</span>
+                    <p className="text-[11px] text-amber-300/80">
+                      Esta foto fija es la que definió la placa. No cambiará mientras revisas o corriges.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={handleDescongelar}
+                  className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-[11px] font-mono flex items-center gap-1 shrink-0"
+                  title="Descongelar y buscar siguiente vehículo"
+                >
+                  <RotateCcw className="w-3 h-3" />
+                  Siguiente Auto
+                </button>
+              </div>
+            )}
+
             {/* Display Estilo Placa Oficial Peruana */}
             <div className="bg-gradient-to-b from-slate-950 to-slate-900 border-2 border-slate-700 rounded-xl p-4 flex flex-col items-center justify-center relative shadow-inner">
               {/* Franja superior de placa peruana */}
@@ -1030,14 +1185,14 @@ export const AlprTrainingStation: React.FC<AlprTrainingStationProps> = ({
               </div>
 
               {/* Número de placa grande */}
-              {detectedPlate ? (
+              {(lockedPlate || detectedPlate) ? (
                 <div className="text-center py-2">
                   <div className="text-4xl sm:text-5xl font-mono font-black text-white tracking-widest drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
-                    {detectedPlate}
+                    {lockedPlate || detectedPlate}
                   </div>
                   <div className="flex items-center justify-center gap-2 mt-2">
                     <span className="text-xs font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">
-                      Confianza: {detectedConfidence}%
+                      Confianza: {lockedConfidence || detectedConfidence}%
                     </span>
                     <span className="text-xs text-slate-400 font-mono">
                       Crudo: "{detectedRaw}"
@@ -1052,14 +1207,46 @@ export const AlprTrainingStation: React.FC<AlprTrainingStationProps> = ({
                 </div>
               )}
 
-              {/* Recorte de la placa si está disponible */}
-              {plateCropImage && (
-                <div className="mt-3 w-full border border-slate-800 rounded-lg p-1 bg-black/60 flex items-center justify-center">
-                  <img
-                    src={plateCropImage}
-                    alt="Recorte Placa"
-                    className="max-h-20 object-contain rounded"
-                  />
+              {/* MUESTRA EXACTA: Recorte de Placa + Foto Completa Usada (Lado a Lado) */}
+              {(lockedSnapshotImage || lastFrameImage || lockedCropImage || plateCropImage) && (
+                <div className="mt-3 grid grid-cols-2 gap-2 w-full">
+                  {/* Recorte Placa */}
+                  <div className="bg-black/80 border border-slate-800 rounded-lg p-2 flex flex-col items-center">
+                    <span className="text-[10px] text-cyan-300 font-mono font-bold mb-1 flex items-center gap-1">
+                      <Crop className="w-3 h-3 text-cyan-400" />
+                      Recorte Placa
+                    </span>
+                    {(lockedCropImage || plateCropImage) ? (
+                      <img
+                        src={(lockedCropImage || plateCropImage)!}
+                        alt="Recorte Placa"
+                        className="max-h-16 w-full object-contain rounded bg-slate-950 border border-slate-800"
+                      />
+                    ) : (
+                      <div className="h-16 flex items-center justify-center text-[10px] text-slate-500">
+                        Sin recorte
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Foto Completa Usada */}
+                  <div className="bg-black/80 border border-slate-800 rounded-lg p-2 flex flex-col items-center">
+                    <span className="text-[10px] text-emerald-300 font-mono font-bold mb-1 flex items-center gap-1">
+                      <Camera className="w-3 h-3 text-emerald-400" />
+                      Foto Completa Usada
+                    </span>
+                    {(lockedSnapshotImage || lastFrameImage) ? (
+                      <img
+                        src={(lockedSnapshotImage || lastFrameImage)!}
+                        alt="Foto Completa Usada"
+                        className="max-h-16 w-full object-contain rounded bg-slate-950 border border-slate-800"
+                      />
+                    ) : (
+                      <div className="h-16 flex items-center justify-center text-[10px] text-slate-500">
+                        Sin foto
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
@@ -1074,9 +1261,9 @@ export const AlprTrainingStation: React.FC<AlprTrainingStationProps> = ({
                 {/* BOTÓN CONFIRMAR */}
                 <button
                   onClick={handleConfirmarPlaca}
-                  disabled={!detectedPlate}
+                  disabled={!(lockedPlate || detectedPlate)}
                   className={`py-3 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-lg transition-all ${
-                    detectedPlate
+                    (lockedPlate || detectedPlate)
                       ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-900/40 hover:scale-[1.02] cursor-pointer'
                       : 'bg-slate-800 text-slate-500 cursor-not-allowed border border-slate-700'
                   }`}
@@ -1112,10 +1299,12 @@ export const AlprTrainingStation: React.FC<AlprTrainingStationProps> = ({
                   </button>
                 </div>
 
-                <p className="text-[11px] text-slate-400">
-                  Escribe la placa real del vehículo. Se guardará el frame actual con la etiqueta exacta en el dataset de
-                  auto-entrenamiento YOLOv8.
-                </p>
+                <div className="bg-indigo-950/40 border border-indigo-500/30 rounded-lg p-2 text-[11px] text-indigo-200 flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-indigo-400 shrink-0" />
+                  <span>
+                    El fotograma original está retenido y la cámara en pausa. Al pulsar 'Auto-Entrenar', se vinculará la foto exacta del auto a tu corrección.
+                  </span>
+                </div>
 
                 <div className="space-y-2">
                   <div className="flex gap-2">

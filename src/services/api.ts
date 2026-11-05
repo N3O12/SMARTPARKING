@@ -256,13 +256,15 @@ class ParkingApiService {
         });
         if (res.ok) {
           const data = await res.json();
+          const rawConf = typeof data.confianza === 'number' ? data.confianza : 0.90;
+          const confPercent = rawConf <= 1.0 ? Math.round(rawConf * 100) : Math.round(rawConf);
           return {
             placa: normalizarPlaca(data.placa || ''),
-            confianza: data.confianza || 0.96,
+            confianza: confPercent,
             bbox: data.bbox || [80, 120, 320, 220],
             metodo: data.metodo || 'YOLOv8 + EasyOCR',
             exito: Boolean(data.exito ?? (data.placa && data.placa.length >= 4)),
-            textoCrudo: data.texto_crudo,
+            textoCrudo: data.texto_crudo || data.placa || '',
           };
         }
       } catch {

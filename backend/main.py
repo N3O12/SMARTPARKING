@@ -461,6 +461,24 @@ def toggle_cajon(id_cajon: str, db: Session = Depends(get_db)):
     return {"id": cajon.id, "ocupado": cajon.ocupado, "mensaje": f"Cajón {cajon.id} ahora está {'OCUPADO' if cajon.ocupado else 'LIBRE'}"}
 
 
+@app.post("/api/ocr")
+def procesar_ocr_endpoint(payload: OCRRequest):
+    """
+    Endpoint ALPR / OCR:
+    Procesa el frame capturado por la cámara web o imagen subida,
+    detecta la placa con YOLOv8, recorta y preprocesa con OpenCV y extrae el texto con EasyOCR.
+    """
+    if not payload.image_base64:
+        raise HTTPException(status_code=400, detail="Se requiere el campo 'image_base64'")
+    
+    img = decodificar_imagen_base64(payload.image_base64)
+    if img is None:
+        raise HTTPException(status_code=400, detail="Formato de imagen Base64 no válido")
+    
+    resultado = preprocesar_y_leer_placa(img)
+    return resultado
+
+
 class FeedbackEntrenamientoRequest(BaseModel):
     image_base64: str = Field(..., description="Frame en Base64 donde se confirmó o corrigió la placa")
     placa_correcta: str = Field(..., description="Placa confirmada o corregida manualmente")

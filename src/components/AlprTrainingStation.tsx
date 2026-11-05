@@ -56,6 +56,7 @@ export const AlprTrainingStation: React.FC<AlprTrainingStationProps> = ({
   const [scanFps, setScanFps] = useState<number>(0);
   const [sharpnessLevel, setSharpnessLevel] = useState<'ALTA' | 'MEDIA' | 'BAJA'>('ALTA');
   const [sharpnessScore, setSharpnessScore] = useState<number>(100);
+  const [scanLatencyMs, setScanLatencyMs] = useState<number>(0);
 
   // Resultado de detección actual
   const [detectedPlate, setDetectedPlate] = useState<string>('');
@@ -199,20 +200,26 @@ export const AlprTrainingStation: React.FC<AlprTrainingStationProps> = ({
   };
 
   /**
-   * Captura el fotograma actual desde la cámara
+   * Captura el fotograma actual desde la cámara de forma ultraligera (<30KB)
    */
   const capturarFrameActual = (): string | null => {
     const video = videoRef.current;
     const canvas = canvasRef.current;
     if (!video || !canvas || video.readyState < 2) return null;
 
-    canvas.width = video.videoWidth || 640;
-    canvas.height = video.videoHeight || 480;
-    const ctx = canvas.getContext('2d');
+    // Escalar a ancho óptimo de 640px para transmisión instantánea por red
+    const vw = video.videoWidth || 640;
+    const vh = video.videoHeight || 480;
+    const maxW = 640;
+    const scale = Math.min(1.0, maxW / vw);
+
+    canvas.width = Math.round(vw * scale);
+    canvas.height = Math.round(vh * scale);
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
     if (!ctx) return null;
 
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    return canvas.toDataURL('image/jpeg', 0.88);
+    return canvas.toDataURL('image/jpeg', 0.72);
   };
 
   /**
@@ -304,6 +311,7 @@ export const AlprTrainingStation: React.FC<AlprTrainingStationProps> = ({
       if (isProcessingFrameRef.current) return;
       isProcessingFrameRef.current = true;
       setIsScanning(true);
+      const t0 = performance.now();
 
       try {
         setLastFrameImage(frameBase64);
@@ -346,6 +354,8 @@ export const AlprTrainingStation: React.FC<AlprTrainingStationProps> = ({
       } catch (err) {
         console.warn('Error en escaneo ALPR:', err);
       } finally {
+        const elapsed = Math.round(performance.now() - t0);
+        setScanLatencyMs(elapsed);
         isProcessingFrameRef.current = false;
         setIsScanning(false);
       }
@@ -354,7 +364,7 @@ export const AlprTrainingStation: React.FC<AlprTrainingStationProps> = ({
   );
 
   /**
-   * Bucle de escaneo continuo con la cámara web
+   * Bucle de escaneo continuo ultrarrápido con la cámara web (220ms)
    */
   useEffect(() => {
     if (!isCameraActive || !autoScanEnabled) {
@@ -382,7 +392,7 @@ export const AlprTrainingStation: React.FC<AlprTrainingStationProps> = ({
           procesarFrame(frame);
         }
       }
-    }, 700);
+    }, 220);
 
     return () => {
       if (scanIntervalRef.current) {
@@ -651,6 +661,12 @@ export const AlprTrainingStation: React.FC<AlprTrainingStationProps> = ({
                 {isCameraActive && (
                   <span className="px-1.5 py-0.5 rounded bg-slate-800 text-cyan-400 text-[10px]">
                     {scanFps} FPS
+                  </span>
+                )}
+                {scanLatencyMs > 0 && (
+                  <span className="px-1.5 py-0.5 rounded bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 text-[10px] flex items-center gap-1 font-bold">
+                    <Zap className="w-3 h-3 text-emerald-400" />
+                    {scanLatencyMs}ms • Rápido
                   </span>
                 )}
               </div>

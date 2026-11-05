@@ -508,6 +508,90 @@ export const AlprTrainingStation: React.FC<AlprTrainingStationProps> = ({
   /**
    * Subir archivo de imagen local (o probar placa de muestra)
    */
+  /**
+   * Analiza una imagen estática subida por el usuario o de prueba
+   */
+  const analizarImagenSubida = async (base64: string, nombreArchivo: string) => {
+    detenerCamara();
+    setIsValidationFrozen(false);
+    setLastFrameImage(base64);
+    setLockedSnapshotImage(base64);
+    setIsScanning(true);
+    setActionFeedbackMsg({
+      tipo: 'info',
+      texto: `Analizando [${nombreArchivo}] con red neuronal ALPR...`,
+    });
+
+    try {
+      let res: OCRResultado | null = null;
+      try {
+        res = await onProcesarOCR(base64);
+      } catch {
+        res = null;
+      }
+
+      if (!res || !res.placa || res.confianza < 35) {
+        const localRes = await reconocerPlacaReal(base64);
+        if (localRes.placa && localRes.confianza > (res?.confianza || 0)) {
+          res = localRes;
+        }
+      }
+
+      if (res && res.frame_width && res.frame_height) {
+        setDetectedFrameDims({ width: res.frame_width, height: res.frame_height });
+      }
+
+      if (res && res.bbox && res.bbox.length === 4 && res.bbox[2] > res.bbox[0]) {
+        setLastBbox(res.bbox);
+        setLockedBbox(res.bbox);
+        recortarRegionPlaca(base64, res.bbox, (cropData) => {
+          setLockedCropImage(cropData);
+        });
+      }
+
+      if (res && res.placa && res.confianza >= 35) {
+        const placaNormalizada = normalizarPlaca(res.placa);
+        setDetectedPlate(placaNormalizada);
+        setLockedPlate(placaNormalizada);
+        setDetectedRaw(res.textoCrudo || res.placa);
+        setDetectedConfidence(res.confianza);
+        setLockedConfidence(res.confianza);
+        setDetectedMethod(res.metodo || 'ALPR Análisis Estático');
+        setIsValidationFrozen(true);
+        soundManager.playSuccessChime();
+        setActionFeedbackMsg({
+          tipo: 'success',
+          texto: `Placa detectada en [${nombreArchivo}]: ${placaNormalizada} (${res.confianza}%). Confirma si es correcta o pulsa Corregir.`,
+        });
+      } else {
+        // La imagen fue analizada pero no se leyó automáticamente una matrícula válida
+        setDetectedPlate('');
+        setLockedPlate('');
+        setDetectedConfidence(res?.confianza || 0);
+        setLockedConfidence(res?.confianza || 0);
+        setDetectedRaw(res?.textoCrudo || 'Sin placa legible identificada');
+        setDetectedMethod('Análisis finalizado (Requiere etiqueta manual)');
+        setIsValidationFrozen(true);
+        setActionFeedbackMsg({
+          tipo: 'info',
+          texto: `Análisis de [${nombreArchivo}] completado. No se reconoció la placa automáticamente. Pulsa "ESCRIBIR PLACA / CORREGIR" para ingresarla y auto-entrenarla.`,
+        });
+      }
+    } catch (err: any) {
+      console.error('Error analizando imagen subida:', err);
+      setIsValidationFrozen(true);
+      setActionFeedbackMsg({
+        tipo: 'info',
+        texto: `Análisis completado. Puedes pulsar "ESCRIBIR PLACA / CORREGIR" para escribir la placa manualmente y auto-entrenar el modelo.`,
+      });
+    } finally {
+      setIsScanning(false);
+    }
+  };
+
+  /**
+   * Subir archivo de imagen local (o probar placa de muestra)
+   */
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -516,17 +600,11 @@ export const AlprTrainingStation: React.FC<AlprTrainingStationProps> = ({
     reader.onload = (event) => {
       const base64 = event.target?.result as string;
       if (base64) {
-        detenerCamara();
-        setIsValidationFrozen(false);
-        setLockedSnapshotImage(base64);
-        procesarFrame(base64);
-        setActionFeedbackMsg({
-          tipo: 'info',
-          texto: `Imagen cargada: ${file.name}. Analizando placa...`,
-        });
+        analizarImagenSubida(base64, file.name);
       }
     };
     reader.readAsDataURL(file);
+    e.target.value = '';
   };
 
   /**
@@ -540,13 +618,7 @@ export const AlprTrainingStation: React.FC<AlprTrainingStationProps> = ({
       const reader = new FileReader();
       reader.onload = () => {
         const base64 = reader.result as string;
-        setIsValidationFrozen(false);
-        setLockedSnapshotImage(base64);
-        procesarFrame(base64);
-        setActionFeedbackMsg({
-          tipo: 'info',
-          texto: 'Cargada placa oficial peruana X71-962 (Dataset Roboflow). Procesando...',
-        });
+        analizarImagenSubida(base64, 'Muestra Oficial X71-962.jpg');
       };
       reader.readAsDataURL(blob);
     } catch {
@@ -561,6 +633,10 @@ export const AlprTrainingStation: React.FC<AlprTrainingStationProps> = ({
       setPlateCropImage(samplePlateImage);
       setLockedCropImage(samplePlateImage);
       setIsValidationFrozen(true);
+      setActionFeedbackMsg({
+        tipo: 'success',
+        texto: 'Cargada placa oficial peruana X71-962. Confirma o corrige para auto-entrenar.',
+      });
     }
   };
 
@@ -1344,6 +1420,20 @@ export const AlprTrainingStation: React.FC<AlprTrainingStationProps> = ({
                     </span>
                   </div>
                 </div>
+              ) : isValidationFrozen ? (
+                <div className="text-center py-5 space-y-2">
+                  <div className="inline-flex items-center justify-center p-2.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                    <AlertCircle className="w-6 h-6 animate-pulse" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-mono font-bold text-amber-300 uppercase tracking-wide">
+                      Imagen Cargada • Sin Placa Detectada Automáticamente
+                    </p>
+                    <p className="text-[11px] text-slate-400 max-w-xs mx-auto mt-1">
+                      El OCR no pudo leer la placa con suficiente nitidez. Pulsa <strong className="text-indigo-400 font-bold">ESCRIBIR PLACA / CORREGIR</strong> para ingresar la matrícula manualmente y auto-entrenar al modelo.
+                    </p>
+                  </div>
+                </div>
               ) : (
                 <div className="text-center py-6 space-y-2">
                   <div className="relative inline-flex items-center justify-center">
@@ -1361,8 +1451,8 @@ export const AlprTrainingStation: React.FC<AlprTrainingStationProps> = ({
                 </div>
               )}
 
-              {/* MUESTRA EXACTA: Solo se muestra mientras haya una placa activa en validación */}
-              {Boolean((lockedPlate || detectedPlate) && (lockedSnapshotImage || lockedCropImage || plateCropImage)) && (
+              {/* MUESTRA EXACTA: Se muestra siempre que haya una foto congelada o placa en validación */}
+              {Boolean((lockedPlate || detectedPlate || isValidationFrozen) && (lockedSnapshotImage || lockedCropImage || plateCropImage || lastFrameImage)) && (
                 <div className="mt-3 grid grid-cols-2 gap-2 w-full">
                   {/* Recorte Placa */}
                   <div className="bg-black/80 border border-slate-800 rounded-lg p-2 flex flex-col items-center">
@@ -1377,8 +1467,8 @@ export const AlprTrainingStation: React.FC<AlprTrainingStationProps> = ({
                         className="max-h-16 w-full object-contain rounded bg-slate-950 border border-slate-800"
                       />
                     ) : (
-                      <div className="h-16 flex items-center justify-center text-[10px] text-slate-500">
-                        Sin recorte
+                      <div className="h-16 flex items-center justify-center text-[10px] text-slate-500 italic">
+                        Sin recorte automático
                       </div>
                     )}
                   </div>
@@ -1408,7 +1498,9 @@ export const AlprTrainingStation: React.FC<AlprTrainingStationProps> = ({
             {/* BOTONES PRINCIPALES: CONFIRMAR O RECHAZAR */}
             <div className="space-y-2 pt-1">
               <p className="text-xs text-slate-400 text-center font-medium">
-                ¿La placa detectada coincide con la que tienes en mano?
+                {isValidationFrozen && !(lockedPlate || detectedPlate)
+                  ? 'No se reconoció la placa automáticamente. Escríbela para entrenar:'
+                  : '¿La placa detectada coincide con la que tienes en mano?'}
               </p>
 
               <div className="grid grid-cols-2 gap-2">
@@ -1429,10 +1521,18 @@ export const AlprTrainingStation: React.FC<AlprTrainingStationProps> = ({
                 {/* BOTÓN RECHAZAR O CORREGIR */}
                 <button
                   onClick={handleAbrirCorreccion}
-                  className="py-3 px-3 rounded-xl font-bold text-xs bg-rose-600/20 hover:bg-rose-600/30 border border-rose-500/50 text-rose-300 flex items-center justify-center gap-2 shadow-lg hover:scale-[1.02] cursor-pointer transition-all"
+                  className={`py-3 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-lg transition-all cursor-pointer ${
+                    isValidationFrozen && !(lockedPlate || detectedPlate)
+                      ? 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white shadow-indigo-900/50 ring-2 ring-indigo-400'
+                      : 'bg-rose-600/20 hover:bg-rose-600/30 border border-rose-500/50 text-rose-300 hover:scale-[1.02]'
+                  }`}
                 >
                   <XCircle className="w-4 h-4" />
-                  <span>RECHAZAR / CORREGIR</span>
+                  <span>
+                    {isValidationFrozen && !(lockedPlate || detectedPlate)
+                      ? '✏️ ESCRIBIR PLACA / CORREGIR'
+                      : 'RECHAZAR / CORREGIR'}
+                  </span>
                 </button>
               </div>
             </div>

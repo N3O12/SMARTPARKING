@@ -44,11 +44,11 @@ async function getOcrWorker(): Promise<Worker> {
 
   isInitializingWorker = true;
   try {
-    console.log('%c[ALPR PERÚ] Inicializando motor OCR con tipografía FE-Schrift...', 'color: #38bdf8; font-weight: bold;');
+    console.log('%c[ALPR PERÚ] Inicializando motor OCR con tipografía FE-Schrift y soporte de escritura...', 'color: #38bdf8; font-weight: bold;');
     const worker = await createWorker('eng');
     await worker.setParameters({
       tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789- ',
-      tessedit_pageseg_mode: '6' as any, // Tratar como bloque uniforme de texto (soporta cabecera PERU + caracteres)
+      tessedit_pageseg_mode: '11' as any, // Sparse text: encuentra texto aislado en cualquier lugar de la hoja o auto
     });
     ocrWorker = worker;
     console.log('%c[ALPR PERÚ] Motor listo y validado.', 'color: #34d399; font-weight: bold;');
@@ -231,6 +231,48 @@ export function aplicarClausuraYBinarizacion(
   return canvas;
 }
 
+/**
+ * Realce especializado de tinta de lapicero azul o negro sobre hojas de cuaderno/papel:
+ * La tinta absorbe fuertemente el espectro rojo, mientras que el papel blanco/crema y las líneas
+ * celestes de los cuadernos reflejan alto rojo. Al filtrar por el canal rojo y estirar el contraste,
+ * las líneas celestes del cuaderno desaparecen y la escritura manuscrita queda ultranítida.
+ */
+export function realzarTintaLapiceroEnPapel(inputCanvas: HTMLCanvasElement): HTMLCanvasElement {
+  const canvas = document.createElement('canvas');
+  canvas.width = inputCanvas.width;
+  canvas.height = inputCanvas.height;
+
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  if (!ctx) return inputCanvas;
+
+  ctx.drawImage(inputCanvas, 0, 0);
+  const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const d = imgData.data;
+
+  // Analizar canal Rojo
+  let minR = 255;
+  let maxR = 0;
+  for (let i = 0; i < d.length; i += 4) {
+    const r = d[i];
+    if (r < minR) minR = r;
+    if (r > maxR) maxR = r;
+  }
+
+  const range = Math.max(1, maxR - minR);
+  // Estirar contraste y umbralizar
+  for (let i = 0; i < d.length; i += 4) {
+    const norm = ((d[i] - minR) / range) * 255;
+    // Tinta oscura hacia 0, fondos y líneas de hoja hacia 255
+    const val = norm < 125 ? 0 : 255;
+    d[i] = val;
+    d[i + 1] = val;
+    d[i + 2] = val;
+  }
+
+  ctx.putImageData(imgData, 0, 0);
+  return canvas;
+}
+
 export interface ResultadoOCRReal {
   placa: string;
   confianza: number;
@@ -294,7 +336,8 @@ export async function reconocerPlacaReal(
     // Ráfaga de segmentaciones (TODA LA FOTO primero para captar hojas escritas en cualquier posición)
     const intentos: Array<{ canvas: HTMLCanvasElement; desc: string }> = [
       { canvas: baseCanvas, desc: 'Toda la Foto (Natural)' },
-      { canvas: aplicarClausuraYBinarizacion(baseCanvas, false), desc: 'Toda la Foto (Alto Contraste / Hoja Papel)' },
+      { canvas: realzarTintaLapiceroEnPapel(baseCanvas), desc: 'Toda la Foto (Realce Tinta/Lapicero)' },
+      { canvas: aplicarClausuraYBinarizacion(baseCanvas, false), desc: 'Toda la Foto (Alto Contraste)' },
       { canvas: recortarZonaCaracteres(baseCanvas, true), desc: 'Recorte Inferior (Parachoques)' },
     ];
 
@@ -353,7 +396,7 @@ export async function reconocerPlacaReal(
           break;
         }
 
-        // Buscar pares adyacentes de palabras (ej. "W2U" y "792")
+        // Buscar pares adyacentes de palabras (ej. "206" y "37F")
         if (w < words.length - 1) {
           const pair = `${words[w].text} ${words[w + 1].text}`;
           const foundPair = buscarSecuenciasPlacaEnTexto(pair);
@@ -386,10 +429,28 @@ export async function reconocerPlacaReal(
         mejorTextoCrudo = foundGlobal[0].textoMatch;
         mejorConfianza = Math.max(conf, 78);
         mejorMetodo = `${intento.desc} (Texto Global)`;
-        // Cuadro centrado por defecto si no hubo coordenadas precisas
-        const cw = intento.canvas.width;
-        const ch = intento.canvas.height;
-        mejorBbox = [Math.round(cw * 0.15), Math.round(ch * 0.25), Math.round(cw * 0.85), Math.round(ch * 0.75)];
+
+        // Extraer la caja delimitadora real analizando las palabras que componen la placa detectada
+        const targetClean = mejorPlaca.replace(/[^A-Z0-9]/g, '');
+        const matchedBoxes: Array<{ x0: number; y0: number; x1: number; y1: number }> = [];
+        for (const wd of words) {
+          const wClean = (wd.text || '').replace(/[^A-Z0-9]/g, '');
+          if (wClean.length >= 2 && targetClean.includes(wClean)) {
+            if (wd.bbox) matchedBoxes.push(wd.bbox);
+          }
+        }
+
+        if (matchedBoxes.length > 0) {
+          mejorBbox = [
+            Math.max(0, Math.round(Math.min(...matchedBoxes.map((b) => b.x0)))),
+            Math.max(0, Math.round(Math.min(...matchedBoxes.map((b) => b.y0)))),
+            Math.min(intento.canvas.width, Math.round(Math.max(...matchedBoxes.map((b) => b.x1)))),
+            Math.min(intento.canvas.height, Math.round(Math.max(...matchedBoxes.map((b) => b.y1)))),
+          ];
+        } else {
+          // No inventar cajas ficticias sobre el lapicero ni sobre bordes aleatorios
+          mejorBbox = undefined;
+        }
         break;
       }
     }

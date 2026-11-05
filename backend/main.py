@@ -150,20 +150,68 @@ PALABRAS_PROHIBIDAS_UI = {
     "WWW", "ANDROID", "GOOGLE", "FIREFOX", "CHROME", "CAMERA", "BATTERY", "WIFI"
 }
 
-LETRAS_INICIALES_VALIDAS_MTC = set("ABCDEFHLMPSTUVWXYZ")
+LETRAS_INICIALES_VALIDAS_MTC = set("ABCDEFHLMPSTUVWXYZ123456789")
+PRIMEROS_CARACTERES_PROHIBIDOS = set("0OQIÑ")
+
+def es_placa_valida_py(cand: str) -> bool:
+    """Valida estrictamente los 4 formatos legales peruanos (MTC) rechazando ruidos como S2S-J8E"""
+    if not cand:
+        return False
+    s = re.sub(r'[^A-Z0-9]', '', cand.upper())
+    if len(s) != 6:
+        return False
+    if s[0] in PRIMEROS_CARACTERES_PROHIBIDOS or s[0] not in LETRAS_INICIALES_VALIDAS_MTC:
+        return False
+    num_dig = sum(c.isdigit() for c in s)
+    if num_dig < 2:
+        return False
+
+    # Formato 1: Autos estándar y camionetas (3 alfanuméricos + 3 dígitos)
+    # Ejemplos: W2U-792, ABC-123, X71-962, AEF-710, 206-371
+    if re.match(r'^[A-Z0-9]{3}[0-9]{3}$', s):
+        return True
+
+    # Formato 2: Motocicletas y trimóviles MTC (3 alfanuméricos + 2 dígitos + 1 letra)
+    # Ejemplos: 206-37F, 123-45M, 456-78A
+    if re.match(r'^[A-Z0-9]{3}[0-9]{2}[A-Z]$', s):
+        return True
+
+    # Formato 3: Autos modernos combinados (3 alfanuméricos + 1 letra + 2 dígitos)
+    # Ejemplos: ABC-X45, F5U-B12
+    if re.match(r'^[A-Z0-9]{3}[A-Z][0-9]{2}$', s):
+        return True
+
+    # Formato 4: Motocicletas 2+4 (2 alfanuméricos + 4 dígitos)
+    # Ejemplos: 20-6371, AB-1234
+    if re.match(r'^[A-Z0-9]{2}[0-9]{4}$', s):
+        return True
+
+    return False
 
 def corregir_fe_schrift_posicional(s: str) -> str:
     """Corrige confusiones OCR en matrículas peruanas según su posición oficial MTC"""
     if len(s) != 6:
         return s
     chars = list(s)
-    # Posición 0: siempre letra geográfica (A, B, C, D, F, H, L, M, P, S, T, U, V, W, X, Y, Z)
-    p0_map = {'0': 'O', '1': 'I', '8': 'B', '5': 'S', '2': 'Z'}
+
+    # Si es formato de moto/trimóvil con letra final (ej. 206-37F):
+    # Los caracteres iniciales numéricos son válidos
+    if chars[5].isalpha() and (chars[3].isdigit() or chars[3] in 'OQD') and (chars[4].isdigit() or chars[4] in 'OQD'):
+        p_num_map = {'O': '0', 'Q': '0', 'D': '0', 'I': '1', 'L': '1', 'Z': '2', 'B': '8', 'S': '5', 'G': '6'}
+        if chars[3] in p_num_map:
+            chars[3] = p_num_map[chars[3]]
+        if chars[4] in p_num_map:
+            chars[4] = p_num_map[chars[4]]
+        return "".join(chars)
+
+    # Posición 0: si es letra geográfica (ej. W2U-792, ABC-123)
+    p0_map = {'0': 'O', '1': 'I', '8': 'B', '5': 'S'}
     if chars[0] in p0_map:
         chars[0] = p0_map[chars[0]]
-    if chars[0] not in LETRAS_INICIALES_VALIDAS_MTC:
+    if chars[0] in PRIMEROS_CARACTERES_PROHIBIDOS or chars[0] not in LETRAS_INICIALES_VALIDAS_MTC:
         return ""
-    # Posición 4 y 5: siempre dígitos en placas peruanas de 6 caracteres
+
+    # Posición 4 y 5: siempre dígitos en placas estándar de 6 caracteres
     p_num_map = {'O': '0', 'Q': '0', 'D': '0', 'I': '1', 'L': '1', 'Z': '2', 'B': '8', 'S': '5', 'G': '6'}
     if chars[4] in p_num_map:
         chars[4] = p_num_map[chars[4]]
@@ -177,10 +225,10 @@ def corregir_fe_schrift_posicional(s: str) -> str:
 def limpiar_texto_placa(texto: str) -> str:
     """
     Normaliza y extrae un patrón estricto de matrícula vehicular peruana (MTC):
-    - Estándar autos y camionetas: 3 alfanuméricos + 3 dígitos (ej: W2U-792, ABC-123, A1B-234, X71-962, AEF-710)
-    - Motos / Especiales: 2 alfanuméricos + 4 dígitos (ej: AB-1234, 12-3456)
-    - Filtra 'PERU', 'PERÚ', 'MTC' impresos en la parte superior de las placas oficiales
-    - Descarta ruidos de interfaz web o cadenas sin dígitos
+    - Estándar autos y camionetas: 3 alfanuméricos + 3 dígitos (ej: W2U-792, ABC-123, A1B-234, X71-962, AEF-710, 206-371)
+    - Motos y trimóviles: 3 alfanuméricos + 2 dígitos + 1 letra (ej: 206-37F, 123-45M)
+    - Motos serie 2+4: 2 alfanuméricos + 4 dígitos (ej: 20-6371, AB-1234)
+    - Descarta alucinaciones y ruidos de interfaz
     """
     if not texto:
         return ""
@@ -193,50 +241,51 @@ def limpiar_texto_placa(texto: str) -> str:
     # 2. Remover cabeceras oficiales impresas en la chapa (ej. "PERU", "MTC")
     t = re.sub(r'\b(PERU|PERÚ|MTC|AUTO|TAXI|CHILE)\b', '', texto.upper())
 
-    # 2.B Si los caracteres fueron escritos a mano en una hoja separados por espacios (ej. "W 2 U - 7 9 2" o "A 1 A 1 2 3")
+    # 3. Buscar si tiene formato con guión explícito o espacio (ej: "206-37F", "W2U-792", "20-6371")
+    match_guion = re.search(r'\b([A-Z0-9]{3})\s*[-_.:/ ]\s*([A-Z0-9]{3})\b', t)
+    if match_guion:
+        cand = match_guion.group(1) + match_guion.group(2)
+        if es_placa_valida_py(cand):
+            return f"{match_guion.group(1)}-{match_guion.group(2)}"
+        cand_corr = corregir_fe_schrift_posicional(cand)
+        if es_placa_valida_py(cand_corr):
+            return f"{cand_corr[:3]}-{cand_corr[3:]}"
+
+    match_moto = re.search(r'\b([A-Z0-9]{2})\s*[-_.:/ ]\s*([0-9]{4})\b', t)
+    if match_moto:
+        cand = match_moto.group(1) + match_moto.group(2)
+        if es_placa_valida_py(cand):
+            return f"{match_moto.group(1)}-{match_moto.group(2)}"
+
+    # 4. Si los caracteres fueron escritos a mano en una hoja separados por espacios (ej. "2 0 6 - 3 7 F" o "W 2 U - 7 9 2")
     match_espaciado = re.search(r'\b([A-Z0-9])\s+([A-Z0-9])\s+([A-Z0-9])\s*[\s\-_.:/]?\s*([A-Z0-9])\s+([A-Z0-9])\s+([A-Z0-9])\b', t)
     if match_espaciado:
         raw_esp = "".join(match_espaciado.groups())
+        if es_placa_valida_py(raw_esp):
+            return f"{raw_esp[:3]}-{raw_esp[3:]}"
         cand_esp = corregir_fe_schrift_posicional(raw_esp)
-        if cand_esp and len(cand_esp) == 6:
-            p1, p2 = cand_esp[:3], cand_esp[3:]
-            num_dig = sum(c.isdigit() for c in cand_esp)
-            if num_dig >= 2 and p1 not in ("000", "OOO"):
-                return f"{p1}-{p2}"
+        if es_placa_valida_py(cand_esp):
+            return f"{cand_esp[:3]}-{cand_esp[3:]}"
 
     limpio = re.sub(r'[^A-Z0-9]', '', t)
     limpio = limpio.replace("PERU", "").replace("PERÚ", "").replace("MTC", "")
 
-    if len(limpio) < 5:
-        return ""
-
-    # 3. Extraer candidatos de 6 caracteres con corrección FE-Schrift
-    candidatos_raw = []
     if len(limpio) == 6:
-        candidatos_raw.append(limpio)
-    elif len(limpio) > 6:
+        if es_placa_valida_py(limpio):
+            return f"{limpio[:3]}-{limpio[3:]}"
+        cand_corr = corregir_fe_schrift_posicional(limpio)
+        if es_placa_valida_py(cand_corr):
+            return f"{cand_corr[:3]}-{cand_corr[3:]}"
+
+    # Si tiene más de 6 caracteres, buscar subsecuencia que sea placa válida
+    if len(limpio) > 6:
         for i in range(len(limpio) - 5):
-            candidatos_raw.append(limpio[i:i+6])
-
-    for cand in candidatos_raw:
-        cand_corregido = corregir_fe_schrift_posicional(cand)
-        if cand_corregido and len(cand_corregido) == 6:
-            p1, p2 = cand_corregido[:3], cand_corregido[3:]
-            num_digitos = sum(c.isdigit() for c in cand_corregido)
-            if num_digitos >= 2 and p1 not in ("000", "OOO"):
-                return f"{p1}-{p2}"
-
-    # 4. Formato estándar MTC directo: 3 alfanuméricos + 3 dígitos (ej. W2U-792, A1B-234)
-    match_std = re.search(r'([A-Z0-9]{3})([0-9]{3})', limpio)
-    if match_std:
-        p1, p2 = match_std.group(1), match_std.group(2)
-        if p1 not in ("000", "OOO") and p1[0] in LETRAS_INICIALES_VALIDAS_MTC:
-            return f"{p1}-{p2}"
-
-    # 5. Formato moto/especial: 2 alfanuméricos + 4 dígitos (ej. AB-1234)
-    match_moto = re.search(r'([A-Z0-9]{2})([0-9]{4})', limpio)
-    if match_moto:
-        return f"{match_moto.group(1)}-{match_moto.group(2)}"
+            sub = limpio[i:i+6]
+            if es_placa_valida_py(sub):
+                return f"{sub[:3]}-{sub[3:]}"
+            cand_sub = corregir_fe_schrift_posicional(sub)
+            if es_placa_valida_py(cand_sub):
+                return f"{cand_sub[:3]}-{cand_sub[3:]}"
 
     return ""
 
@@ -481,8 +530,7 @@ def preprocesar_y_leer_placa(img: np.ndarray) -> dict:
     if reader is not None:
         try:
             if es_escena_completa:
-                # Si no se aisló un vehículo con YOLO (ej: usuario muestra placa en hoja de papel o cuaderno):
-                # Escanear TODA LA FOTO buscando la secuencia de matrícula
+                # 1. Escanear foto original
                 res_full = reader.readtext(
                     img,
                     allowlist='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789- ',
@@ -491,6 +539,21 @@ def preprocesar_y_leer_placa(img: np.ndarray) -> dict:
                     batch_size=1
                 )
                 candidatos = extraer_candidatos_ocr(res_full, min_conf=0.15)
+
+                # 2. Si no encontró placa, probar con realce de tinta sobre papel (aislar canal rojo para borrar rayas de cuaderno)
+                if not candidatos:
+                    canal_rojo = img[:, :, 2]
+                    rojo_norm = cv2.normalize(canal_rojo, None, 0, 255, cv2.NORM_MINMAX)
+                    _, rojo_bin = cv2.threshold(rojo_norm, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+                    res_tinta = reader.readtext(
+                        rojo_bin,
+                        allowlist='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789- ',
+                        detail=1,
+                        paragraph=False,
+                        batch_size=1
+                    )
+                    candidatos = extraer_candidatos_ocr(res_tinta, min_conf=0.15)
+
                 if candidatos:
                     candidatos.sort(key=lambda x: x[1], reverse=True)
                     texto_detectado = candidatos[0][0]

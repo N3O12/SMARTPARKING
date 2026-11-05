@@ -46,13 +46,17 @@ export const CAJONES_INICIALES: CajonEstado[] = [
 ];
 
 /** Letras iniciales oficiales permitidas para la zona geográfica y serie */
+/** Letras y caracteres iniciales oficiales permitidos (Zona geográfica o series de motos MTC) */
 export const LETRAS_INICIALES_VALIDAS = new Set([
-  'A', 'B', 'C', 'D', 'F', 'H', 'L', 'M', 'P', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'
+  'A', 'B', 'C', 'D', 'E', 'F', 'H', 'L', 'M', 'P', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
+  '1', '2', '3', '4', '5', '6', '7', '8', '9'
 ]);
 
-/** Letras y caracteres inválidos en primera posición */
+export const CARACTERES_INICIALES_VALIDOS = LETRAS_INICIALES_VALIDAS;
+
+/** Letras y caracteres estrictamente prohibidos en primera posición según MTC */
 export const PRIMEROS_CARACTERES_INVALIDOS = new Set([
-  '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'O', 'Q', 'I', 'Ñ'
+  '0', 'O', 'Q', 'I', 'Ñ'
 ]);
 
 /**
@@ -87,62 +91,15 @@ export function corregirCaracterSegunPosicion(
 }
 
 /**
- * Limpia y normaliza una matrícula aplicando los 3 formatos peruanos autorizados:
- * 1. Autos Estándar: LLL-NNN (ej. X71-962 -> X71-962 o ABC-123)
- * 2. Autos Modernos: LLL-LNN (ej. ABC-X45)
- * 3. Motos: LL-NNNN o 6 caracteres (ej. AB-1234)
- */
-export function normalizarPlaca(texto: string): string {
-  if (!texto) return '';
-
-  // 1. Omitir deliberadamente palabras fijas de cabeceras oficiales y ruidos comunes
-  let limpio = texto
-    .toUpperCase()
-    .replace(/PERU|PERÚ|CHILE|AUTO|STOP|TAXI|MTC/g, '')
-    .replace(/[^A-Z0-9]/g, '');
-
-  if (limpio.length < 5) return '';
-
-  // 2. Si tiene más de 6 caracteres (ej. "PERUW2U792" o ruidos pegados), buscar subsecuencia válida de 6 caracteres
-  if (limpio.length > 6) {
-    let subValida = '';
-    for (let i = 0; i <= limpio.length - 6; i++) {
-      const sub = limpio.slice(i, i + 6);
-      if (LETRAS_INICIALES_VALIDAS.has(sub[0]) && !PRIMEROS_CARACTERES_INVALIDOS.has(sub[0])) {
-        // Verificar que tenga al menos 2 dígitos para evitar falsos positivos
-        const numDigitos = (sub.match(/[0-9]/g) || []).length;
-        if (numDigitos >= 2) {
-          subValida = sub;
-          break;
-        }
-      }
-    }
-    limpio = subValida || limpio.slice(0, 6);
-  }
-
-  // 3. Validación de primer carácter
-  const primerChar = limpio[0];
-  if (PRIMEROS_CARACTERES_INVALIDOS.has(primerChar) || !LETRAS_INICIALES_VALIDAS.has(primerChar)) {
-    return '';
-  }
-
-  if (limpio.length === 6) {
-    // Verificar que contenga al menos 2 números (evita palabras como COOWCM)
-    const digitos = (limpio.match(/[0-9]/g) || []).length;
-    if (digitos < 2) return '';
-
-    return `${limpio.slice(0, 3)}-${limpio.slice(3, 6)}`;
-  }
-
-  return '';
-}
-
-/**
- * Valida si una placa cumple con cualquiera de las estructuras legales peruanas (MTC)
- * - Autos y camionetas estándar: ABC-123, AEF-710 (3 letras + 3 dígitos)
- * - Camionetas, taxis y comerciales: W2U-792, A1A-123, T1A-123, F5U-597, A1B-234, X71-962 (1 letra inicial + 2 alfanuméricos + 3 dígitos)
- * - Autos modernos combinados: ABC-X45 (3 letras + 1 letra + 2 dígitos)
- * - Motos: AB-1234 (2 alfanuméricos + 4 dígitos)
+ * Valida si una placa cumple estrictamente con cualquiera de las estructuras legales peruanas (MTC):
+ * 1. Autos y camionetas estándar: 3 alfanuméricos + 3 dígitos (ej. ABC-123, W2U-792, A1A-123, X71-962, AEF-710, 206-371)
+ * 2. Motos y trimóviles (L1-L5 MTC): 3 alfanuméricos + 2 dígitos + 1 letra (ej. 206-37F, 123-45M, 456-78A)
+ * 3. Autos modernos combinados: 3 alfanuméricos + 1 letra + 2 dígitos (ej. ABC-X45, ABC-F12)
+ * 4. Motocicletas serie 2+4: 2 alfanuméricos + 4 dígitos (ej. 20-6371, AB-1234, 12-3456)
+ *
+ * NOTA CRÍTICA ANTI-ALUCINACIÓN:
+ * Se rechazan categóricamente sufijos espurios de ruido OCR como "J8E" (letra-número-letra),
+ * "WCM" (3 letras), o cualquier cadena sin la combinación numérica oficial.
  */
 export function esPlacaValida(placa: string): boolean {
   if (!placa) return false;
@@ -150,36 +107,124 @@ export function esPlacaValida(placa: string): boolean {
   if (sinGuion.length !== 6) return false;
 
   const primerChar = sinGuion[0];
-  if (!LETRAS_INICIALES_VALIDAS.has(primerChar) || PRIMEROS_CARACTERES_INVALIDOS.has(primerChar)) {
+  if (PRIMEROS_CARACTERES_INVALIDOS.has(primerChar) || !CARACTERES_INICIALES_VALIDOS.has(primerChar)) {
     return false;
   }
 
-  // Descartar cadenas compuestas solo por letras (ej: COO-WCM o palabras)
+  // 1. Descartar cadenas sin al menos 2 dígitos reales (evita palabras como COO-WCM o títulos web)
   const numDigitos = (sinGuion.match(/[0-9]/g) || []).length;
   if (numDigitos < 2) return false;
 
-  // Regex 1: Autos estándar particulares (3 letras + 3 números)
-  const regexAutoEstandar = /^[A-Z]{3}-?[0-9]{3}$/;
-  // Regex 2: Camionetas, pick-ups, taxis y comerciales peruanos (ej. W2U-792, A1A-123, X71-962)
-  const regexComercial = /^[A-Z][A-Z0-9]{2}-?[0-9]{3}$/;
-  // Regex 3: Autos modernos combinados (3 letras + 1 letra + 2 números)
-  const regexAutoModerno = /^[A-Z]{3}-?[A-Z][0-9]{2}$/;
-  // Regex 4: Motocicletas y vehículos menores (2 alfanuméricos + 4 números)
-  const regexMoto = /^[A-Z0-9]{2}-?[0-9]{4}$/;
-  // Regex 5: Regla general MTC: 1 letra inicial válida + 5 caracteres con al menos 2 números
-  const regexGeneral = /^[A-Z][A-Z0-9]{2}-?[A-Z0-9]{3}$/;
+  // Formato 1: Autos estándar, camionetas y comerciales (3 alfanuméricos + 3 dígitos)
+  // Ejemplos: W2U-792, ABC-123, X71-962, AEF-710, A1B-234, 206-371
+  const regexAutoEstandar = /^[A-Z0-9]{3}-?[0-9]{3}$/;
+
+  // Formato 2: Motocicletas y trimóviles MTC (3 alfanuméricos + 2 dígitos + 1 letra)
+  // Ejemplos: 206-37F, 123-45M, 456-78A, A12-34B
+  const regexMotoMTC = /^[A-Z0-9]{3}-?[0-9]{2}[A-Z]$/;
+
+  // Formato 3: Autos modernos combinados (3 alfanuméricos + 1 letra + 2 dígitos)
+  // Ejemplos: ABC-X45, F5U-B12
+  const regexAutoModerno = /^[A-Z0-9]{3}-?[A-Z][0-9]{2}$/;
+
+  // Formato 4: Motocicletas serie 2+4 (2 alfanuméricos + 4 dígitos)
+  // Ejemplos: 20-6371, AB-1234, 12-3456
+  const regexMoto2Plus4 = /^[A-Z0-9]{2}-?[0-9]{4}$/;
 
   return (
     regexAutoEstandar.test(placa) ||
-    regexComercial.test(placa) ||
-    regexAutoModerno.test(placa) ||
-    regexMoto.test(placa) ||
     regexAutoEstandar.test(sinGuion) ||
-    regexComercial.test(sinGuion) ||
+    regexMotoMTC.test(placa) ||
+    regexMotoMTC.test(sinGuion) ||
+    regexAutoModerno.test(placa) ||
     regexAutoModerno.test(sinGuion) ||
-    regexMoto.test(sinGuion) ||
-    (regexGeneral.test(sinGuion) && numDigitos >= 2)
+    regexMoto2Plus4.test(placa) ||
+    regexMoto2Plus4.test(sinGuion)
   );
+}
+
+/**
+ * Limpia y normaliza una matrícula aplicando los formatos peruanos autorizados (MTC):
+ * 1. Autos Estándar / Comerciales: LLL-NNN o LNL-NNN (ej. X71-962, W2U-792, ABC-123)
+ * 2. Motos / Trimóviles MTC: NNN-NNL (ej. 206-37F, 123-45M)
+ * 3. Autos Modernos: LLL-LNN (ej. ABC-X45)
+ * 4. Motos clásicas: LL-NNNN o NN-NNNN (ej. 20-6371, AB-1234)
+ */
+export function normalizarPlaca(texto: string): string {
+  if (!texto) return '';
+
+  // 1. Omitir palabras fijas de cabeceras oficiales y ruidos comunes
+  let limpio = texto
+    .toUpperCase()
+    .replace(/PERU|PERÚ|CHILE|AUTO|STOP|TAXI|MTC/g, '')
+    .replace(/[^A-Z0-9]/g, '');
+
+  if (limpio.length < 5) return '';
+
+  // 2. Si tiene exactamente 6 caracteres
+  if (limpio.length === 6) {
+    const c0 = limpio[0];
+    if (PRIMEROS_CARACTERES_INVALIDOS.has(c0) || !CARACTERES_INICIALES_VALIDOS.has(c0)) {
+      return '';
+    }
+
+    // Formato 3+3 (Autos, camionetas o motos 3+3 ej. 206-37F, W2U-792)
+    const p1 = limpio.slice(0, 3);
+    const p2 = limpio.slice(3, 6);
+    const conGuion = `${p1}-${p2}`;
+
+    if (esPlacaValida(conGuion)) {
+      return conGuion;
+    }
+
+    // Formato 2+4 (Motos ej. 20-6371)
+    const conGuionMoto = `${limpio.slice(0, 2)}-${limpio.slice(2, 6)}`;
+    if (esPlacaValida(conGuionMoto)) {
+      return conGuionMoto;
+    }
+
+    // Corrección adaptativa de confusiones OCR frecuentes (O->0, I->1, B->8 en zonas numéricas)
+    // Intento A: Sufijo numérico (ej. W2U-792 o 206-371)
+    const p2Num = p2
+      .replace(/[OQD]/g, '0')
+      .replace(/[IL]/g, '1')
+      .replace(/B/g, '8')
+      .replace(/S/g, '5')
+      .replace(/Z/g, '2')
+      .replace(/G/g, '6');
+    const candA = `${p1}-${p2Num}`;
+    if (esPlacaValida(candA)) {
+      return candA;
+    }
+
+    // Intento B: Sufijo de moto con letra final (ej. 206-37F)
+    const p2Moto =
+      p2.slice(0, 2)
+        .replace(/[OQD]/g, '0')
+        .replace(/[IL]/g, '1')
+        .replace(/B/g, '8')
+        .replace(/S/g, '5')
+        .replace(/Z/g, '2') + p2.slice(2);
+    const candB = `${p1}-${p2Moto}`;
+    if (esPlacaValida(candB)) {
+      return candB;
+    }
+
+    return '';
+  }
+
+  // 3. Si tiene más de 6 caracteres (ej. "PERUW2U792" o ruidos pegados), buscar subsecuencia válida
+  if (limpio.length > 6) {
+    for (let i = 0; i <= limpio.length - 6; i++) {
+      const sub = limpio.slice(i, i + 6);
+      const res = normalizarPlaca(sub);
+      if (res && esPlacaValida(res)) {
+        return res;
+      }
+    }
+  }
+
+  return '';
 }
 
 /**

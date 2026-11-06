@@ -259,23 +259,26 @@ class ParkingApiService {
           const data = await res.json();
           const rawConf = typeof data.confianza === 'number' ? data.confianza : 0.90;
           const confPercent = rawConf <= 1.0 ? Math.round(rawConf * 100) : Math.round(rawConf);
-          return {
-            placa: normalizarPlaca(data.placa || ''),
-            confianza: confPercent,
-            bbox: data.bbox || [80, 120, 320, 220],
-            frame_width: data.frame_width,
-            frame_height: data.frame_height,
-            metodo: data.metodo || 'YOLOv8 + EasyOCR',
-            exito: Boolean(data.exito ?? (data.placa && data.placa.length >= 4)),
-            textoCrudo: data.texto_crudo || data.placa || '',
-          };
+          const placaBackend = normalizarPlaca(data.placa || '');
+          if (placaBackend) {
+            return {
+              placa: placaBackend,
+              confianza: confPercent,
+              bbox: data.bbox,
+              frame_width: data.frame_width,
+              frame_height: data.frame_height,
+              metodo: data.metodo || 'YOLOv8 + EasyOCR',
+              exito: true,
+              textoCrudo: data.texto_crudo || data.placa || '',
+            };
+          }
         }
       } catch {
         this.isBackendOnline = false;
       }
     }
 
-    // Modo Local: Motor de OCR Real sobre el frame de la cámara o imagen
+    // Modo Local o Respaldo Multi-Escenario (Escritura en Hoja / Pantallas / Vehículo):
     if (imageBase64 && imageBase64.startsWith('data:image')) {
       try {
         const img = new Image();
@@ -287,10 +290,14 @@ class ParkingApiService {
 
         const resReal = await reconocerPlacaReal(img);
         if (resReal.exito && resReal.placa) {
+          const confPercent =
+            resReal.confianza <= 1.0
+              ? Math.round(resReal.confianza * 100)
+              : Math.round(resReal.confianza);
           return {
             placa: resReal.placa,
-            confianza: resReal.confianza,
-            bbox: [60, 90, 340, 210],
+            confianza: confPercent,
+            bbox: resReal.bbox,
             metodo: resReal.metodo,
             exito: true,
             textoCrudo: resReal.textoCrudo,

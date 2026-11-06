@@ -194,10 +194,16 @@ def corregir_fe_schrift_posicional(s: str) -> str:
         return s
     chars = list(s)
 
-    # Si es formato de moto/trimóvil con letra final (ej. 206-37F):
-    # Los caracteres iniciales numéricos son válidos
-    if chars[5].isalpha() and (chars[3].isdigit() or chars[3] in 'OQD') and (chars[4].isdigit() or chars[4] in 'OQD'):
+    # Si es formato de moto/trimóvil con letra final (ej. 206-37F leído como 2QC-37F o 20C-37F):
+    # Las posiciones 1, 2, 3 y 4 son numéricas cuando inicia con dígito
+    if chars[5].isalpha() and (chars[3].isdigit() or chars[3] in 'OQDILZB') and (chars[4].isdigit() or chars[4] in 'OQDILZB'):
         p_num_map = {'O': '0', 'Q': '0', 'D': '0', 'I': '1', 'L': '1', 'Z': '2', 'B': '8', 'S': '5', 'G': '6'}
+        p_pos2_map = {'C': '6', 'G': '6', 'T': '6', 'O': '0', 'Q': '0', 'D': '0', 'I': '1', 'L': '1', 'Z': '2', 'B': '8', 'S': '5'}
+        if chars[0].isdigit():
+            if chars[1] in p_num_map:
+                chars[1] = p_num_map[chars[1]]
+            if chars[2] in p_pos2_map:
+                chars[2] = p_pos2_map[chars[2]]
         if chars[3] in p_num_map:
             chars[3] = p_num_map[chars[3]]
         if chars[4] in p_num_map:
@@ -602,42 +608,149 @@ def preprocesar_y_leer_placa(img: np.ndarray) -> dict:
 
     es_escena_completa = (roi_img is img or (roi_img.shape[0] == h and roi_img.shape[1] == w))
 
+    def extraer_lienzo_manuscrito_alineado_cv(frame_bgr: np.ndarray):
+        """
+        Aísla trazos de lapicero azul o negro sobre hojas de cuaderno con iluminación desigual:
+        1. Resta el fondo local en R y B (37x37) y calcula score = dR - 0.85 * dB, eliminando el 100%
+           de las rayas impresas del cuaderno y sombras de iluminación.
+        2. Localiza automáticamente la caja exacta [x1, y1, x2, y2] de la escritura.
+        3. Segmenta y alinea verticalmente los caracteres (dividiendo trazos cursivos pre-guión en 3 bloques).
+        """
+        try:
+            fh, fw = frame_bgr.shape[:2]
+            if fw < 80 or fh < 50:
+                return None, None
+            B_ch = frame_bgr[:, :, 0].astype(np.float32)
+            R_ch = frame_bgr[:, :, 2].astype(np.float32)
+
+            bg_R = cv2.boxFilter(R_ch, -1, (37, 37))
+            bg_B = cv2.boxFilter(B_ch, -1, (37, 37))
+
+            dR = bg_R - R_ch
+            dB = bg_B - B_ch
+            score = dR - 0.85 * dB
+
+            valid_paper = (B_ch >= 90) & (bg_B >= 95)
+            ink_mask = valid_paper & (((score > 2.8) & (dR > 5.0)) | ((dR > 28.0) & (dR >= 0.92 * dB)))
+            score_mat = ink_mask.astype(np.uint8)
+            # Limpiar bordes extremos
+            score_mat[:25, :] = 0
+            score_mat[fh-25:, :] = 0
+            score_mat[:, :25] = 0
+            score_mat[:, fw-25:] = 0
+
+            x_margin = min(40, int(fw * 0.08))
+            row_ink = np.sum(score_mat[:, x_margin:fw-x_margin], axis=1)
+
+            best_y1, best_y2, best_sum = 0, 0, 0
+            in_band, by1 = False, 0
+            for y_idx in range(25, fh - 25):
+                if row_ink[y_idx] >= 18 and not in_band:
+                    in_band = True
+                    by1 = y_idx
+                elif row_ink[y_idx] < 14 and in_band:
+                    in_band = False
+                    s_band = int(np.sum(row_ink[by1:y_idx]))
+                    if (y_idx - by1) >= 18 and s_band > best_sum:
+                        best_sum = s_band
+                        best_y1, best_y2 = by1, y_idx
+            if in_band and (fh - 25 - by1) >= 18:
+                s_band = int(np.sum(row_ink[by1:fh-25]))
+                if s_band > best_sum:
+                    best_y1, best_y2 = by1, fh - 25
+
+            if (best_y2 - best_y1) < 18:
+                return None, None
+
+            y1 = max(20, best_y1 - 4)
+            y2 = min(fh - 20, best_y2)
+            col_proj = np.sum(score_mat[y1:y2, :], axis=0)
+
+            cand_segs = []
+            in_seg, start_x = False, 0
+            for x_idx in range(30, fw - 30):
+                if col_proj[x_idx] >= 2 and not in_seg:
+                    in_seg = True
+                    start_x = x_idx
+                elif col_proj[x_idx] < 2 and in_seg:
+                    in_seg = False
+                    if (x_idx - start_x) >= 12:
+                        area = int(np.sum(score_mat[y1:y2, start_x:x_idx]))
+                        cand_segs.append((start_x, x_idx, area))
+
+            if not cand_segs:
+                return None, None
+
+            max_area = max(a for _, _, a in cand_segs)
+            char_indices = [i for i, (_, _, a) in enumerate(cand_segs) if a >= max(160, max_area * 0.25)]
+            if not char_indices:
+                return None, None
+
+            first_c, last_c = min(char_indices), max(char_indices)
+            raw_segs = [cand_segs[i] for i in range(first_c, last_c + 1) if cand_segs[i][2] >= 80]
+            if len(raw_segs) < 3:
+                return None, None
+
+            x1 = max(10, raw_segs[0][0] - 13)
+            x2 = min(fw - 10, raw_segs[-1][1] + 8)
+            cw, ch = x2 - x1, y2 - y1
+            if cw < 60 or ch < 18:
+                return None, None
+
+            crop_ink = score_mat[y1:y2, x1:x2]
+            kernel_dil = np.ones((3, 3), np.uint8)
+            dil = cv2.dilate(crop_ink, kernel_dil, iterations=1)
+
+            local_segs = [(s - x1, e - x1, a) for s, e, a in raw_segs]
+            hyphen_idx = -1
+            for idx, (s, e, a) in enumerate(local_segs):
+                if 0 < idx < len(local_segs) - 1 and a < max_area * 0.35 and (e - s) <= 28:
+                    hyphen_idx = idx
+                    break
+
+            segs = []
+            if hyphen_idx > 0:
+                pre_segs = local_segs[:hyphen_idx]
+                if len(pre_segs) < 3:
+                    ps, pe = pre_segs[0][0], pre_segs[-1][1]
+                    pw_tot = pe - ps
+                    segs.append((ps, ps + int(pw_tot * 0.35)))
+                    segs.append((ps + int(pw_tot * 0.35) + 1, ps + int(pw_tot * 0.66)))
+                    segs.append((ps + int(pw_tot * 0.66) + 1, pe))
+                else:
+                    segs.extend((s, e) for s, e, _ in pre_segs)
+                segs.append((local_segs[hyphen_idx][0], local_segs[hyphen_idx][1]))
+                segs.extend((s, e) for s, e, _ in local_segs[hyphen_idx+1:])
+            else:
+                segs = [(s, e) for s, e, _ in local_segs]
+
+            total_w = 40 + sum((e - s) + 20 for s, e in segs) + 20
+            total_h = ch + 40
+            comb_img = np.full((total_h, total_w, 3), 255, dtype=np.uint8)
+            cur_x = 30
+            for s, e in segs:
+                s_clamped = max(0, min(cw - 1, s))
+                e_clamped = max(s_clamped + 1, min(cw, e))
+                sub = dil[:, s_clamped:e_clamped]
+                ys_nz = np.where(np.any(sub > 0, axis=1))[0]
+                if len(ys_nz) == 0:
+                    continue
+                sy1, sy2 = int(ys_nz[0]), int(ys_nz[-1]) + 1
+                sw, sh = e_clamped - s_clamped, sy2 - sy1
+                y_off = (total_h - sh) // 2
+                mask_sub = sub[sy1:sy2, :] > 0
+                comb_img[y_off:y_off+sh, cur_x:cur_x+sw][mask_sub] = [0, 0, 0]
+                cur_x += sw + 20
+
+            return comb_img, [x1, y1, x2, y2]
+        except Exception as e:
+            logger.warning(f"Aviso en aislamiento cromático de tinta: {e}")
+            return None, None
+
     if reader is not None:
         try:
-            if es_escena_completa:
-                # 1. Escanear foto original
-                res_full = reader.readtext(
-                    img,
-                    allowlist='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789- ',
-                    detail=1,
-                    paragraph=False,
-                    batch_size=1
-                )
-                candidatos = extraer_candidatos_ocr(res_full, min_conf=0.15)
-
-                # 2. Si no encontró placa, probar con realce de tinta sobre papel (aislar canal rojo para borrar rayas de cuaderno)
-                if not candidatos:
-                    canal_rojo = img[:, :, 2]
-                    rojo_norm = cv2.normalize(canal_rojo, None, 0, 255, cv2.NORM_MINMAX)
-                    _, rojo_bin = cv2.threshold(rojo_norm, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-                    res_tinta = reader.readtext(
-                        rojo_bin,
-                        allowlist='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789- ',
-                        detail=1,
-                        paragraph=False,
-                        batch_size=1
-                    )
-                    candidatos = extraer_candidatos_ocr(res_tinta, min_conf=0.15)
-
-                if candidatos:
-                    candidatos.sort(key=lambda x: x[1], reverse=True)
-                    texto_detectado = candidatos[0][0]
-                    confianza = candidatos[0][1]
-                    if candidatos[0][2]:
-                        bbox_detectado = candidatos[0][2]
-                    metodo = "Secuencia en Hoja / Toda la Foto"
-            else:
-                # Caso vehículo: la región de la placa fue localizada con YOLO
+            # 1. Si YOLO o morfología propuso un recorte de vehículo, intentar leerlo primero
+            if not es_escena_completa:
                 roi_h, roi_w = roi_img.shape[:2]
                 target_h = 160
                 scale_roi = max(1.0, target_h / float(roi_h))
@@ -673,6 +786,65 @@ def preprocesar_y_leer_placa(img: np.ndarray) -> dict:
                     candidatos.sort(key=lambda x: x[1], reverse=True)
                     texto_detectado = candidatos[0][0]
                     confianza = candidatos[0][1]
+
+            # 2. RESPALDO UNIVERSAL MULTI-ESCENARIO:
+            # Si el recorte inicial no tenía una placa válida (ej. recorte falso sobre rayas de cuaderno)
+            # o estamos en escena completa, escanear aislamiento cromático de tinta y foto completa
+            if not texto_detectado:
+                lienzo_tinta, bbox_tinta = extraer_lienzo_manuscrito_alineado_cv(img)
+                candidatos_full = []
+
+                if lienzo_tinta is not None:
+                    if bbox_tinta:
+                        bbox_detectado = bbox_tinta
+                    res_alineado = reader.readtext(
+                        lienzo_tinta,
+                        allowlist='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-',
+                        detail=1,
+                        paragraph=False,
+                        batch_size=1
+                    )
+                    candidatos_full = extraer_candidatos_ocr(res_alineado, min_conf=0.10)
+                    if candidatos_full:
+                        metodo = "Escritura en Hoja (Aislamiento Cromático de Tinta)"
+
+                # Pasada sobre foto completa original si aún no hay candidatos
+                if not candidatos_full:
+                    res_full = reader.readtext(
+                        img,
+                        allowlist='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789- ',
+                        detail=1,
+                        paragraph=False,
+                        batch_size=1
+                    )
+                    candidatos_full = extraer_candidatos_ocr(res_full, min_conf=0.15)
+                    if candidatos_full:
+                        metodo = "Secuencia en Toda la Foto"
+
+                # Pasada con normalización local de iluminación (división por desenfoque gaussiano)
+                if not candidatos_full:
+                    canal_rojo = img[:, :, 2]
+                    bg_rojo = cv2.GaussianBlur(canal_rojo, (51, 51), 0)
+                    rojo_div = cv2.divide(canal_rojo, bg_rojo, scale=255)
+                    clahe = cv2.createCLAHE(clipLimit=3.5, tileGridSize=(8, 8))
+                    rojo_eq = clahe.apply(rojo_div)
+                    res_tinta = reader.readtext(
+                        rojo_eq,
+                        allowlist='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789- ',
+                        detail=1,
+                        paragraph=False,
+                        batch_size=1
+                    )
+                    candidatos_full = extraer_candidatos_ocr(res_tinta, min_conf=0.12)
+                    if candidatos_full:
+                        metodo = "Realce Adaptativo de Iluminación"
+
+                if candidatos_full:
+                    candidatos_full.sort(key=lambda x: x[1], reverse=True)
+                    texto_detectado = candidatos_full[0][0]
+                    confianza = max(0.85, candidatos_full[0][1])
+                    if candidatos_full[0][2] and not bbox_tinta:
+                        bbox_detectado = candidatos_full[0][2]
         except Exception as e:
             logger.warning(f"Error en OCR rápido: {e}")
 

@@ -239,38 +239,343 @@ export function aplicarClausuraYBinarizacion(
  */
 export function realzarTintaLapiceroEnPapel(inputCanvas: HTMLCanvasElement): HTMLCanvasElement {
   const canvas = document.createElement('canvas');
-  canvas.width = inputCanvas.width;
-  canvas.height = inputCanvas.height;
+  const w = inputCanvas.width;
+  const h = inputCanvas.height;
+  canvas.width = w;
+  canvas.height = h;
 
   const ctx = canvas.getContext('2d', { willReadFrequently: true });
   if (!ctx) return inputCanvas;
 
   ctx.drawImage(inputCanvas, 0, 0);
-  const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const imgData = ctx.getImageData(0, 0, w, h);
   const d = imgData.data;
 
-  // Analizar canal Rojo
-  let minR = 255;
-  let maxR = 0;
-  for (let i = 0; i < d.length; i += 4) {
-    const r = d[i];
-    if (r < minR) minR = r;
-    if (r > maxR) maxR = r;
+  const R = new Uint8Array(w * h);
+  const B = new Uint8Array(w * h);
+  for (let i = 0, j = 0; i < d.length; i += 4, j++) {
+    R[j] = d[i];
+    B[j] = d[i + 2];
   }
 
-  const range = Math.max(1, maxR - minR);
-  // Estirar contraste y umbralizar
-  for (let i = 0; i < d.length; i += 4) {
-    const norm = ((d[i] - minR) / range) * 255;
-    // Tinta oscura hacia 0, fondos y líneas de hoja hacia 255
-    const val = norm < 125 ? 0 : 255;
-    d[i] = val;
-    d[i + 1] = val;
-    d[i + 2] = val;
+  const ink = new Uint8Array(w * h);
+  const margin = 20;
+  const offsets = [-18, -9, 0, 9, 18];
+
+  for (let y = margin; y < h - margin; y++) {
+    for (let x = margin; x < w - margin; x++) {
+      const idx = y * w + x;
+      if (B[idx] < 85) continue;
+
+      let rSum = 0;
+      let bSum = 0;
+      for (let ky = 0; ky < 5; ky++) {
+        const yy = y + offsets[ky];
+        const rowOff = yy * w;
+        for (let kx = 0; kx < 5; kx++) {
+          const xx = x + offsets[kx];
+          rSum += R[rowOff + xx];
+          bSum += B[rowOff + xx];
+        }
+      }
+      const dR = rSum / 25.0 - R[idx];
+      const dB = bSum / 25.0 - B[idx];
+      const score = dR - 0.85 * dB;
+      if ((score > 2.8 && dR > 5.0) || (dR > 28.0 && dR >= 0.92 * dB)) {
+        ink[idx] = 1;
+      }
+    }
+  }
+
+  // Dilatación morfológica de 1px para consolidar trazos finos de lapicero
+  for (let y = 1; y < h - 1; y++) {
+    for (let x = 1; x < w - 1; x++) {
+      const idx = y * w + x;
+      const isInk =
+        ink[idx] ||
+        ink[idx - 1] ||
+        ink[idx + 1] ||
+        ink[idx - w] ||
+        ink[idx + w];
+      const val = isInk ? 0 : 255;
+      const p = idx * 4;
+      d[p] = val;
+      d[p + 1] = val;
+      d[p + 2] = val;
+    }
   }
 
   ctx.putImageData(imgData, 0, 0);
   return canvas;
+}
+
+/**
+ * Localiza automáticamente el bloque de escritura manuscrita sobre hojas de cuaderno/papel,
+ * suprime las líneas impresas mediante diferencia cromática local (dR - 0.85*dB) y alinea
+ * verticalmente los caracteres (separando trazos cursivos unidos antes del guión en 3 bloques).
+ */
+export function extraerLienzoManuscritoAlineado(
+  inputCanvas: HTMLCanvasElement
+): { canvas: HTMLCanvasElement; bbox?: number[] } | null {
+  const w = inputCanvas.width;
+  const h = inputCanvas.height;
+  if (w < 80 || h < 50) return null;
+
+  const ctx = inputCanvas.getContext('2d', { willReadFrequently: true });
+  if (!ctx) return null;
+
+  const d = ctx.getImageData(0, 0, w, h).data;
+  const R = new Uint8Array(w * h);
+  const B = new Uint8Array(w * h);
+  for (let i = 0, j = 0; i < d.length; i += 4, j++) {
+    R[j] = d[i];
+    B[j] = d[i + 2];
+  }
+
+  const scoreMat = new Uint8Array(w * h);
+  const offsets = [-18, -9, 0, 9, 18];
+
+  for (let y = 25; y < h - 25; y++) {
+    for (let x = 25; x < w - 25; x++) {
+      const idx = y * w + x;
+      if (
+        B[idx] < 95 ||
+        B[(y - 18) * w + (x - 18)] < 95 ||
+        B[(y + 18) * w + (x + 18)] < 95
+      ) {
+        continue;
+      }
+      let rSum = 0;
+      let bSum = 0;
+      for (let ky = 0; ky < 5; ky++) {
+        const rowOff = (y + offsets[ky]) * w;
+        for (let kx = 0; kx < 5; kx++) {
+          const pIdx = rowOff + x + offsets[kx];
+          rSum += R[pIdx];
+          bSum += B[pIdx];
+        }
+      }
+      const dR = rSum / 25.0 - R[idx];
+      const dB = bSum / 25.0 - B[idx];
+      const score = dR - 0.85 * dB;
+      if ((score > 2.8 && dR > 5.0) || (dR > 28.0 && dR >= 0.92 * dB)) {
+        scoreMat[idx] = 1;
+      }
+    }
+  }
+
+  const rowInk = new Int32Array(h);
+  const xMargin = Math.min(40, Math.floor(w * 0.08));
+  for (let y = 25; y < h - 25; y++) {
+    let s = 0;
+    const rowOff = y * w;
+    for (let x = xMargin; x < w - xMargin; x++) {
+      s += scoreMat[rowOff + x];
+    }
+    rowInk[y] = s;
+  }
+
+  let bestY1 = 0;
+  let bestY2 = 0;
+  let bestSum = 0;
+  let inBand = false;
+  let by1 = 0;
+
+  for (let y = 25; y < h - 25; y++) {
+    if (rowInk[y] >= 18 && !inBand) {
+      inBand = true;
+      by1 = y;
+    } else if (rowInk[y] < 14 && inBand) {
+      inBand = false;
+      let s = 0;
+      for (let k = by1; k < y; k++) s += rowInk[k];
+      if (y - by1 >= 18 && s > bestSum) {
+        bestSum = s;
+        bestY1 = by1;
+        bestY2 = y;
+      }
+    }
+  }
+  if (inBand && h - 25 - by1 >= 18) {
+    let s = 0;
+    for (let k = by1; k < h - 25; k++) s += rowInk[k];
+    if (s > bestSum) {
+      bestY1 = by1;
+      bestY2 = h - 25;
+    }
+  }
+
+  if (bestY2 - bestY1 < 18) return null;
+
+  const y1 = Math.max(20, bestY1 - 4);
+  const y2 = Math.min(h - 20, bestY2);
+
+  const colProj = new Int32Array(w);
+  for (let x = 30; x < w - 30; x++) {
+    let s = 0;
+    for (let y = y1; y < y2; y++) {
+      s += scoreMat[y * w + x];
+    }
+    colProj[x] = s;
+  }
+
+  const candSegs: Array<{ s: number; e: number; area: number }> = [];
+  let inSeg = false;
+  let start = 0;
+  for (let x = 30; x < w - 30; x++) {
+    if (colProj[x] >= 2 && !inSeg) {
+      inSeg = true;
+      start = x;
+    } else if (colProj[x] < 2 && inSeg) {
+      inSeg = false;
+      if (x - start >= 12) {
+        let area = 0;
+        for (let yy = y1; yy < y2; yy++) {
+          for (let xx = start; xx < x; xx++) {
+            if (scoreMat[yy * w + xx]) area++;
+          }
+        }
+        candSegs.push({ s: start, e: x, area });
+      }
+    }
+  }
+
+  if (candSegs.length === 0) return null;
+
+  const maxArea = Math.max(...candSegs.map((c) => c.area));
+  const charIndices: number[] = [];
+  candSegs.forEach((c, idx) => {
+    if (c.area >= Math.max(160, maxArea * 0.25)) {
+      charIndices.push(idx);
+    }
+  });
+
+  if (charIndices.length === 0) return null;
+
+  const firstC = Math.min(...charIndices);
+  const lastC = Math.max(...charIndices);
+  const rawSegs = candSegs
+    .slice(firstC, lastC + 1)
+    .filter((c) => c.area >= 80);
+
+  if (rawSegs.length < 3) return null;
+
+  const x1 = Math.max(10, rawSegs[0].s - 13);
+  const x2 = Math.min(w - 10, rawSegs[rawSegs.length - 1].e + 8);
+  const cw = x2 - x1;
+  const ch = y2 - y1;
+  if (cw < 60 || ch < 18) return null;
+
+  const dil = new Uint8Array(cw * ch);
+  for (let yy = 1; yy < ch - 1; yy++) {
+    for (let xx = 2; xx < cw - 2; xx++) {
+      const gx = x1 + xx;
+      const gy = y1 + yy;
+      const gIdx = gy * w + gx;
+      if (
+        scoreMat[gIdx] ||
+        scoreMat[gIdx - 1] ||
+        scoreMat[gIdx + 1] ||
+        scoreMat[gIdx - w] ||
+        scoreMat[gIdx + w] ||
+        (scoreMat[gIdx - 2] && scoreMat[gIdx + 2])
+      ) {
+        dil[yy * cw + xx] = 1;
+      }
+    }
+  }
+
+  const localSegs = rawSegs.map((c) => ({
+    s: c.s - x1,
+    e: c.e - x1,
+    area: c.area,
+  }));
+
+  let hyphenIdx = -1;
+  for (let i = 1; i < localSegs.length - 1; i++) {
+    const seg = localSegs[i];
+    if (seg.area < maxArea * 0.35 && seg.e - seg.s <= 28) {
+      hyphenIdx = i;
+      break;
+    }
+  }
+
+  const segs: Array<{ s: number; e: number }> = [];
+  if (hyphenIdx > 0) {
+    const preSegs = localSegs.slice(0, hyphenIdx);
+    if (preSegs.length < 3) {
+      const ps = preSegs[0].s;
+      const pe = preSegs[preSegs.length - 1].e;
+      const pwTot = pe - ps;
+      segs.push({ s: ps, e: ps + Math.floor(pwTot * 0.35) });
+      segs.push({
+        s: ps + Math.floor(pwTot * 0.35) + 1,
+        e: ps + Math.floor(pwTot * 0.66),
+      });
+      segs.push({ s: ps + Math.floor(pwTot * 0.66) + 1, e: pe });
+    } else {
+      preSegs.forEach((p) => segs.push({ s: p.s, e: p.e }));
+    }
+    segs.push({
+      s: localSegs[hyphenIdx].s,
+      e: localSegs[hyphenIdx].e,
+    });
+    localSegs.slice(hyphenIdx + 1).forEach((p) => segs.push({ s: p.s, e: p.e }));
+  } else {
+    localSegs.forEach((p) => segs.push({ s: p.s, e: p.e }));
+  }
+
+  const totalW =
+    40 + segs.reduce((acc, s) => acc + (s.e - s.s) + 20, 0) + 20;
+  const totalH = ch + 40;
+  const outCanvas = document.createElement('canvas');
+  outCanvas.width = totalW;
+  outCanvas.height = totalH;
+  const outCtx = outCanvas.getContext('2d', { willReadFrequently: true });
+  if (!outCtx) return null;
+
+  const outData = outCtx.createImageData(totalW, totalH);
+  const od = outData.data;
+  od.fill(255);
+
+  let curX = 30;
+  for (const seg of segs) {
+    let sy1 = ch;
+    let sy2 = 0;
+    for (let yy = 0; yy < ch; yy++) {
+      for (let xx = seg.s; xx < seg.e; xx++) {
+        if (dil[yy * cw + xx]) {
+          if (yy < sy1) sy1 = yy;
+          if (yy + 1 > sy2) sy2 = yy + 1;
+        }
+      }
+    }
+    if (sy2 <= sy1) continue;
+    const sw = seg.e - seg.s;
+    const sh = sy2 - sy1;
+    const yOff = Math.floor((totalH - sh) / 2);
+
+    for (let yy = 0; yy < totalH; yy++) {
+      const iy = yy - yOff + sy1;
+      if (iy < sy1 || iy >= sy2) continue;
+      for (let xx = 0; xx < sw; xx++) {
+        const ix = seg.s + xx;
+        if (dil[iy * cw + ix]) {
+          const p = (yy * totalW + (curX + xx)) * 4;
+          od[p] = 0;
+          od[p + 1] = 0;
+          od[p + 2] = 0;
+        }
+      }
+    }
+    curX += sw + 20;
+  }
+
+  outCtx.putImageData(outData, 0, 0);
+  return {
+    canvas: outCanvas,
+    bbox: [x1, y1, x2, y2],
+  };
 }
 
 /**
@@ -432,20 +737,50 @@ export async function reconocerPlacaReal(
 
     const worker = await getOcrWorker();
 
-    // Ráfaga multi-escenario: Papel / Cuaderno, Pantallas Celular, Autos Reales y Alto Contraste
-    const intentos: Array<{ canvas: HTMLCanvasElement; desc: string }> = [
-      { canvas: baseCanvas, desc: 'Toda la Foto (Natural)' },
-      { canvas: realzarTintaLapiceroEnPapel(baseCanvas), desc: 'Toda la Foto (Realce Tinta/Lapicero)' },
-      { canvas: realcePantallaCelularYLuzBaja(baseCanvas), desc: 'Toda la Foto (Pantallas/Luz Baja)' },
-      { canvas: aplicarClausuraYBinarizacion(baseCanvas, false), desc: 'Toda la Foto (Alto Contraste)' },
-      { canvas: recortarZonaCaracteres(baseCanvas, true), desc: 'Recorte Inferior (Parachoques)' },
-    ];
-
     let mejorPlaca = '';
     let mejorTextoCrudo = '';
     let mejorConfianza = 0;
     let mejorBbox: number[] | undefined = undefined;
     let mejorMetodo = 'ALPR Búsqueda en Escena';
+
+    // 1.A Intento prioritario especializado para escritura manuscrita sobre hoja/cuaderno:
+    // Suprime rayas del cuaderno (dR - 0.85*dB), localiza el bloque exacto de tinta y alinea los caracteres
+    const manuscrito = extraerLienzoManuscritoAlineado(baseCanvas);
+    if (manuscrito) {
+      for (const psmMode of ['8', '7']) {
+        await worker.setParameters({
+          tessedit_pageseg_mode: psmMode as any,
+          tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-',
+        });
+        const { data: mData } = await worker.recognize(manuscrito.canvas);
+        const mText = (mData.text || '').trim();
+        const foundM = buscarSecuenciasPlacaEnTexto(mText);
+        if (foundM.length > 0) {
+          mejorPlaca = foundM[0].placa;
+          mejorTextoCrudo = foundM[0].textoMatch;
+          mejorConfianza = Math.max(88, Math.round(mData.confidence || 88));
+          mejorMetodo = 'Escritura en Hoja (Aislamiento Cromático de Tinta)';
+          mejorBbox = manuscrito.bbox;
+          break;
+        }
+      }
+      // Restaurar parámetros para escaneo de escena completa
+      await worker.setParameters({
+        tessedit_pageseg_mode: '11' as any,
+        tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789- ',
+      });
+    }
+
+    // Ráfaga multi-escenario: Papel / Cuaderno, Pantallas Celular, Autos Reales y Alto Contraste
+    const intentos: Array<{ canvas: HTMLCanvasElement; desc: string }> = mejorPlaca
+      ? []
+      : [
+          { canvas: baseCanvas, desc: 'Toda la Foto (Natural)' },
+          { canvas: realzarTintaLapiceroEnPapel(baseCanvas), desc: 'Toda la Foto (Realce Tinta/Lapicero)' },
+          { canvas: realcePantallaCelularYLuzBaja(baseCanvas), desc: 'Toda la Foto (Pantallas/Luz Baja)' },
+          { canvas: aplicarClausuraYBinarizacion(baseCanvas, false), desc: 'Toda la Foto (Alto Contraste)' },
+          { canvas: recortarZonaCaracteres(baseCanvas, true), desc: 'Recorte Inferior (Parachoques)' },
+        ];
 
     for (const intento of intentos) {
       const { data } = await worker.recognize(intento.canvas);

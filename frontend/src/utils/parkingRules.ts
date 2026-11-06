@@ -169,8 +169,29 @@ export function normalizarPlaca(texto: string): string {
     }
 
     // Formato 3+3 (Autos, camionetas o motos 3+3 ej. 206-37F, W2U-792)
-    const p1 = limpio.slice(0, 3);
+    let p1 = limpio.slice(0, 3);
     const p2 = limpio.slice(3, 6);
+
+    // Si es formato de motocicleta NNN-NNL (inicia con dígito y termina en letra, ej. 206-37F leído como 2QC-37F o 20C-37F):
+    // Las posiciones 1 y 2 del prefijo son estrictamente numéricas
+    if (/^[1-9]/.test(p1) && /[A-Z]$/.test(p2)) {
+      const c1 = p1[1]
+        .replace(/[OQD]/g, '0')
+        .replace(/[IL]/g, '1')
+        .replace(/Z/g, '2')
+        .replace(/S/g, '5')
+        .replace(/G/g, '6')
+        .replace(/B/g, '8');
+      const c2 = p1[2]
+        .replace(/[CGT]/g, '6')
+        .replace(/[OQD]/g, '0')
+        .replace(/[IL]/g, '1')
+        .replace(/Z/g, '2')
+        .replace(/S/g, '5')
+        .replace(/B/g, '8');
+      p1 = `${p1[0]}${c1}${c2}`;
+    }
+
     const conGuion = `${p1}-${p2}`;
 
     if (esPlacaValida(conGuion)) {

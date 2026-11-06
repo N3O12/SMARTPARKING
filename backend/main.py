@@ -40,7 +40,7 @@ from sqlalchemy.orm import Session, sessionmaker
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 logger = logging.getLogger("sge_pro")
 
-MIN_CONFIANZA_ACEPTABLE = 0.20
+MIN_CONFIANZA_ACEPTABLE = 0.50
 
 # ---------------------------------------------------------
 # 1. BASE DE DATOS SQLITE CON SQLALCHEMY
@@ -162,7 +162,7 @@ def reparar_prefijo_cursivo_py(texto: str) -> str:
     return t
 
 def es_placa_valida_py(cand: str) -> bool:
-    """Valida estrictamente los 4 formatos legales peruanos (MTC y cuadernos) rechazando ruidos como S2S-J8E"""
+    """Valida estrictamente los formatos legales peruanos (MTC y cuadernos) rechazando ruido de paredes/habitaciones"""
     if not cand:
         return False
     s = re.sub(r'[^A-Z0-9]', '', cand.upper())
@@ -171,7 +171,16 @@ def es_placa_valida_py(cand: str) -> bool:
     if s[0] in PRIMEROS_CARACTERES_PROHIBIDOS or s[0] not in LETRAS_INICIALES_VALIDAS_MTC:
         return False
     num_dig = sum(c.isdigit() for c in s)
-    if num_dig < 2:
+    num_let = sum(c.isalpha() for c in s)
+    if num_dig < 2 or num_let < 1:
+        return False
+
+    # Filtro anti-ruido de líneas verticales/bordes (ej. I11-111, O00-000, L1L-111, 111-11A)
+    if any(s.count(ch) >= 4 for ch in set(s)):
+        return False
+    if sum(ch in "1IL0O" for ch in s) >= 5:
+        return False
+    if re.match(r'^([1IL0O])\1', s):
         return False
 
     # Formato 1: Autos estándar y camionetas (3 alfanuméricos + 3 dígitos)
@@ -182,32 +191,32 @@ def es_placa_valida_py(cand: str) -> bool:
     if re.match(r'^[A-Z0-9]{3}[0-9]{2}[A-Z]$', s):
         return True
 
-    # Formato 3: Autos modernos combinados (3 alfanuméricos + 1 letra + 2 dígitos)
-    if re.match(r'^[A-Z0-9]{3}[A-Z][0-9]{2}$', s):
+    # Formato 3: Autos modernos combinados (3 letras + 1 letra + 2 dígitos)
+    if re.match(r'^[A-Z]{3}[A-Z][0-9]{2}$', s):
         return True
 
-    # Formato 4: Motocicletas 2+4 (2 alfanuméricos + 4 dígitos)
-    if re.match(r'^[A-Z0-9]{2}[0-9]{4}$', s):
+    # Formato 4: Motocicletas 2+4 (2 letras + 4 dígitos)
+    if re.match(r'^[A-Z]{2}[0-9]{4}$', s):
         return True
 
     return False
 
 def corregir_fe_schrift_posicional(s: str) -> str:
-    """Corrige confusiones OCR en matrículas peruanas según su posición oficial MTC"""
+    """Corrige confusiones OCR en matrículas peruanas SOLO si ya contiene al menos 2 dígitos reales"""
     if len(s) != 6:
-        return s
+        return ""
+    if sum(c.isdigit() for c in s) < 2:
+        return ""
     chars = list(s)
 
     # Si es formato de moto/trimóvil con letra final (ej. 206-37F leído como 2QC-37F, 20C-37F o 2AT-37F):
-    # Las posiciones 1, 2, 3 y 4 son numéricas cuando inicia con dígito
-    if chars[5].isalpha() and (chars[3].isdigit() or chars[3] in 'OQDILZBS') and (chars[4].isdigit() or chars[4] in 'OQDILZBS'):
+    if chars[0].isdigit() and chars[5].isalpha() and (chars[3].isdigit() or chars[3] in 'OQDILZBS') and (chars[4].isdigit() or chars[4] in 'OQDILZBS'):
         p_num_map = {'O': '0', 'Q': '0', 'D': '0', 'A': '0', 'I': '1', 'L': '1', 'Z': '2', 'B': '8', 'S': '5', 'G': '6'}
         p_pos2_map = {'C': '6', 'G': '6', 'T': '6', 'O': '0', 'Q': '0', 'D': '0', 'I': '1', 'L': '1', 'Z': '2', 'B': '8', 'S': '5'}
-        if chars[0].isdigit():
-            if chars[1] in p_num_map:
-                chars[1] = p_num_map[chars[1]]
-            if chars[2] in p_pos2_map:
-                chars[2] = p_pos2_map[chars[2]]
+        if chars[1] in p_num_map:
+            chars[1] = p_num_map[chars[1]]
+        if chars[2] in p_pos2_map:
+            chars[2] = p_pos2_map[chars[2]]
         if chars[3] in p_num_map:
             chars[3] = p_num_map[chars[3]]
         if chars[4] in {'I': '7', 'L': '7', **p_num_map}:
@@ -215,22 +224,23 @@ def corregir_fe_schrift_posicional(s: str) -> str:
         return "".join(chars)
 
     # Posición 0: si es letra geográfica (ej. W2U-792, ABC-123)
-    p0_map = {'0': 'O', '1': 'I', '8': 'B', '5': 'S'}
-    if chars[0] in p0_map:
-        chars[0] = p0_map[chars[0]]
+    if chars[0] == '0':
+        chars[0] = 'O'
     if chars[0] in PRIMEROS_CARACTERES_PROHIBIDOS or chars[0] not in LETRAS_INICIALES_VALIDAS_MTC:
         return ""
 
-    # Posición 4 y 5: siempre dígitos en placas estándar de 6 caracteres
-    p_num_map = {'O': '0', 'Q': '0', 'D': '0', 'I': '1', 'L': '1', 'Z': '2', 'B': '8', 'S': '5', 'G': '6', 'C': '6'}
-    if chars[4] in p_num_map:
-        chars[4] = p_num_map[chars[4]]
-    if chars[5] in p_num_map:
-        chars[5] = p_num_map[chars[5]]
-    # Posición 3: usualmente dígito (ej: W2U-792, ABC-123)
-    if chars[3] in p_num_map:
-        chars[3] = p_num_map[chars[3]]
-    return "".join(chars)
+    # Solo convertir letras a números en el sufijo si el sufijo ya tiene al menos 2 dígitos reales
+    if sum(c.isdigit() for c in chars[3:6]) >= 2:
+        p_num_map = {'O': '0', 'Q': '0', 'D': '0', 'I': '1', 'L': '1', 'Z': '2', 'B': '8', 'S': '5', 'G': '6', 'C': '6'}
+        if chars[4] in p_num_map:
+            chars[4] = p_num_map[chars[4]]
+        if chars[5] in p_num_map:
+            chars[5] = p_num_map[chars[5]]
+        if chars[3] in p_num_map:
+            chars[3] = p_num_map[chars[3]]
+        return "".join(chars)
+
+    return ""
 
 def distancia_levenshtein(s1: str, s2: str) -> int:
     """Calcula la distancia de edición de Levenshtein entre dos cadenas de texto"""
@@ -254,8 +264,7 @@ def distancia_levenshtein(s1: str, s2: str) -> int:
 def consultar_memoria_aprendizaje(texto: str) -> Optional[tuple]:
     """
     Motor de Aprendizaje Activo (Active Learning Memory):
-    Consulta dataset_autoentrenamiento/correcciones.json para aplicar de inmediato
-    las placas confirmadas y las correcciones ingresadas por el usuario.
+    Consulta dataset_autoentrenamiento/correcciones.json solo para lecturas válidas de 6 caracteres.
     """
     if not texto:
         return None
@@ -269,29 +278,29 @@ def consultar_memoria_aprendizaje(texto: str) -> Optional[tuple]:
             return None
         
         texto_clean = re.sub(r'[^A-Z0-9]', '', texto.upper())
-        if len(texto_clean) < 4:
+        if len(texto_clean) != 6:
             return None
 
-        # 1. Búsqueda exacta de coincidencia con placa aprendida o error previo corregido
+        # 1. Búsqueda exacta de coincidencia con placa aprendida o error previo válido de 6 caracteres
         for placa_aprendida, info in data.items():
             placa_clean = re.sub(r'[^A-Z0-9]', '', placa_aprendida.upper())
             det_previo = (info.get("detectado_previo") or "").upper()
             det_previo_clean = re.sub(r'[^A-Z0-9]', '', det_previo)
 
-            if det_previo_clean and det_previo_clean == texto_clean:
+            if len(det_previo_clean) == 6 and es_placa_valida_py(det_previo_clean) and det_previo_clean == texto_clean:
                 return (placa_aprendida, 0.98, f"Aprendizaje Activo: Corrección memorizada de '{det_previo}'")
 
             if placa_clean == texto_clean:
                 return (placa_aprendida, 0.99, "Aprendizaje Activo: Placa Confirmada en Memoria")
 
-        # 2. Búsqueda difusa por distancia de Levenshtein (<= 1)
-        if len(texto_clean) == 6:
+        # 2. Búsqueda difusa por distancia de Levenshtein (<= 1) solo si texto_clean ya es placa válida
+        if es_placa_valida_py(texto_clean):
             for placa_aprendida in data.keys():
                 placa_clean = re.sub(r'[^A-Z0-9]', '', placa_aprendida.upper())
                 if len(placa_clean) == 6:
                     dist = distancia_levenshtein(texto_clean, placa_clean)
                     if dist <= 1:
-                        return (placa_aprendida, 0.96, f"Aprendizaje Activo: Ajuste por similitud con '{placa_aprendida}'")
+                        return (placa_aprendida, 0.95, f"Aprendizaje Activo: Ajuste por similitud con '{placa_aprendida}'")
 
     except Exception as e:
         logger.warning(f"Aviso en consulta de memoria de aprendizaje: {e}")
@@ -299,20 +308,19 @@ def consultar_memoria_aprendizaje(texto: str) -> Optional[tuple]:
 
 def limpiar_texto_placa(texto: str) -> str:
     """
-    Normaliza y extrae un patrón de matrícula vehicular peruana (MTC y escritura manual):
-    - Estándar autos y camionetas: 3 alfanuméricos + 3 dígitos (ej: W2U-792, ABC-123, A1B-234, X71-962, AEF-710, 206-371)
-    - Motos y trimóviles: 3 alfanuméricos + 2 dígitos + 1 letra (ej: 206-37F, 123-45M)
-    - Motos serie 2+4: 2 alfanuméricos + 4 dígitos (ej: 20-6371, AB-1234)
-    - Repara divisiones de trazos cursivos/manuscritos (ej: 2AQCT-37F -> 206-37F)
+    Normaliza y extrae un patrón de matrícula vehicular peruana (MTC y escritura manual) línea por línea,
+    rechazando palabras comunes, frases largas o ruido vertical disperso.
     """
     if not texto:
         return ""
     
-    # 0. Consultar primero la Memoria Activa de Aprendizaje
-    mem_res = consultar_memoria_aprendizaje(texto)
-    if mem_res:
-        return mem_res[0]
-    
+    if "\n" in texto or "\r" in texto:
+        for linea in texto.splitlines():
+            res_l = limpiar_texto_placa(linea.strip())
+            if res_l:
+                return res_l
+        return ""
+
     # 1. Descartar si contiene palabras de URL o interfaz
     for palabra in PALABRAS_PROHIBIDAS_UI:
         if palabra in texto.upper():
@@ -322,30 +330,30 @@ def limpiar_texto_placa(texto: str) -> str:
     t = reparar_prefijo_cursivo_py(texto)
     t = re.sub(r'\b(PERU|PERÚ|MTC|AUTO|TAXI|CHILE)\b', '', t)
 
-    # 3. Buscar si tiene formato con guión explícito o espacio (ej: "206-37F", "W2U-792", "20-6371")
-    match_guion = re.search(r'\b([A-Z0-9]{3})\s*[-_.:/ ]\s*([A-Z0-9]{3})\b', t)
+    # 3. Buscar si tiene formato con guión explícito o espacio en la misma línea (ej: "206-37F", "W2U-792")
+    match_guion = re.search(r'\b([A-Z0-9]{3})[ \t\-_.:/]{0,2}([A-Z0-9]{3})\b', t)
     if match_guion:
         cand = match_guion.group(1) + match_guion.group(2)
         if es_placa_valida_py(cand):
             return f"{match_guion.group(1)}-{match_guion.group(2)}"
         cand_corr = corregir_fe_schrift_posicional(cand)
-        if es_placa_valida_py(cand_corr):
+        if cand_corr and es_placa_valida_py(cand_corr):
             return f"{cand_corr[:3]}-{cand_corr[3:]}"
 
-    match_moto = re.search(r'\b([A-Z0-9]{2})\s*[-_.:/ ]\s*([0-9]{4})\b', t)
+    match_moto = re.search(r'\b([A-Z]{2})[ \t\-_.:/]?([0-9]{4})\b', t)
     if match_moto:
         cand = match_moto.group(1) + match_moto.group(2)
         if es_placa_valida_py(cand):
             return f"{match_moto.group(1)}-{match_moto.group(2)}"
 
-    # 4. Si los caracteres fueron escritos a mano en una hoja separados por espacios
-    match_espaciado = re.search(r'\b([A-Z0-9])\s+([A-Z0-9])\s+([A-Z0-9])\s*[\s\-_.:/]?\s*([A-Z0-9])\s+([A-Z0-9])\s+([A-Z0-9])\b', t)
+    # 4. Si los caracteres fueron escritos separados por un espacio con guión central
+    match_espaciado = re.search(r'\b([A-Z0-9])[ \t]?([A-Z0-9])[ \t]?([A-Z0-9])[ \t]*-[ \t]*([A-Z0-9])[ \t]?([A-Z0-9])[ \t]?([A-Z0-9])\b', t)
     if match_espaciado:
         raw_esp = "".join(match_espaciado.groups())
         if es_placa_valida_py(raw_esp):
             return f"{raw_esp[:3]}-{raw_esp[3:]}"
         cand_esp = corregir_fe_schrift_posicional(raw_esp)
-        if es_placa_valida_py(cand_esp):
+        if cand_esp and es_placa_valida_py(cand_esp):
             return f"{cand_esp[:3]}-{cand_esp[3:]}"
 
     limpio = re.sub(r'[^A-Z0-9]', '', t)
@@ -360,18 +368,8 @@ def limpiar_texto_placa(texto: str) -> str:
         if es_placa_valida_py(limpio):
             return f"{limpio[:3]}-{limpio[3:]}"
         cand_corr = corregir_fe_schrift_posicional(limpio)
-        if es_placa_valida_py(cand_corr):
+        if cand_corr and es_placa_valida_py(cand_corr):
             return f"{cand_corr[:3]}-{cand_corr[3:]}"
-
-    # Si tiene más de 6 caracteres, buscar subsecuencia que sea placa válida
-    if len(limpio) > 6:
-        for i in range(len(limpio) - 5):
-            sub = limpio[i:i+6]
-            if es_placa_valida_py(sub):
-                return f"{sub[:3]}-{sub[3:]}"
-            cand_sub = corregir_fe_schrift_posicional(sub)
-            if es_placa_valida_py(cand_sub):
-                return f"{cand_sub[:3]}-{cand_sub[3:]}"
 
     return ""
 
@@ -391,11 +389,21 @@ def decodificar_imagen_base64(imagen_base64: str) -> Optional[np.ndarray]:
         return None
 
 
-def consultar_gemini_vision_py(img_bgr: np.ndarray) -> Optional[dict]:
+_last_gemini_call_ts = 0.0
+
+def consultar_gemini_vision_py(img_bgr: np.ndarray, force: bool = False) -> Optional[dict]:
     """
-    Intenta consultar el endpoint local /api/gemini-ocr (puerto 3000) o la API de Gemini
-    para reconocer placas extremadamente borrosas, lejanas o escritas a mano en cuaderno.
+    Intenta consultar el endpoint local /api/gemini-ocr (puerto 3000)
+    para reconocer placas borrosas, lejanas o escritas a mano en cuaderno,
+    con control de frecuencia para no saturar el stream en vivo.
     """
+    global _last_gemini_call_ts
+    import time
+    now_ts = time.time()
+    if not force and (now_ts - _last_gemini_call_ts) < 3.5:
+        return None
+    _last_gemini_call_ts = now_ts
+
     try:
         import urllib.request
         import cv2
@@ -414,6 +422,9 @@ def consultar_gemini_vision_py(img_bgr: np.ndarray) -> Optional[dict]:
         with urllib.request.urlopen(req, timeout=2.6) as resp:
             if resp.status == 200:
                 data = json.loads(resp.read().decode("utf-8"))
+                conf_gem = float(data.get("confianza") or 0.0)
+                if conf_gem < 0.78:
+                    return None
                 placa_raw = data.get("placa") or ""
                 placa_norm = limpiar_texto_placa(placa_raw) or limpiar_texto_placa(data.get("texto_crudo") or "")
                 if placa_norm:
@@ -430,7 +441,7 @@ def consultar_gemini_vision_py(img_bgr: np.ndarray) -> Optional[dict]:
                             bbox = [x1, y1, x2, y2]
                     return {
                         "placa": placa_norm,
-                        "confianza": float(data.get("confianza") or 0.96),
+                        "confianza": conf_gem,
                         "bbox": bbox,
                         "metodo": data.get("metodo") or "Gemini Vision ALPR (Alta Precisión)"
                     }
@@ -445,14 +456,14 @@ def preprocesar_y_leer_placa(img: np.ndarray) -> dict:
     1. Inferencia YOLO para vehículos/placas reales + recorte interior limpio sin bordes ni cabecera 'PERU'.
     2. Super-resolución + Unsharp Masking (deconvolución de bordes) para placas borrosas por lejanía/cercanía/desenfoque.
     3. Aislamiento cromático de tinta (dR - 0.85*dB) y alineación de caracteres para placas escritas en cuaderno.
-    4. Sensibilidad extendida en EasyOCR (text_threshold=0.25, low_text=0.18, mag_ratio=1.6) + respaldo Gemini Vision.
+    4. Cero falsos positivos en habitaciones vacías, paredes o personas.
     """
     import cv2
     import time
     
     t_start = time.time()
     h, w = img.shape[:2]
-    bbox_detectado = [0, 0, w, h]
+    bbox_detectado = None
     roi_img = None
     metodo = "Fast-ALPR Multi-Escenario"
 
@@ -467,13 +478,15 @@ def preprocesar_y_leer_placa(img: np.ndarray) -> dict:
     yolo = get_yolo_detector()
     if yolo is not None:
         try:
-            results = yolo(img_infer, imgsz=416, conf=0.18, verbose=False)
+            results = yolo(img_infer, imgsz=416, conf=0.25, verbose=False)
             candidatos_placas = []
             candidatos_vehiculos = []
 
             for r in results:
+                names_map = r.names if hasattr(r, "names") and isinstance(r.names, dict) else {}
                 for box in r.boxes:
                     cls_id = int(box.cls[0])
+                    cls_name = str(names_map.get(cls_id, "")).lower()
                     conf = float(box.conf[0])
                     x1, y1, x2, y2 = map(int, box.xyxy[0])
                     
@@ -483,9 +496,15 @@ def preprocesar_y_leer_placa(img: np.ndarray) -> dict:
                         x2 = int(x2 / scale_input)
                         y2 = int(y2 / scale_input)
 
-                    if cls_id == 0 and conf >= 0.18 and (x2 - x1) >= 25:
+                    bw_box = x2 - x1
+                    bh_box = max(1, y2 - y1)
+                    aspect_box = bw_box / float(bh_box)
+                    area_ratio = (bw_box * bh_box) / float(max(1, w * h))
+
+                    # Ignorar clase 'person' de COCO (cls_id 0 en yolov8n.pt estándar) y cajas gigantes o cuadradas
+                    if cls_id == 0 and cls_name != "person" and conf >= 0.30 and bw_box >= 32 and 1.4 <= aspect_box <= 7.5 and area_ratio <= 0.45:
                         candidatos_placas.append((conf, [x1, y1, x2, y2]))
-                    elif cls_id in [2, 3, 5, 7] and conf >= 0.25:
+                    elif cls_id in [2, 3, 5, 7] and conf >= 0.35:
                         candidatos_vehiculos.append((conf, [x1, y1, x2, y2]))
 
             if candidatos_placas:
@@ -517,11 +536,10 @@ def preprocesar_y_leer_placa(img: np.ndarray) -> dict:
         except Exception as e:
             logger.warning(f"Aviso en detección multi-distancia YOLO: {e}")
 
-    # Si YOLO no detectó un vehículo o placa real, escanear directamente la escena completa
-    # (sin usar Sobel morfológico global para no encerrar por error lapiceros ni rayas de cuaderno)
+    # Si YOLO no detectó un vehículo o placa real, escanear directamente la escena completa sin inventar bbox
     if roi_img is None or roi_img.size == 0:
         roi_img = img
-        bbox_detectado = [0, 0, w, h]
+        bbox_detectado = None
         metodo = "Escena Completa Multi-Escenario"
 
     def obtener_rect_bbox(pts):
@@ -532,7 +550,7 @@ def preprocesar_y_leer_placa(img: np.ndarray) -> dict:
         except Exception:
             return None
 
-    def extraer_candidatos_ocr(resultados_ocr, min_conf=0.12, offset_x=0, offset_y=0):
+    def extraer_candidatos_ocr(resultados_ocr, min_conf=0.45, offset_x=0, offset_y=0):
         cands = []
         if not resultados_ocr:
             return cands
@@ -547,48 +565,30 @@ def preprocesar_y_leer_placa(img: np.ndarray) -> dict:
                 cands.append((p, c, b, text))
         
         for i in range(len(resultados_ocr) - 1):
-            txt_par = f"{resultados_ocr[i][1]} {resultados_ocr[i+1][1]}"
-            p_par = limpiar_texto_placa(txt_par)
-            if p_par:
-                c_par = (float(resultados_ocr[i][2]) + float(resultados_ocr[i+1][2])) / 2.0
-                if c_par >= min_conf:
-                    b1 = obtener_rect_bbox(resultados_ocr[i][0])
-                    b2 = obtener_rect_bbox(resultados_ocr[i+1][0])
-                    b_merged = None
-                    if b1 and b2:
+            b1 = obtener_rect_bbox(resultados_ocr[i][0])
+            b2 = obtener_rect_bbox(resultados_ocr[i+1][0])
+            if not b1 or not b2:
+                continue
+            h1 = max(8, b1[3] - b1[1])
+            h2 = max(8, b2[3] - b2[1])
+            h_max = max(h1, h2)
+            cy1 = (b1[1] + b1[3]) / 2.0
+            cy2 = (b2[1] + b2[3]) / 2.0
+            x_gap = b2[0] - b1[2]
+            # Unir par de bloques SOLO si están en la misma línea horizontal y próximos
+            if abs(cy1 - cy2) <= h_max * 0.70 and -15 <= x_gap <= h_max * 2.2:
+                txt_par = f"{resultados_ocr[i][1]} {resultados_ocr[i+1][1]}"
+                p_par = limpiar_texto_placa(txt_par)
+                if p_par:
+                    c_par = (float(resultados_ocr[i][2]) + float(resultados_ocr[i+1][2])) / 2.0
+                    if c_par >= min_conf:
                         b_merged = [
                             min(b1[0], b2[0]) + offset_x,
                             min(b1[1], b2[1]) + offset_y,
                             max(b1[2], b2[2]) + offset_x,
                             max(b1[3], b2[3]) + offset_y,
                         ]
-                    cands.append((p_par, c_par, b_merged, txt_par))
-
-        for i in range(len(resultados_ocr) - 2):
-            txt_trio = f"{resultados_ocr[i][1]} {resultados_ocr[i+1][1]} {resultados_ocr[i+2][1]}"
-            p_trio = limpiar_texto_placa(txt_trio)
-            if p_trio:
-                c_trio = (float(resultados_ocr[i][2]) + float(resultados_ocr[i+1][2]) + float(resultados_ocr[i+2][2])) / 3.0
-                if c_trio >= min_conf:
-                    b1 = obtener_rect_bbox(resultados_ocr[i][0])
-                    b3 = obtener_rect_bbox(resultados_ocr[i+2][0])
-                    b_merged = None
-                    if b1 and b3:
-                        b_merged = [
-                            min(b1[0], b3[0]) + offset_x,
-                            min(b1[1], b3[1]) + offset_y,
-                            max(b1[2], b3[2]) + offset_x,
-                            max(b1[3], b3[3]) + offset_y,
-                        ]
-                    cands.append((p_trio, c_trio, b_merged, txt_trio))
-
-        textos_todos = [r[1] for r in resultados_ocr if r[1].strip()]
-        if len(textos_todos) > 1:
-            texto_unido = " ".join(textos_todos)
-            p_unida = limpiar_texto_placa(texto_unido)
-            if p_unida:
-                avg_conf = sum(float(r[2]) for r in resultados_ocr) / len(resultados_ocr)
-                cands.append((p_unida, max(0.75, avg_conf), None, texto_unido))
+                        cands.append((p_par, c_par, b_merged, txt_par))
                     
         return cands
 
@@ -600,11 +600,8 @@ def preprocesar_y_leer_placa(img: np.ndarray) -> dict:
 
     def extraer_lienzo_manuscrito_alineado_cv(frame_bgr: np.ndarray):
         """
-        Aísla trazos de lapicero azul o negro sobre hojas de cuaderno con iluminación desigual:
-        1. Resta el fondo local en R y B (37x37) y calcula score = dR - 0.85 * dB, eliminando el 100%
-           de las rayas impresas del cuaderno y sombras de iluminación.
-        2. Localiza automáticamente la caja exacta [x1, y1, x2, y2] de la escritura.
-        3. Segmenta y alinea verticalmente los caracteres (dividiendo trazos cursivos pre-guión en 3 bloques).
+        Aísla trazos de lapicero azul o negro sobre hojas de cuaderno verificando estrictamente
+        que el fondo sea papel uniforme (nunca paredes, rostros ni habitaciones).
         """
         try:
             fh, fw = frame_bgr.shape[:2]
@@ -623,7 +620,7 @@ def preprocesar_y_leer_placa(img: np.ndarray) -> dict:
 
             no_cyan_ui = ~((G_ch > R_ch + 55) & (B_ch > R_ch + 55) & (G_ch > 150))
             valid_paper = (B_ch >= 90) & (bg_B >= 90) & (bg_R >= 50) & no_cyan_ui
-            ink_mask = valid_paper & (((score > 2.8) & (dR > 5.0)) | ((dR > 28.0) & (dR >= 0.92 * dB)))
+            ink_mask = valid_paper & (((score > 2.8) & (dR > 5.0)) | ((dR > 30.0) & (bg_B > 135) & (bg_R > 120) & (R_ch < 70)))
             score_mat = ink_mask.astype(np.uint8)
             score_mat[:25, :] = 0
             score_mat[fh-25:, :] = 0
@@ -679,16 +676,32 @@ def preprocesar_y_leer_placa(img: np.ndarray) -> dict:
 
             first_c, last_c = min(char_indices), max(char_indices)
             raw_segs = [cand_segs[i] for i in range(first_c, last_c + 1) if cand_segs[i][2] >= min(80, max_area * 0.10)]
-            if len(raw_segs) < 3:
+            if len(raw_segs) < 4 or len(raw_segs) > 8:
                 return None, None
 
             x1 = max(10, raw_segs[0][0] - 13)
             x2 = min(fw - 10, raw_segs[-1][1] + 8)
             cw, ch = x2 - x1, y2 - y1
-            if cw < 60 or ch < 16:
+            aspect = cw / float(max(1, ch))
+            if cw < 80 or cw > fw * 0.75 or ch < 18 or ch > fh * 0.32 or aspect < 2.4 or aspect > 8.2:
                 return None, None
 
+            # Verificar uniformidad de papel dentro de la caja [x1, y1, x2, y2]
+            sub_B = B_ch[y1:y2, x1:x2]
+            sub_G = G_ch[y1:y2, x1:x2]
+            sub_R = R_ch[y1:y2, x1:x2]
             crop_ink = score_mat[y1:y2, x1:x2]
+            total_box = float(max(1, cw * ch))
+
+            paper_mask = (sub_B >= 92) & (sub_G >= 70) & (sub_R >= 48) & (sub_B >= sub_R - 10) & (np.abs(sub_G - (sub_R + sub_B) * 0.5) < 28)
+            dark_mask = (sub_B < 75) | (sub_R < 45)
+            paper_ratio = float(np.sum(paper_mask)) / total_box
+            dark_ratio = float(np.sum(dark_mask)) / total_box
+            ink_ratio = float(np.sum(crop_ink)) / total_box
+
+            if paper_ratio < 0.72 or dark_ratio > 0.15 or ink_ratio < 0.04 or ink_ratio > 0.28:
+                return None, None
+
             kernel_dil = np.ones((3, 3), np.uint8)
             dil = cv2.dilate(crop_ink, kernel_dil, iterations=1)
 
@@ -769,89 +782,72 @@ def preprocesar_y_leer_placa(img: np.ndarray) -> dict:
                         allowlist='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789- ',
                         detail=1,
                         paragraph=False,
-                        text_threshold=0.25,
-                        low_text=0.18,
-                        contrast_ths=0.05,
+                        text_threshold=0.35,
+                        low_text=0.25,
+                        contrast_ths=0.08,
                         adjust_contrast=0.7,
                         batch_size=1
                     )
-                    candidatos = extraer_candidatos_ocr(res_try, min_conf=0.12)
+                    candidatos = extraer_candidatos_ocr(res_try, min_conf=0.40)
                     if candidatos:
                         break
 
                 if candidatos:
                     candidatos.sort(key=lambda x: x[1], reverse=True)
                     texto_detectado = candidatos[0][0]
-                    confianza = max(0.88, candidatos[0][1])
+                    confianza = max(0.84, candidatos[0][1])
 
-            # 2. ESCANEO UNIVERSAL DE ALTA SENSIBILIDAD (Cuadernos Manuscritos, Placas Borrosas, Lejanas o Desenfocadas):
+            # 2. ESCANEO DE CUADERNOS MANUSCRITOS Y ESCENA COMPLETA (CON FILTRO ANTI-FALSOS POSITIVOS):
             if not texto_detectado:
                 lienzo_tinta, bbox_tinta = extraer_lienzo_manuscrito_alineado_cv(img)
                 candidatos_full = []
 
                 if lienzo_tinta is not None:
-                    if bbox_tinta:
-                        bbox_detectado = bbox_tinta
                     res_alineado = reader.readtext(
                         lienzo_tinta,
                         allowlist='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-',
                         detail=1,
                         paragraph=False,
-                        text_threshold=0.20,
-                        low_text=0.15,
-                        contrast_ths=0.05,
+                        text_threshold=0.35,
+                        low_text=0.25,
+                        contrast_ths=0.08,
                         batch_size=1
                     )
-                    candidatos_full = extraer_candidatos_ocr(res_alineado, min_conf=0.08)
+                    candidatos_full = extraer_candidatos_ocr(res_alineado, min_conf=0.42)
                     if candidatos_full:
                         metodo = "Escritura en Hoja (Aislamiento Cromático de Tinta)"
+                        if bbox_tinta:
+                            bbox_detectado = bbox_tinta
 
-                # Pasada con De-blurring (Unsharp Masking fuerte) + sensibilidad extendida para imágenes borrosas/desenfocadas
+                # Pasada con De-blurring (Unsharp Masking) con umbral estricto (>= 0.55) para evitar falsos positivos en paredes/habitaciones
                 if not candidatos_full:
-                    blur_bg = cv2.GaussianBlur(img, (0, 0), 2.5)
-                    img_unsharp = cv2.addWeighted(img, 2.3, blur_bg, -1.3, 0)
+                    blur_bg = cv2.GaussianBlur(img, (0, 0), 2.2)
+                    img_unsharp = cv2.addWeighted(img, 1.9, blur_bg, -0.9, 0)
                     res_full = reader.readtext(
                         img_unsharp,
                         allowlist='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789- ',
                         detail=1,
                         paragraph=False,
-                        mag_ratio=1.5,
-                        text_threshold=0.25,
-                        low_text=0.18,
-                        contrast_ths=0.05,
-                        adjust_contrast=0.7,
+                        mag_ratio=1.3,
+                        text_threshold=0.50,
+                        low_text=0.35,
+                        contrast_ths=0.12,
                         batch_size=1
                     )
-                    candidatos_full = extraer_candidatos_ocr(res_full, min_conf=0.12)
+                    candidatos_raw = extraer_candidatos_ocr(res_full, min_conf=0.55)
+                    for p_cand, c_cand, b_cand, t_cand in candidatos_raw:
+                        if b_cand and len(b_cand) == 4:
+                            bw_c = b_cand[2] - b_cand[0]
+                            bh_c = max(1, b_cand[3] - b_cand[1])
+                            if 1.5 <= (bw_c / float(bh_c)) <= 9.0 and bw_c >= 45:
+                                candidatos_full.append((p_cand, c_cand, b_cand, t_cand))
                     if candidatos_full:
-                        metodo = "De-blurring Unsharp Mask (Alta Sensibilidad)"
-
-                # Pasada con normalización local de iluminación (división por desenfoque gaussiano)
-                if not candidatos_full:
-                    canal_rojo = img[:, :, 2]
-                    bg_rojo = cv2.GaussianBlur(canal_rojo, (51, 51), 0)
-                    rojo_div = cv2.divide(canal_rojo, bg_rojo, scale=255)
-                    clahe = cv2.createCLAHE(clipLimit=3.5, tileGridSize=(8, 8))
-                    rojo_eq = clahe.apply(rojo_div)
-                    res_tinta = reader.readtext(
-                        rojo_eq,
-                        allowlist='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789- ',
-                        detail=1,
-                        paragraph=False,
-                        mag_ratio=1.5,
-                        text_threshold=0.25,
-                        low_text=0.18,
-                        contrast_ths=0.05,
-                        batch_size=1
-                    )
-                    candidatos_full = extraer_candidatos_ocr(res_tinta, min_conf=0.10)
-                    if candidatos_full:
-                        metodo = "Realce Adaptativo de Iluminación"
+                        metodo = "De-blurring Unsharp Mask"
 
                 if candidatos_full:
                     candidatos_full.sort(key=lambda x: x[1], reverse=True)
                     texto_detectado = candidatos_full[0][0]
-                    confianza = max(0.88, candidatos_full[0][1])
+                    confianza = candidatos_full[0][1]
                     if candidatos_full[0][2] and not bbox_tinta:
                         bbox_detectado = candidatos_full[0][2]
         except Exception as e:

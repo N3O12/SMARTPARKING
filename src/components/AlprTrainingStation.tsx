@@ -129,6 +129,7 @@ export const AlprTrainingStation: React.FC<AlprTrainingStationProps> = ({
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const scanIntervalRef = useRef<number | null>(null);
   const isProcessingFrameRef = useRef<boolean>(false);
+  const consecutiveDetectionRef = useRef<{ plate: string; count: number }>({ plate: '', count: 0 });
   const fpsCounterRef = useRef<{ count: number; lastTime: number }>({ count: 0, lastTime: Date.now() });
 
   // Placa de prueba oficial subida por el usuario
@@ -380,9 +381,9 @@ export const AlprTrainingStation: React.FC<AlprTrainingStationProps> = ({
           res = null;
         }
 
-        // 2. Si no hubo respuesta de backend o falló, ejecutar OCR local en toda la foto
-        if (!res || !res.placa || res.confianza < 40) {
-          const localRes = await reconocerPlacaReal(frameBase64);
+        // 2. Si no hubo respuesta de backend o falló, ejecutar OCR local en toda la foto (modo stream en vivo)
+        if (!res || !res.placa || res.confianza < 55) {
+          const localRes = await reconocerPlacaReal(frameBase64, true);
           if (localRes.placa) {
             res = {
               placa: localRes.placa,
@@ -399,36 +400,46 @@ export const AlprTrainingStation: React.FC<AlprTrainingStationProps> = ({
           if (res.frame_width && res.frame_height) {
             setDetectedFrameDims({ width: res.frame_width, height: res.frame_height });
           }
-          if (res.bbox && res.bbox.length === 4 && res.bbox[2] > res.bbox[0]) {
-            setLastBbox(res.bbox);
-            recortarRegionPlaca(frameBase64, res.bbox);
-          }
 
           const placaNormalizada = res.placa ? normalizarPlaca(res.placa) : '';
+          const confPct = Math.round(res.confianza <= 1.0 ? res.confianza * 100 : res.confianza);
 
-          // Congelar y presentar placa si cumple formato válido MTC o confianza >= 25%
-          if (placaNormalizada && (res.confianza >= 25 || placaNormalizada.length === 7)) {
-            setDetectedPlate(placaNormalizada);
-            setDetectedRaw(res.textoCrudo || res.placa);
-            setDetectedConfidence(Math.max(res.confianza, 65));
-            setDetectedMethod(res.metodo || 'FE-Schrift Perú OCR');
+          // Exigir placa válida real y confianza >= 58% (nunca congelar en paredes, rostros o escenas vacías)
+          if (placaNormalizada && confPct >= 58) {
+            const prev = consecutiveDetectionRef.current;
+            const nextCount = prev.plate === placaNormalizada ? prev.count + 1 : 1;
+            consecutiveDetectionRef.current = { plate: placaNormalizada, count: nextCount };
 
-            // 🔒 CONGELAR FOTOGRAMA PARA VALIDACIÓN:
-            // Asegura que la foto exacta y su recorte permanezcan fijados en la tarjeta de validación
-            setLockedSnapshotImage(frameBase64);
-            setLockedBbox(res.bbox);
-            setLockedPlate(placaNormalizada);
-            setLockedConfidence(Math.max(res.confianza, 65));
-            recortarRegionPlaca(frameBase64, res.bbox, (cropData) => {
-              setLockedCropImage(cropData);
-            });
-            setIsValidationFrozen(true);
+            if (res.bbox && res.bbox.length === 4 && res.bbox[2] > res.bbox[0]) {
+              setLastBbox(res.bbox);
+              recortarRegionPlaca(frameBase64, res.bbox);
+            }
 
-            // Si la confianza es alta, emitir beep suave
-            soundManager.playScanBeep();
+            // Congelar fotograma si tiene alta certeza (>= 82%) o se confirma en 2 lecturas consecutivas
+            if (confPct >= 82 || nextCount >= 2) {
+              setDetectedPlate(placaNormalizada);
+              setDetectedRaw(res.textoCrudo || res.placa);
+              setDetectedConfidence(confPct);
+              setDetectedMethod(res.metodo || 'FE-Schrift Perú OCR');
+
+              // 🔒 CONGELAR FOTOGRAMA PARA VALIDACIÓN:
+              setLockedSnapshotImage(frameBase64);
+              setLockedBbox(res.bbox);
+              setLockedPlate(placaNormalizada);
+              setLockedConfidence(confPct);
+              recortarRegionPlaca(frameBase64, res.bbox, (cropData) => {
+                setLockedCropImage(cropData);
+              });
+              setIsValidationFrozen(true);
+              consecutiveDetectionRef.current = { plate: '', count: 0 };
+
+              soundManager.playScanBeep();
+            }
           } else {
-            // No se detectó placa con confianza suficiente en este cuadro
+            // No se detectó placa válida en este cuadro: limpiar caja para no encerrar escenas vacías
+            consecutiveDetectionRef.current = { plate: '', count: 0 };
             if (!isValidationFrozen) {
+              setLastBbox(undefined);
               setDetectedRaw('Buscando placa válida en el vehículo...');
             }
           }
@@ -553,11 +564,12 @@ export const AlprTrainingStation: React.FC<AlprTrainingStationProps> = ({
             if (!res?.placa || res.confianza < 35) {
               try {
                 const cropRes = await reconocerPlacaReal(cropData);
-                if (cropRes.placa && cropRes.confianza > 0.25) {
+                const cropConf = Math.round(cropRes.confianza <= 1.0 ? cropRes.confianza * 100 : cropRes.confianza);
+                if (cropRes.placa && cropConf >= 55) {
                   res = {
                     ...res!,
                     placa: cropRes.placa,
-                    confianza: Math.round(cropRes.confianza * 100),
+                    confianza: cropConf,
                     textoCrudo: cropRes.textoCrudo,
                     metodo: 'OCR sobre Recorte de Matrícula',
                     exito: true,
@@ -800,10 +812,10 @@ export const AlprTrainingStation: React.FC<AlprTrainingStationProps> = ({
       return;
     }
 
-    // Usar estrictamente la foto congelada que originó esta placa
+    // Usar estrictamente la foto congelada que originó esta placa (nunca guardar textos de estado UI como placa previa)
     const frameToSend = lockedSnapshotImage || lastFrameImage || capturarFrameActual();
     const bboxToSend = lockedBbox || lastBbox;
-    const placaOriginal = lockedPlate || detectedPlate || detectedRaw || 'NINGUNA';
+    const placaOriginal = lockedPlate || detectedPlate || '';
 
     if (!frameToSend) {
       alert('No hay fotograma para registrar la corrección.');

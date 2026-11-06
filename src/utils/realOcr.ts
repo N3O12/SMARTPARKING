@@ -368,7 +368,7 @@ export function extraerLienzoManuscritoAlineado(
       const dR = bgR - R[idx];
       const dB = bgB - B[idx];
       const score = dR - 0.85 * dB;
-      if ((score > 2.8 && dR > 5.0) || (dR > 28.0 && dR >= 0.92 * dB)) {
+      if ((score > 2.8 && dR > 5.0) || (dR > 30.0 && bgB > 135 && bgR > 120 && R[idx] < 70)) {
         scoreMat[idx] = 1;
       }
     }
@@ -468,13 +468,41 @@ export function extraerLienzoManuscritoAlineado(
     .slice(firstC, lastC + 1)
     .filter((c) => c.area >= Math.min(80, maxArea * 0.1));
 
-  if (rawSegs.length < 3) return null;
+  if (rawSegs.length < 4 || rawSegs.length > 8) return null;
 
   const x1 = Math.max(10, rawSegs[0].s - 13);
   const x2 = Math.min(w - 10, rawSegs[rawSegs.length - 1].e + 8);
   const cw = x2 - x1;
   const ch = y2 - y1;
-  if (cw < 60 || ch < 16) return null;
+  const aspect = cw / Math.max(1, ch);
+  if (cw < 80 || cw > w * 0.75 || ch < 18 || ch > h * 0.32 || aspect < 2.4 || aspect > 8.2) {
+    return null;
+  }
+
+  // Verificar que el fondo dentro de [x1, y1, x2, y2] sea realmente una hoja de papel/cuaderno uniforme
+  let paperCount = 0;
+  let darkCount = 0;
+  let inkCount = 0;
+  const totalBox = cw * ch;
+  for (let yy = y1; yy < y2; yy++) {
+    for (let xx = x1; xx < x2; xx++) {
+      const idx = yy * w + xx;
+      if (scoreMat[idx]) inkCount++;
+      const r = R[idx];
+      const g = G[idx];
+      const b = B[idx];
+      if (b < 75 || r < 45) darkCount++;
+      if (b >= 92 && g >= 70 && r >= 48 && b >= r - 10 && Math.abs(g - (r + b) / 2) < 28) {
+        paperCount++;
+      }
+    }
+  }
+  const paperRatio = paperCount / Math.max(1, totalBox);
+  const darkRatio = darkCount / Math.max(1, totalBox);
+  const inkRatio = inkCount / Math.max(1, totalBox);
+  if (paperRatio < 0.72 || darkRatio > 0.15 || inkRatio < 0.04 || inkRatio > 0.28) {
+    return null;
+  }
 
   const dil = new Uint8Array(cw * ch);
   for (let yy = 1; yy < ch - 1; yy++) {
@@ -835,14 +863,14 @@ export function consultarMemoriaAprendizajeCliente(texto: string): { placa: stri
     const memoria: Record<string, { timestamp: number; detectadoPrevio?: string; count: number }> = JSON.parse(raw);
 
     const limpio = texto.toUpperCase().replace(/[^A-Z0-9]/g, '');
-    if (limpio.length < 4) return null;
+    if (limpio.length !== 6) return null;
 
     for (const [placa, info] of Object.entries(memoria)) {
       const placaLimpia = placa.replace(/[^A-Z0-9]/g, '');
       const previoLimpio = (info.detectadoPrevio || '').replace(/[^A-Z0-9]/g, '');
 
-      // 1. Coincidencia con error previo corregido
-      if (previoLimpio && (limpio.includes(previoLimpio) || previoLimpio.includes(limpio))) {
+      // 1. Coincidencia exacta con error previo de 6 caracteres válido
+      if (previoLimpio.length === 6 && esPlacaValida(previoLimpio) && limpio === previoLimpio) {
         return { placa, metodo: `Memoria Viva: Corrección de '${info.detectadoPrevio}'` };
       }
 
@@ -851,8 +879,8 @@ export function consultarMemoriaAprendizajeCliente(texto: string): { placa: stri
         return { placa, metodo: 'Memoria Viva: Placa Confirmada' };
       }
 
-      // 3. Similitud difusa (Levenshtein 1 carácter)
-      if (limpio.length === 6 && placaLimpia.length === 6) {
+      // 3. Similitud difusa (Levenshtein 1 carácter) solo si el texto crudo ya es una placa estructuralmente válida
+      if (limpio.length === 6 && placaLimpia.length === 6 && esPlacaValida(limpio)) {
         let diff = 0;
         for (let i = 0; i < 6; i++) {
           if (limpio[i] !== placaLimpia[i]) diff++;
@@ -881,7 +909,7 @@ export interface ResultadoOCRReal {
  * Validador Estricto con Filtro de Letra Inicial y Longitud Exacta (6 caracteres)
  */
 export function validarYCorregirLectura(textoCrudo: string, confianza: number = 50): string {
-  if (!textoCrudo) return '';
+  if (!textoCrudo || confianza < 45) return '';
   const encontrados = buscarSecuenciasPlacaEnTexto(textoCrudo);
   if (encontrados.length > 0) {
     return encontrados[0].placa;
@@ -918,19 +946,23 @@ export function realcePantallaCelularYLuzBaja(inputCanvas: HTMLCanvasElement): H
   return canvas;
 }
 
+let lastGeminiVideoCallMs = 0;
+
 /**
  * Reconoce la placa en TODA LA FOTO (hoja de papel, cuaderno, pantalla o vehículo, incluso borroso):
- * 1. Consulta Gemini Vision ALPR (/api/gemini-ocr) en paralelo con el preprocesamiento local.
- * 2. Jamás descarta frames borrosos: aplica Unsharp Masking para restaurar trazos por lejanía/cercanía/desenfoque.
- * 3. Aísla tanto escritura manuscrita en cuaderno (dR - 0.85*dB) como placas amarillas/vehiculares.
- * 4. Consulta la Memoria de Aprendizaje Activo (Active Learning).
+ * - Cero falsos positivos en habitaciones vacías, paredes o escenas sin placa.
+ * - Aísla escritura manuscrita verificando uniformidad de hoja y densidad real de tinta.
+ * - Aísla placas vehiculares amarillas/sombreadas con súper-resolución 3x.
+ * - Soporta placas borrosas mediante Unsharp Masking y Gemini Vision ALPR.
  */
 export async function reconocerPlacaReal(
-  source: HTMLVideoElement | HTMLImageElement | HTMLCanvasElement | string
+  source: HTMLVideoElement | HTMLImageElement | HTMLCanvasElement | string,
+  esStreamEnVivo: boolean = false
 ): Promise<ResultadoOCRReal> {
   const tStart = performance.now();
 
   try {
+    const esVideoEnVivo = esStreamEnVivo || source instanceof HTMLVideoElement;
     let resolvedSource: HTMLVideoElement | HTMLImageElement | HTMLCanvasElement;
     if (typeof source === 'string') {
       const img = new Image();
@@ -950,8 +982,13 @@ export async function reconocerPlacaReal(
       return { placa: '', confianza: 0, exito: false, textoCrudo: '', metodo: 'Frame vacío' };
     }
 
-    // Lanzar inferencia multimodal Gemini Vision en paralelo para placas borrosas o manuscritas complejas
-    const geminiPromise = reconocerConGeminiVision(baseCanvas);
+    // Lanzar inferencia multimodal Gemini Vision en paralelo (si es imagen subida o cada 4s en video en vivo)
+    const nowMs = Date.now();
+    let geminiPromise: Promise<ResultadoOCRReal | null> = Promise.resolve(null);
+    if (!esVideoEnVivo || nowMs - lastGeminiVideoCallMs >= 4000) {
+      if (esVideoEnVivo) lastGeminiVideoCallMs = nowMs;
+      geminiPromise = reconocerConGeminiVision(baseCanvas);
+    }
 
     const worker = await getOcrWorker();
 
@@ -971,11 +1008,12 @@ export async function reconocerPlacaReal(
         });
         const { data: mData } = await worker.recognize(manuscrito.canvas);
         const mText = (mData.text || '').trim();
+        const mConf = Math.round(mData.confidence || 0);
         const foundM = buscarSecuenciasPlacaEnTexto(mText);
-        if (foundM.length > 0) {
+        if (foundM.length > 0 && mConf >= 45) {
           mejorPlaca = foundM[0].placa;
           mejorTextoCrudo = foundM[0].textoMatch;
-          mejorConfianza = Math.max(90, Math.round(mData.confidence || 90));
+          mejorConfianza = Math.max(82, mConf);
           mejorMetodo = 'Escritura en Hoja (Aislamiento Cromático de Tinta)';
           mejorBbox = manuscrito.bbox;
           break;
@@ -993,20 +1031,21 @@ export async function reconocerPlacaReal(
         });
         const { data: pData } = await worker.recognize(placaAmarilla.canvas);
         const pText = (pData.text || '').trim();
+        const pConf = Math.round(pData.confidence || 0);
         const foundP = buscarSecuenciasPlacaEnTexto(pText);
-        if (foundP.length > 0) {
+        if (foundP.length > 0 && pConf >= 50) {
           mejorPlaca = foundP[0].placa;
           mejorTextoCrudo = foundP[0].textoMatch;
-          mejorConfianza = Math.max(88, Math.round(pData.confidence || 88));
+          mejorConfianza = Math.max(84, pConf);
           mejorMetodo = 'Placa Vehicular Detectada (Super-Resolución)';
           mejorBbox = placaAmarilla.bbox;
         }
       }
     }
 
-    // 1.C Si Gemini Vision ya resolvió con alta precisión (especialmente en imágenes muy borrosas), usar su resultado
+    // 1.C Si Gemini Vision resolvió con alta confianza (>= 0.80), utilizar su lectura
     const geminiRes = await geminiPromise;
-    if (geminiRes && geminiRes.exito && geminiRes.placa) {
+    if (geminiRes && geminiRes.exito && geminiRes.placa && geminiRes.confianza >= 0.80) {
       if (!mejorPlaca || geminiRes.confianza >= 0.90) {
         mejorPlaca = geminiRes.placa;
         mejorTextoCrudo = geminiRes.textoCrudo;
@@ -1016,39 +1055,36 @@ export async function reconocerPlacaReal(
       }
     }
 
-    // Restaurar parámetros para escaneo de escena completa si aún no se encontró placa
+    // Usar PSM 6 (bloque uniforme) en lugar de PSM 11 para no capturar motas de ruido disperso en paredes/habitaciones
     if (!mejorPlaca) {
       await worker.setParameters({
-        tessedit_pageseg_mode: '11' as any,
+        tessedit_pageseg_mode: '6' as any,
         tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789- ',
       });
     }
 
-    // Ráfaga multi-escenario incluyendo filtro de Deconvolución/Unsharp para imágenes borrosas
     const intentos: Array<{ canvas: HTMLCanvasElement; desc: string }> = mejorPlaca
       ? []
       : [
-          { canvas: desenfocarYRealzarNitidez(baseCanvas), desc: 'Realce Anti-Desenfoque (Unsharp Mask)' },
           { canvas: baseCanvas, desc: 'Toda la Foto (Natural)' },
-          { canvas: realzarTintaLapiceroEnPapel(baseCanvas), desc: 'Toda la Foto (Realce Tinta/Lapicero)' },
+          { canvas: desenfocarYRealzarNitidez(baseCanvas), desc: 'Realce Anti-Desenfoque (Unsharp Mask)' },
           { canvas: realcePantallaCelularYLuzBaja(baseCanvas), desc: 'Toda la Foto (Pantallas/Luz Baja)' },
-          { canvas: aplicarClausuraYBinarizacion(baseCanvas, false), desc: 'Toda la Foto (Alto Contraste)' },
-          { canvas: recortarZonaCaracteres(baseCanvas, true), desc: 'Recorte Inferior (Parachoques)' },
         ];
 
     for (const intento of intentos) {
       const { data } = await worker.recognize(intento.canvas);
-      const crudo = (data.text || '').trim();
       const conf = Math.round(data.confidence || 0);
 
-      // 1. Buscar en las líneas de texto detectadas
+      // 1. Buscar en las líneas de texto con confianza real suficiente (>= 58%)
       const lines = (data as any).lines || [];
       for (const line of lines) {
+        const lineConf = Math.round(line.confidence || conf);
+        if (lineConf < 58) continue;
         const found = buscarSecuenciasPlacaEnTexto(line.text || '');
         if (found.length > 0) {
           mejorPlaca = found[0].placa;
           mejorTextoCrudo = found[0].textoMatch;
-          mejorConfianza = Math.max(conf, line.confidence || 85);
+          mejorConfianza = lineConf;
           mejorMetodo = `${intento.desc} (Línea)`;
           if (line.bbox) {
             mejorBbox = [
@@ -1064,104 +1100,86 @@ export async function reconocerPlacaReal(
 
       if (mejorPlaca) break;
 
-      // 2. Buscar en las palabras individuales
+      // 2. Buscar en palabras individuales o pares adyacentes alineados horizontalmente con confianza >= 60%
       const words = (data as any).words || [];
       for (let w = 0; w < words.length; w++) {
         const word = words[w];
-        const foundWord = buscarSecuenciasPlacaEnTexto(word.text || '');
-        if (foundWord.length > 0) {
-          mejorPlaca = foundWord[0].placa;
-          mejorTextoCrudo = foundWord[0].textoMatch;
-          mejorConfianza = Math.max(conf, word.confidence || 85);
-          mejorMetodo = `${intento.desc} (Palabra)`;
-          if (word.bbox) {
-            mejorBbox = [
-              Math.max(0, Math.round(word.bbox.x0)),
-              Math.max(0, Math.round(word.bbox.y0)),
-              Math.min(intento.canvas.width, Math.round(word.bbox.x1)),
-              Math.min(intento.canvas.height, Math.round(word.bbox.y1)),
-            ];
-          }
-          break;
-        }
-
-        // Buscar pares adyacentes de palabras (ej. "206" y "37F")
-        if (w < words.length - 1) {
-          const pair = `${words[w].text} ${words[w + 1].text}`;
-          const foundPair = buscarSecuenciasPlacaEnTexto(pair);
-          if (foundPair.length > 0) {
-            mejorPlaca = foundPair[0].placa;
-            mejorTextoCrudo = foundPair[0].textoMatch;
-            mejorConfianza = Math.max(conf, Math.round(((words[w].confidence || 80) + (words[w + 1].confidence || 80)) / 2));
-            mejorMetodo = `${intento.desc} (Par de Palabras)`;
-            const b1 = words[w].bbox;
-            const b2 = words[w + 1].bbox;
-            if (b1 && b2) {
+        const wordConf = Math.round(word.confidence || conf);
+        if (wordConf >= 60) {
+          const foundWord = buscarSecuenciasPlacaEnTexto(word.text || '');
+          if (foundWord.length > 0) {
+            mejorPlaca = foundWord[0].placa;
+            mejorTextoCrudo = foundWord[0].textoMatch;
+            mejorConfianza = wordConf;
+            mejorMetodo = `${intento.desc} (Palabra)`;
+            if (word.bbox) {
               mejorBbox = [
-                Math.max(0, Math.round(Math.min(b1.x0, b2.x0))),
-                Math.max(0, Math.round(Math.min(b1.y0, b2.y0))),
-                Math.min(intento.canvas.width, Math.round(Math.max(b1.x1, b2.x1))),
-                Math.min(intento.canvas.height, Math.round(Math.max(b1.y1, b2.y1))),
+                Math.max(0, Math.round(word.bbox.x0)),
+                Math.max(0, Math.round(word.bbox.y0)),
+                Math.min(intento.canvas.width, Math.round(word.bbox.x1)),
+                Math.min(intento.canvas.height, Math.round(word.bbox.y1)),
               ];
             }
             break;
           }
         }
+
+        // Buscar pares adyacentes de palabras únicamente si están en la misma línea horizontal y próximas
+        if (w < words.length - 1) {
+          const w1Conf = Math.round(words[w].confidence || 0);
+          const w2Conf = Math.round(words[w + 1].confidence || 0);
+          const avgConf = Math.round((w1Conf + w2Conf) / 2);
+          const b1 = words[w].bbox;
+          const b2 = words[w + 1].bbox;
+          if (avgConf >= 60 && b1 && b2) {
+            const hMax = Math.max(10, b1.y1 - b1.y0, b2.y1 - b2.y0);
+            const sameLine = Math.abs(b1.y0 - b2.y0) <= hMax * 0.65;
+            const xGap = b2.x0 - b1.x1;
+            if (sameLine && xGap >= -10 && xGap <= hMax * 2.2) {
+              const pair = `${words[w].text} ${words[w + 1].text}`;
+              const foundPair = buscarSecuenciasPlacaEnTexto(pair);
+              if (foundPair.length > 0) {
+                mejorPlaca = foundPair[0].placa;
+                mejorTextoCrudo = foundPair[0].textoMatch;
+                mejorConfianza = avgConf;
+                mejorMetodo = `${intento.desc} (Par Alineado)`;
+                mejorBbox = [
+                  Math.max(0, Math.round(Math.min(b1.x0, b2.x0))),
+                  Math.max(0, Math.round(Math.min(b1.y0, b2.y0))),
+                  Math.min(intento.canvas.width, Math.round(Math.max(b1.x1, b2.x1))),
+                  Math.min(intento.canvas.height, Math.round(Math.max(b1.y1, b2.y1))),
+                ];
+                break;
+              }
+            }
+          }
+        }
       }
 
       if (mejorPlaca) break;
-
-      // 3. Buscar en todo el texto concatenado
-      const foundGlobal = buscarSecuenciasPlacaEnTexto(crudo);
-      if (foundGlobal.length > 0) {
-        mejorPlaca = foundGlobal[0].placa;
-        mejorTextoCrudo = foundGlobal[0].textoMatch;
-        mejorConfianza = Math.max(conf, 78);
-        mejorMetodo = `${intento.desc} (Texto Global)`;
-
-        // Extraer la caja delimitadora real analizando las palabras que componen la placa detectada
-        const targetClean = mejorPlaca.replace(/[^A-Z0-9]/g, '');
-        const matchedBoxes: Array<{ x0: number; y0: number; x1: number; y1: number }> = [];
-        for (const wd of words) {
-          const wClean = (wd.text || '').replace(/[^A-Z0-9]/g, '');
-          if (wClean.length >= 2 && targetClean.includes(wClean)) {
-            if (wd.bbox) matchedBoxes.push(wd.bbox);
-          }
-        }
-
-        if (matchedBoxes.length > 0) {
-          mejorBbox = [
-            Math.max(0, Math.round(Math.min(...matchedBoxes.map((b) => b.x0)))),
-            Math.max(0, Math.round(Math.min(...matchedBoxes.map((b) => b.y0)))),
-            Math.min(intento.canvas.width, Math.round(Math.max(...matchedBoxes.map((b) => b.x1)))),
-            Math.min(intento.canvas.height, Math.round(Math.max(...matchedBoxes.map((b) => b.y1)))),
-          ];
-        } else {
-          mejorBbox = undefined;
-        }
-        break;
-      }
     }
 
-    // 4. Consultar Memoria de Aprendizaje Activo (Active Learning)
-    const memMatch = consultarMemoriaAprendizajeCliente(mejorPlaca || mejorTextoCrudo);
-    if (memMatch) {
-      mejorPlaca = memMatch.placa;
-      mejorConfianza = 99;
-      mejorMetodo = memMatch.metodo;
+    // 4. Consultar Memoria de Aprendizaje Activo (solo si ya hay una lectura de 6 caracteres válida)
+    if (mejorPlaca) {
+      const memMatch = consultarMemoriaAprendizajeCliente(mejorPlaca);
+      if (memMatch) {
+        mejorPlaca = memMatch.placa;
+        mejorConfianza = Math.max(mejorConfianza, 95);
+        mejorMetodo = memMatch.metodo;
+      }
     }
 
     const tDur = Math.round(performance.now() - tStart);
 
-    if (mejorPlaca) {
+    if (mejorPlaca && mejorConfianza >= 55) {
       console.log(
-        `%c[ALPR PERÚ] 🎯 SECUENCIA DETECTADA EN LA FOTO: "${mejorPlaca}" (${mejorMetodo}, Ráfaga: ${tDur}ms)`,
+        `%c[ALPR PERÚ] 🎯 SECUENCIA DETECTADA EN LA FOTO: "${mejorPlaca}" (${mejorConfianza}%, ${mejorMetodo}, ${tDur}ms)`,
         'color: #10b981; font-weight: bold; font-size: 13px;'
       );
 
       return {
         placa: mejorPlaca,
-        confianza: Math.max(0.75, mejorConfianza / 100),
+        confianza: mejorConfianza / 100,
         exito: true,
         textoCrudo: mejorTextoCrudo,
         metodo: mejorMetodo,
@@ -1171,9 +1189,9 @@ export async function reconocerPlacaReal(
 
     return {
       placa: '',
-      confianza: mejorConfianza / 100,
+      confianza: 0,
       exito: false,
-      textoCrudo: mejorTextoCrudo,
+      textoCrudo: '',
       metodo: 'ALPR Perú (Buscando secuencia de matrícula...)',
     };
   } catch (err) {

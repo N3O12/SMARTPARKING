@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   normalizarPlaca,
+  buscarSecuenciasPlacaEnTexto,
   calcularAutosEnTransito,
   calcularCajonesLibres,
   puedeIngresar,
@@ -9,10 +10,27 @@ import {
   CAPACIDAD_MAXIMA
 } from './parkingRules';
 
-test('normalizarPlaca cleans spaces and formats standard 6 char plates', () => {
+test('normalizarPlaca cleans spaces and formats standard 6 char plates and handwritten plates', () => {
   assert.equal(normalizarPlaca('x71 962'), 'X71-962');
   assert.equal(normalizarPlaca('abc-123'), 'ABC-123');
   assert.equal(normalizarPlaca('abc f12'), 'ABC-F12');
+  assert.equal(normalizarPlaca('20C-37F'), '206-37F');
+  assert.equal(normalizarPlaca('W2U-792'), 'W2U-792');
+});
+
+test('normalizarPlaca and buscarSecuenciasPlacaEnTexto reject empty-scene noise and cross-line specks', () => {
+  // Scattered characters across newlines must never join into a fake plate
+  const scatteredNoise = '48\n\n-\n\nI 1\n\nBA\n\nI\n\n1\n\nA';
+  assert.equal(buscarSecuenciasPlacaEnTexto(scatteredNoise).length, 0);
+  assert.equal(normalizarPlaca(scatteredNoise), '');
+
+  // Vertical bars / notebook lines / pure digits / pure letters must be rejected
+  assert.equal(normalizarPlaca('I11-111'), '');
+  assert.equal(normalizarPlaca('11B-111'), '');
+  assert.equal(normalizarPlaca('123-456'), '');
+  assert.equal(normalizarPlaca('ABC-DEF'), '');
+  assert.equal(normalizarPlaca('AAA-A12'), '');
+  assert.equal(normalizarPlaca('Buscando placa válida en el vehículo...'), '');
 });
 
 test('calcularAutosEnTransito returns difference between recinto and ocupados', () => {

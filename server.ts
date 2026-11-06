@@ -68,13 +68,11 @@ async function startServer() {
             },
           },
           {
-            text: `Eres un motor ALPR (Reconocimiento Automático de Matrículas) de máxima precisión para Perú.
-Analiza toda la imagen y encuentra cualquier código de placa vehicular (6 caracteres alfanuméricos, usualmente separados por guión como XXX-XXX o XX-XXXX, por ejemplo: W2U-792, 206-37F, ABC-123, X71-962, A1B-234).
-IMPORTANTE:
-1. La placa puede estar en un vehículo real (cerca, lejos, inclinada o muy borrosa/desenfocada), en la pantalla de un celular/monitor, o ESCRITA A MANO con lapicero/lápiz/plumón en una hoja de cuaderno o papel (con o sin guión, aunque no tenga marco de placa y esté borrosa).
-2. Si la imagen está borrosa por lejanía, cercanía o desenfoque de cámara, deduce con exactitud los 6 caracteres de la placa analizando los trazos visibles.
-3. En escritura manual en cuaderno, distingue cuidadosamente números de letras: por ejemplo "206-37F" (no confundir el 0 con O/Q ni el 6 con C/G).
-4. Devuelve en bbox_2d las coordenadas normalizadas [ymin, xmin, ymax, xmax] de 0 a 1000 que encierran únicamente el texto de la placa o matrícula escrita. Si no hay ninguna placa ni código escrito en absoluto, devuelve placa vacía "".`,
+            text: `Eres un motor ALPR (Reconocimiento Automático de Matrículas) de alta precisión para Perú.
+Analiza la imagen y determina PRIMERO si realmente existe una placa vehicular o un código de matrícula de 6 caracteres escrito intencionalmente (formato XXX-XXX o XX-XXXX, como W2U-792, 206-37F, ABC-123, X71-962, A1B-234).
+REGLAS CRÍTICAS ANTI-FALSOS POSITIVOS:
+1. Si en la imagen NO hay ninguna placa vehicular ni ningún código de matrícula escrito (por ejemplo: si solo se ve una habitación vacía, pared, techo, persona/rostro, muebles, escritorio, teclado, hoja de cuaderno en blanco sin texto, o texto común que NO es una placa de 6 caracteres), DEBES devolver obligatoriamente placa: "", texto_crudo: "", confianza: 0, escenario: "Sin Placa", bbox_2d: []. ¡JAMÁS inventes ni adivines una placa donde no la hay!
+2. Si SÍ hay una placa vehicular real (incluso si está borrosa por lejanía, cercanía o desenfoque de cámara) o una matrícula de 6 caracteres escrita a mano en un cuaderno/papel (con al menos 1 letra y al menos 2 números, ej. "206-37F"), lee los 6 caracteres con exactitud y devuelve en bbox_2d las coordenadas [ymin, xmin, ymax, xmax] de 0 a 1000 que encierran únicamente la placa o matrícula escrita.`,
           },
         ],
         config: {
@@ -86,15 +84,15 @@ IMPORTANTE:
               placa: {
                 type: Type.STRING,
                 description:
-                  'Matrícula detectada normalizada con guión (ej. W2U-792, 206-37F, ABC-123) o cadena vacía si no hay ninguna.',
+                  'Matrícula detectada normalizada con guión (ej. W2U-792, 206-37F, ABC-123) o cadena vacía "" si no hay ninguna placa real.',
               },
               texto_crudo: {
                 type: Type.STRING,
-                description: 'Texto exacto leído en la imagen.',
+                description: 'Texto exacto leído en la placa o cadena vacía "" si no hay placa.',
               },
               confianza: {
                 type: Type.NUMBER,
-                description: 'Nivel de confianza entre 0.0 y 1.0 (ej. 0.96).',
+                description: 'Nivel de confianza entre 0.0 y 1.0 (0.0 si no hay placa).',
               },
               escenario: {
                 type: Type.STRING,
@@ -105,7 +103,7 @@ IMPORTANTE:
                 type: Type.ARRAY,
                 items: { type: Type.INTEGER },
                 description:
-                  'Caja delimitadora [ymin, xmin, ymax, xmax] en escala 0 a 1000 encerrando exactamente la placa o texto manuscrito.',
+                  'Caja delimitadora [ymin, xmin, ymax, xmax] en escala 0 a 1000 encerrando exactamente la placa, o [] si no hay placa.',
               },
             },
             required: ['placa', 'texto_crudo', 'confianza', 'escenario', 'bbox_2d'],
@@ -116,14 +114,20 @@ IMPORTANTE:
       const rawText = response.text || '{}';
       const parsed = JSON.parse(rawText);
       const latenciaMs = Date.now() - tStart;
+      const confVal = typeof parsed.confianza === 'number' ? parsed.confianza : 0;
+      const placaClean = (parsed.placa || '').trim().toUpperCase();
+      const tienePlacaValida =
+        placaClean.length >= 6 &&
+        confVal >= 0.78 &&
+        parsed.escenario !== 'Sin Placa';
 
       res.json({
-        exito: Boolean(parsed.placa && parsed.placa.trim().length >= 5),
-        placa: (parsed.placa || '').trim().toUpperCase(),
-        texto_crudo: parsed.texto_crudo || parsed.placa || '',
-        confianza: typeof parsed.confianza === 'number' ? parsed.confianza : 0.95,
-        escenario: parsed.escenario || 'Gemini Vision ALPR',
-        bbox_2d: Array.isArray(parsed.bbox_2d) ? parsed.bbox_2d : null,
+        exito: tienePlacaValida,
+        placa: tienePlacaValida ? placaClean : '',
+        texto_crudo: tienePlacaValida ? parsed.texto_crudo || placaClean : '',
+        confianza: tienePlacaValida ? confVal : 0,
+        escenario: parsed.escenario || 'Sin Placa',
+        bbox_2d: tienePlacaValida && Array.isArray(parsed.bbox_2d) ? parsed.bbox_2d : null,
         metodo: `Gemini Vision ALPR (${parsed.escenario || 'Multi-Escenario'}, ${latenciaMs}ms)`,
         latencia_ms: latenciaMs,
       });

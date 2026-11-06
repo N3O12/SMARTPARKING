@@ -111,21 +111,33 @@ export function esPlacaValida(placa: string): boolean {
     return false;
   }
 
-  // 1. Descartar cadenas sin al menos 2 dígitos reales (evita palabras como COO-WCM o títulos web)
+  // 1. Toda placa peruana (auto o moto) tiene al menos 1 letra real (A-Z) y al menos 2 dígitos reales (0-9)
   const numDigitos = (sinGuion.match(/[0-9]/g) || []).length;
-  if (numDigitos < 2) return false;
+  const numLetras = (sinGuion.match(/[A-Z]/g) || []).length;
+  if (numDigitos < 2 || numLetras < 1) return false;
+
+  // 2. Filtro anti-ruido de líneas verticales/bordes (ej. I11-111, O00-000, L1L-111, 111-11A)
+  const conteoChars: Record<string, number> = {};
+  let conteoPalotes = 0;
+  for (const ch of sinGuion) {
+    conteoChars[ch] = (conteoChars[ch] || 0) + 1;
+    if (conteoChars[ch] >= 4) return false;
+    if ('1IL0O'.includes(ch)) conteoPalotes++;
+  }
+  if (conteoPalotes >= 5) return false;
+  if (/^([1IL0O])\1/.test(sinGuion)) return false;
 
   // Formato 1: Autos estándar, camionetas y comerciales (3 alfanuméricos + 3 dígitos)
   const regexAutoEstandar = /^[A-Z0-9]{3}-?[0-9]{3}$/;
 
-  // Formato 2: Motocicletas y trimóviles MTC (3 alfanuméricos + 2 dígitos + 1 letra)
+  // Formato 2: Motocicletas y trimóviles MTC (3 alfanuméricos + 2 dígitos + 1 letra, ej. 206-37F)
   const regexMotoMTC = /^[A-Z0-9]{3}-?[0-9]{2}[A-Z]$/;
 
-  // Formato 3: Autos modernos combinados (3 alfanuméricos + 1 letra + 2 dígitos)
-  const regexAutoModerno = /^[A-Z0-9]{3}-?[A-Z][0-9]{2}$/;
+  // Formato 3: Autos modernos combinados (3 letras + 1 letra + 2 dígitos, ej. ABC-F12)
+  const regexAutoModerno = /^[A-Z]{3}-?[A-Z][0-9]{2}$/;
 
-  // Formato 4: Motocicletas serie 2+4 (2 alfanuméricos + 4 dígitos)
-  const regexMoto2Plus4 = /^[A-Z0-9]{2}-?[0-9]{4}$/;
+  // Formato 4: Motocicletas serie 2+4 (2 letras + 4 dígitos, ej. AB-1234)
+  const regexMoto2Plus4 = /^[A-Z]{2}-?[0-9]{4}$/;
 
   return (
     regexAutoEstandar.test(placa) ||
@@ -145,9 +157,9 @@ export function esPlacaValida(placa: string): boolean {
 function repararPrefijoCursivo(texto: string): string {
   return texto
     .toUpperCase()
-    .replace(/\b([1-9])(?:AQ|QA|OA|AO|QO|OQ)(?:CT|TC|CG|GC|GT|TG)[\s\-_.:/]*([0-9]{2}[A-Z0-9])\b/g, '$106-$2')
-    .replace(/\b([1-9])A([CT])[\s\-_.:/]*([0-9]{2}[A-Z0-9])\b/g, '$106-$3')
-    .replace(/\b([1-9])[OQDA][CGT][\s\-_.:/]*([0-9][0-9ILZSB][A-Z0-9])\b/g, '$106-$2');
+    .replace(/\b([1-9])(?:AQ|QA|OA|AO|QO|OQ)(?:CT|TC|CG|GC|GT|TG)[ \t\-_.:/]*([0-9]{2}[A-Z0-9])\b/g, '$106-$2')
+    .replace(/\b([1-9])A([CT])[ \t\-_.:/]*([0-9]{2}[A-Z0-9])\b/g, '$106-$3')
+    .replace(/\b([1-9])[OQDA][CGT][ \t\-_.:/]*([0-9][0-9ILZSB][A-Z0-9])\b/g, '$106-$2');
 }
 
 /**
@@ -155,20 +167,30 @@ function repararPrefijoCursivo(texto: string): string {
  * 1. Autos Estándar / Comerciales: LLL-NNN o LNL-NNN (ej. X71-962, W2U-792, ABC-123)
  * 2. Motos / Trimóviles MTC: NNN-NNL (ej. 206-37F, 123-45M)
  * 3. Autos Modernos: LLL-LNN (ej. ABC-X45)
- * 4. Motos clásicas: LL-NNNN o NN-NNNN (ej. 20-6371, AB-1234)
+ * 4. Motos clásicas: LL-NNNN (ej. AB-1234)
  */
 export function normalizarPlaca(texto: string): string {
   if (!texto) return '';
+
+  // Si el texto contiene saltos de línea, evaluar cada línea por separado (jamás unir basura de distintas líneas)
+  if (/[\r\n]/.test(texto)) {
+    const lineas = texto.split(/[\r\n]+/);
+    for (const l of lineas) {
+      const normL = normalizarPlaca(l.trim());
+      if (normL) return normL;
+    }
+    return '';
+  }
 
   const preReparado = repararPrefijoCursivo(texto);
 
   // 1. Omitir palabras fijas de cabeceras oficiales y ruidos comunes
   let limpio = preReparado
     .toUpperCase()
-    .replace(/PERU|PERÚ|CHILE|AUTO|STOP|TAXI|MTC/g, '')
+    .replace(/\b(PERU|PERÚ|CHILE|AUTO|STOP|TAXI|MTC)\b/g, '')
     .replace(/[^A-Z0-9]/g, '');
 
-  if (limpio.length < 5) return '';
+  if (limpio.length < 6) return '';
 
   // Reparar caso donde 6 caracteres manuscritos se leyeron como 7 u 8 por división de trazos (ej. 2AQCT37F -> 20637F)
   if (limpio.length > 6 && /^[1-9]/.test(limpio)) {
@@ -178,53 +200,57 @@ export function normalizarPlaca(texto: string): string {
       .replace(/^([1-9])([OQD0])(?:CT|TC|CG|GC)/, '$106');
   }
 
-  // 2. Si tiene exactamente 6 caracteres
-  if (limpio.length === 6) {
-    let c0 = limpio[0];
-    if (c0 === '0') c0 = 'O';
-    if (PRIMEROS_CARACTERES_INVALIDOS.has(c0) || !CARACTERES_INICIALES_VALIDOS.has(c0)) {
-      return '';
-    }
-    limpio = c0 + limpio.slice(1);
+  // No recortar palabras largas ni textos largos arbitrarios (evita inventar placas de frases u objetos)
+  if (limpio.length !== 6) return '';
 
-    // Formato 3+3 (Autos, camionetas o motos 3+3 ej. 206-37F, W2U-792)
-    let p1 = limpio.slice(0, 3);
-    const p2 = limpio.slice(3, 6);
+  // Exigir que la lectura cruda ya contenga al menos 2 dígitos reales (0-9) antes de convertir letras a números
+  const digitosCrudos = (limpio.match(/[0-9]/g) || []).length;
+  if (digitosCrudos < 2) return '';
 
-    // Si es formato de motocicleta NNN-NNL (inicia con dígito y termina en letra, ej. 206-37F leído como 2QC-37F, 20C-37F o 2AT-37F):
-    // Las posiciones 1 y 2 del prefijo son estrictamente numéricas
-    if (/^[1-9]/.test(p1) && /[A-Z]$/.test(p2)) {
-      const c1 = p1[1]
-        .replace(/[OQDA]/g, '0')
-        .replace(/[IL]/g, '1')
-        .replace(/Z/g, '2')
-        .replace(/S/g, '5')
-        .replace(/G/g, '6')
-        .replace(/B/g, '8');
-      const c2 = p1[2]
-        .replace(/[CGT]/g, '6')
-        .replace(/[OQD]/g, '0')
-        .replace(/[IL]/g, '1')
-        .replace(/Z/g, '2')
-        .replace(/S/g, '5')
-        .replace(/B/g, '8');
-      p1 = `${p1[0]}${c1}${c2}`;
-    }
+  let c0 = limpio[0];
+  if (c0 === '0') c0 = 'O';
+  if (PRIMEROS_CARACTERES_INVALIDOS.has(c0) || !CARACTERES_INICIALES_VALIDOS.has(c0)) {
+    return '';
+  }
+  limpio = c0 + limpio.slice(1);
 
-    const conGuion = `${p1}-${p2}`;
+  // Formato 3+3 (Autos, camionetas o motos 3+3 ej. 206-37F, W2U-792)
+  let p1 = limpio.slice(0, 3);
+  const p2 = limpio.slice(3, 6);
 
-    if (esPlacaValida(conGuion)) {
-      return conGuion;
-    }
+  // Si es formato de motocicleta NNN-NNL (inicia con dígito y termina en letra, ej. 206-37F leído como 2QC-37F, 20C-37F o 2AT-37F)
+  if (/^[1-9]/.test(p1) && /[A-Z]$/.test(p2) && /^[0-9OQDILZSB]{2}[A-Z]$/.test(p2)) {
+    const c1 = p1[1]
+      .replace(/[OQDA]/g, '0')
+      .replace(/[IL]/g, '1')
+      .replace(/Z/g, '2')
+      .replace(/S/g, '5')
+      .replace(/G/g, '6')
+      .replace(/B/g, '8');
+    const c2 = p1[2]
+      .replace(/[CGT]/g, '6')
+      .replace(/[OQD]/g, '0')
+      .replace(/[IL]/g, '1')
+      .replace(/Z/g, '2')
+      .replace(/S/g, '5')
+      .replace(/B/g, '8');
+    p1 = `${p1[0]}${c1}${c2}`;
+  }
 
-    // Formato 2+4 (Motos ej. 20-6371)
-    const conGuionMoto = `${limpio.slice(0, 2)}-${limpio.slice(2, 6)}`;
-    if (esPlacaValida(conGuionMoto)) {
-      return conGuionMoto;
-    }
+  const conGuion = `${p1}-${p2}`;
+  if (esPlacaValida(conGuion)) {
+    return conGuion;
+  }
 
-    // Corrección adaptativa de confusiones OCR frecuentes (O->0, I->1, B->8 en zonas numéricas)
-    // Intento A: Sufijo numérico (ej. W2U-792 o 206-371)
+  // Formato 2+4 (Motos ej. AB-1234)
+  const conGuionMoto = `${limpio.slice(0, 2)}-${limpio.slice(2, 6)}`;
+  if (esPlacaValida(conGuionMoto)) {
+    return conGuionMoto;
+  }
+
+  // Corrección adaptativa de confusiones OCR frecuentes en el sufijo SOLO si el sufijo ya tiene al menos 2 dígitos reales
+  const digitosEnSufijo = (p2.match(/[0-9]/g) || []).length;
+  if (digitosEnSufijo >= 2) {
     const p2Num = p2
       .replace(/[OQD]/g, '0')
       .replace(/[IL]/g, '1')
@@ -236,8 +262,10 @@ export function normalizarPlaca(texto: string): string {
     if (esPlacaValida(candA)) {
       return candA;
     }
+  }
 
-    // Intento B: Sufijo de moto con letra final (ej. 206-37F leído como 206-3IF)
+  // Intento B: Sufijo de moto con letra final (ej. 206-37F leído como 206-3IF)
+  if (/^[0-9]/.test(p1) && /[A-Z]$/.test(p2) && (p2.slice(0, 2).match(/[0-9]/g) || []).length >= 1) {
     const p2Moto =
       p2.slice(0, 2)
         .replace(/[OQD]/g, '0')
@@ -249,89 +277,57 @@ export function normalizarPlaca(texto: string): string {
     if (esPlacaValida(candB)) {
       return candB;
     }
-
-    return '';
-  }
-
-  // 3. Si tiene más de 6 caracteres (ej. "PERUW2U792" o ruidos pegados), buscar subsecuencia válida
-  if (limpio.length > 6) {
-    for (let i = 0; i <= limpio.length - 6; i++) {
-      const sub = limpio.slice(i, i + 6);
-      const res = normalizarPlaca(sub);
-      if (res && esPlacaValida(res)) {
-        return res;
-      }
-    }
   }
 
   return '';
 }
 
 /**
- * Escanea cualquier texto libre (como el leído en una hoja de papel, cuaderno, pantalla o escena completa)
- * buscando secuencias que cumplan con la estructura de matrícula vehicular peruana oficial MTC.
+ * Escanea cualquier texto libre línea por línea (jamás uniendo ruido de distintas líneas verticales)
+ * buscando secuencias que cumplan estrictamente con la estructura de matrícula vehicular peruana oficial MTC.
  */
 export function buscarSecuenciasPlacaEnTexto(texto: string): Array<{ placa: string; textoMatch: string }> {
   if (!texto) return [];
   const candidatos: Array<{ placa: string; textoMatch: string }> = [];
   const encontradas = new Set<string>();
 
-  // Normalizar acentos, reparar trazos cursivos y pasar a mayúsculas
-  const t = repararPrefijoCursivo(texto.toUpperCase().replace(/PERÚ/g, 'PERU'));
+  const lineas = texto.split(/[\r\n]+/);
 
-  // Patrón 1: Bloque de 6 caracteres compactos o con guión/espacio central (ej: W2U-792, A1A 123, ABC-123, 206-37F)
-  const regexA = /\b([A-Z0-9]{3})[\s\-_.:/]*([A-Z0-9]{3})\b/g;
-  let match: RegExpExecArray | null;
-  while ((match = regexA.exec(t)) !== null) {
-    const raw = match[1] + match[2];
-    const norm = normalizarPlaca(raw);
-    if (norm && esPlacaValida(norm) && !encontradas.has(norm)) {
-      encontradas.add(norm);
-      candidatos.push({ placa: norm, textoMatch: match[0] });
-    }
-  }
+  for (const lineaCruda of lineas) {
+    const t = repararPrefijoCursivo(lineaCruda.toUpperCase().replace(/PERÚ/g, 'PERU')).trim();
+    if (!t || t.length < 5) continue;
 
-  // Patrón 2: Letras escritas a mano separadas por espacios (ej: "W 2 U - 7 9 2" o "2 0 6 - 3 7 F")
-  const regexB = /\b([A-Z0-9])\s*([A-Z0-9])\s*([A-Z0-9])\s*[\s\-_.:/]?\s*([A-Z0-9])\s*([A-Z0-9])\s*([A-Z0-9])\b/g;
-  while ((match = regexB.exec(t)) !== null) {
-    const raw = match[1] + match[2] + match[3] + match[4] + match[5] + match[6];
-    const norm = normalizarPlaca(raw);
-    if (norm && esPlacaValida(norm) && !encontradas.has(norm)) {
-      encontradas.add(norm);
-      candidatos.push({ placa: norm, textoMatch: match[0] });
+    // Patrón 1: Bloque de 6 caracteres compactos o con guión/espacio central en la misma línea (ej: W2U-792, ABC-123, 206-37F)
+    const regexA = /\b([A-Z0-9]{3})[ \t\-_.:/]{0,2}([A-Z0-9]{3})\b/g;
+    let match: RegExpExecArray | null;
+    while ((match = regexA.exec(t)) !== null) {
+      const raw = match[1] + match[2];
+      const norm = normalizarPlaca(raw);
+      if (norm && esPlacaValida(norm) && !encontradas.has(norm)) {
+        encontradas.add(norm);
+        candidatos.push({ placa: norm, textoMatch: match[0] });
+      }
     }
-  }
 
-  // Patrón 3: Motos (2 caracteres + 4 dígitos, ej: "AB-1234" o "12-3456")
-  const regexMoto = /\b([A-Z0-9]{2})[\s\-_.:/]?([0-9]{4})\b/g;
-  while ((match = regexMoto.exec(t)) !== null) {
-    const raw = match[1] + match[2];
-    const norm = normalizarPlaca(raw);
-    if (norm && esPlacaValida(norm) && !encontradas.has(norm)) {
-      encontradas.add(norm);
-      candidatos.push({ placa: norm, textoMatch: match[0] });
+    // Patrón 2: Caracteres con guión explícito separados por un espacio horizontal en la misma línea (ej: "2 0 6 - 3 7 F")
+    const regexB = /\b([A-Z0-9])[ \t]?([A-Z0-9])[ \t]?([A-Z0-9])[ \t]*-[ \t]*([A-Z0-9])[ \t]?([A-Z0-9])[ \t]?([A-Z0-9])\b/g;
+    while ((match = regexB.exec(t)) !== null) {
+      const raw = match[1] + match[2] + match[3] + match[4] + match[5] + match[6];
+      const norm = normalizarPlaca(raw);
+      if (norm && esPlacaValida(norm) && !encontradas.has(norm)) {
+        encontradas.add(norm);
+        candidatos.push({ placa: norm, textoMatch: match[0] });
+      }
     }
-  }
 
-  // Patrón 4: Subsecuencias dentro de palabras largas o ruido de OCR
-  const palabras = t.split(/\s+/);
-  for (const palabra of palabras) {
-    const normDirecta = normalizarPlaca(palabra);
-    if (normDirecta && esPlacaValida(normDirecta) && !encontradas.has(normDirecta)) {
-      encontradas.add(normDirecta);
-      candidatos.push({ placa: normDirecta, textoMatch: palabra });
-      continue;
-    }
-    const soloAlfanum = palabra.replace(/[^A-Z0-9]/g, '');
-    if (soloAlfanum.length >= 6) {
-      for (let i = 0; i <= soloAlfanum.length - 6; i++) {
-        const sub = soloAlfanum.slice(i, i + 6);
-        const norm = normalizarPlaca(sub);
-        if (norm && esPlacaValida(norm) && !encontradas.has(norm)) {
-          encontradas.add(norm);
-          candidatos.push({ placa: norm, textoMatch: palabra });
-          break;
-        }
+    // Patrón 3: Motos (2 letras + 4 dígitos en la misma línea, ej: "AB-1234")
+    const regexMoto = /\b([A-Z]{2})[ \t\-_.:/]?([0-9]{4})\b/g;
+    while ((match = regexMoto.exec(t)) !== null) {
+      const raw = match[1] + match[2];
+      const norm = normalizarPlaca(raw);
+      if (norm && esPlacaValida(norm) && !encontradas.has(norm)) {
+        encontradas.add(norm);
+        candidatos.push({ placa: norm, textoMatch: match[0] });
       }
     }
   }

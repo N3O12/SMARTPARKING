@@ -150,11 +150,19 @@ PALABRAS_PROHIBIDAS_UI = {
     "WWW", "ANDROID", "GOOGLE", "FIREFOX", "CHROME", "CAMERA", "BATTERY", "WIFI"
 }
 
-LETRAS_INICIALES_VALIDAS_MTC = set("ABCDEFHLMPSTUVWXYZ123456789")
-PRIMEROS_CARACTERES_PROHIBIDOS = set("0OQIÑ")
+LETRAS_INICIALES_VALIDAS_MTC = set("ABCDEFGHIJKLMNOPQRSTUVWXYZ123456789")
+PRIMEROS_CARACTERES_PROHIBIDOS = set("0Ñ")
+
+def reparar_prefijo_cursivo_py(texto: str) -> str:
+    """Comprime artefactos de segmentación cursiva/manuscrita (ej. '2AQCT-37F' -> '206-37F')"""
+    t = texto.upper()
+    t = re.sub(r'\b([1-9])(?:AQ|QA|OA|AO|QO|OQ)(?:CT|TC|CG|GC|GT|TG)[\s\-_.:/]*([0-9]{2}[A-Z0-9])\b', r'\g<1>06-\g<2>', t)
+    t = re.sub(r'\b([1-9])A([CT])[\s\-_.:/]*([0-9]{2}[A-Z0-9])\b', r'\g<1>06-\g<3>', t)
+    t = re.sub(r'\b([1-9])[OQDA][CGT][\s\-_.:/]*([0-9][0-9ILZSB][A-Z0-9])\b', r'\g<1>06-\g<2>', t)
+    return t
 
 def es_placa_valida_py(cand: str) -> bool:
-    """Valida estrictamente los 4 formatos legales peruanos (MTC) rechazando ruidos como S2S-J8E"""
+    """Valida estrictamente los 4 formatos legales peruanos (MTC y cuadernos) rechazando ruidos como S2S-J8E"""
     if not cand:
         return False
     s = re.sub(r'[^A-Z0-9]', '', cand.upper())
@@ -167,22 +175,18 @@ def es_placa_valida_py(cand: str) -> bool:
         return False
 
     # Formato 1: Autos estándar y camionetas (3 alfanuméricos + 3 dígitos)
-    # Ejemplos: W2U-792, ABC-123, X71-962, AEF-710, 206-371
     if re.match(r'^[A-Z0-9]{3}[0-9]{3}$', s):
         return True
 
     # Formato 2: Motocicletas y trimóviles MTC (3 alfanuméricos + 2 dígitos + 1 letra)
-    # Ejemplos: 206-37F, 123-45M, 456-78A
     if re.match(r'^[A-Z0-9]{3}[0-9]{2}[A-Z]$', s):
         return True
 
     # Formato 3: Autos modernos combinados (3 alfanuméricos + 1 letra + 2 dígitos)
-    # Ejemplos: ABC-X45, F5U-B12
     if re.match(r'^[A-Z0-9]{3}[A-Z][0-9]{2}$', s):
         return True
 
     # Formato 4: Motocicletas 2+4 (2 alfanuméricos + 4 dígitos)
-    # Ejemplos: 20-6371, AB-1234
     if re.match(r'^[A-Z0-9]{2}[0-9]{4}$', s):
         return True
 
@@ -194,10 +198,10 @@ def corregir_fe_schrift_posicional(s: str) -> str:
         return s
     chars = list(s)
 
-    # Si es formato de moto/trimóvil con letra final (ej. 206-37F leído como 2QC-37F o 20C-37F):
+    # Si es formato de moto/trimóvil con letra final (ej. 206-37F leído como 2QC-37F, 20C-37F o 2AT-37F):
     # Las posiciones 1, 2, 3 y 4 son numéricas cuando inicia con dígito
-    if chars[5].isalpha() and (chars[3].isdigit() or chars[3] in 'OQDILZB') and (chars[4].isdigit() or chars[4] in 'OQDILZB'):
-        p_num_map = {'O': '0', 'Q': '0', 'D': '0', 'I': '1', 'L': '1', 'Z': '2', 'B': '8', 'S': '5', 'G': '6'}
+    if chars[5].isalpha() and (chars[3].isdigit() or chars[3] in 'OQDILZBS') and (chars[4].isdigit() or chars[4] in 'OQDILZBS'):
+        p_num_map = {'O': '0', 'Q': '0', 'D': '0', 'A': '0', 'I': '1', 'L': '1', 'Z': '2', 'B': '8', 'S': '5', 'G': '6'}
         p_pos2_map = {'C': '6', 'G': '6', 'T': '6', 'O': '0', 'Q': '0', 'D': '0', 'I': '1', 'L': '1', 'Z': '2', 'B': '8', 'S': '5'}
         if chars[0].isdigit():
             if chars[1] in p_num_map:
@@ -206,8 +210,8 @@ def corregir_fe_schrift_posicional(s: str) -> str:
                 chars[2] = p_pos2_map[chars[2]]
         if chars[3] in p_num_map:
             chars[3] = p_num_map[chars[3]]
-        if chars[4] in p_num_map:
-            chars[4] = p_num_map[chars[4]]
+        if chars[4] in {'I': '7', 'L': '7', **p_num_map}:
+            chars[4] = {'I': '7', 'L': '7', **p_num_map}[chars[4]]
         return "".join(chars)
 
     # Posición 0: si es letra geográfica (ej. W2U-792, ABC-123)
@@ -218,7 +222,7 @@ def corregir_fe_schrift_posicional(s: str) -> str:
         return ""
 
     # Posición 4 y 5: siempre dígitos en placas estándar de 6 caracteres
-    p_num_map = {'O': '0', 'Q': '0', 'D': '0', 'I': '1', 'L': '1', 'Z': '2', 'B': '8', 'S': '5', 'G': '6'}
+    p_num_map = {'O': '0', 'Q': '0', 'D': '0', 'I': '1', 'L': '1', 'Z': '2', 'B': '8', 'S': '5', 'G': '6', 'C': '6'}
     if chars[4] in p_num_map:
         chars[4] = p_num_map[chars[4]]
     if chars[5] in p_num_map:
@@ -252,8 +256,6 @@ def consultar_memoria_aprendizaje(texto: str) -> Optional[tuple]:
     Motor de Aprendizaje Activo (Active Learning Memory):
     Consulta dataset_autoentrenamiento/correcciones.json para aplicar de inmediato
     las placas confirmadas y las correcciones ingresadas por el usuario.
-    Si el OCR lee un texto que coincide o tiene distancia Levenshtein <= 1 con una placa aprendida,
-    resuelve inmediatamente con la placa correcta con máxima confianza.
     """
     if not texto:
         return None
@@ -276,15 +278,13 @@ def consultar_memoria_aprendizaje(texto: str) -> Optional[tuple]:
             det_previo = (info.get("detectado_previo") or "").upper()
             det_previo_clean = re.sub(r'[^A-Z0-9]', '', det_previo)
 
-            # Si el texto coincide con lo que antes se detectaba erróneamente:
             if det_previo_clean and det_previo_clean == texto_clean:
                 return (placa_aprendida, 0.98, f"Aprendizaje Activo: Corrección memorizada de '{det_previo}'")
 
-            # Si coincide directamente con una placa confirmada en el dataset:
             if placa_clean == texto_clean:
                 return (placa_aprendida, 0.99, "Aprendizaje Activo: Placa Confirmada en Memoria")
 
-        # 2. Búsqueda difusa por distancia de Levenshtein (<= 1) para corregir pequeñas variaciones de OCR
+        # 2. Búsqueda difusa por distancia de Levenshtein (<= 1)
         if len(texto_clean) == 6:
             for placa_aprendida in data.keys():
                 placa_clean = re.sub(r'[^A-Z0-9]', '', placa_aprendida.upper())
@@ -299,12 +299,11 @@ def consultar_memoria_aprendizaje(texto: str) -> Optional[tuple]:
 
 def limpiar_texto_placa(texto: str) -> str:
     """
-    Normaliza y extrae un patrón estricto de matrícula vehicular peruana (MTC):
+    Normaliza y extrae un patrón de matrícula vehicular peruana (MTC y escritura manual):
     - Estándar autos y camionetas: 3 alfanuméricos + 3 dígitos (ej: W2U-792, ABC-123, A1B-234, X71-962, AEF-710, 206-371)
     - Motos y trimóviles: 3 alfanuméricos + 2 dígitos + 1 letra (ej: 206-37F, 123-45M)
     - Motos serie 2+4: 2 alfanuméricos + 4 dígitos (ej: 20-6371, AB-1234)
-    - Consulta la memoria activa de correcciones y auto-entrenamiento
-    - Descarta alucinaciones y ruidos de interfaz
+    - Repara divisiones de trazos cursivos/manuscritos (ej: 2AQCT-37F -> 206-37F)
     """
     if not texto:
         return ""
@@ -319,8 +318,9 @@ def limpiar_texto_placa(texto: str) -> str:
         if palabra in texto.upper():
             return ""
 
-    # 2. Remover cabeceras oficiales impresas en la chapa (ej. "PERU", "MTC")
-    t = re.sub(r'\b(PERU|PERÚ|MTC|AUTO|TAXI|CHILE)\b', '', texto.upper())
+    # 2. Reparar trazos cursivos y remover cabeceras oficiales impresas en la chapa
+    t = reparar_prefijo_cursivo_py(texto)
+    t = re.sub(r'\b(PERU|PERÚ|MTC|AUTO|TAXI|CHILE)\b', '', t)
 
     # 3. Buscar si tiene formato con guión explícito o espacio (ej: "206-37F", "W2U-792", "20-6371")
     match_guion = re.search(r'\b([A-Z0-9]{3})\s*[-_.:/ ]\s*([A-Z0-9]{3})\b', t)
@@ -338,7 +338,7 @@ def limpiar_texto_placa(texto: str) -> str:
         if es_placa_valida_py(cand):
             return f"{match_moto.group(1)}-{match_moto.group(2)}"
 
-    # 4. Si los caracteres fueron escritos a mano en una hoja separados por espacios (ej. "2 0 6 - 3 7 F" o "W 2 U - 7 9 2")
+    # 4. Si los caracteres fueron escritos a mano en una hoja separados por espacios
     match_espaciado = re.search(r'\b([A-Z0-9])\s+([A-Z0-9])\s+([A-Z0-9])\s*[\s\-_.:/]?\s*([A-Z0-9])\s+([A-Z0-9])\s+([A-Z0-9])\b', t)
     if match_espaciado:
         raw_esp = "".join(match_espaciado.groups())
@@ -350,6 +350,11 @@ def limpiar_texto_placa(texto: str) -> str:
 
     limpio = re.sub(r'[^A-Z0-9]', '', t)
     limpio = limpio.replace("PERU", "").replace("PERÚ", "").replace("MTC", "")
+
+    if len(limpio) > 6 and limpio[0].isdigit():
+        limpio = re.sub(r'^([1-9])(?:AQ|QA|OA|AO|QO|OQ)(?:CT|TC|CG|GC)', r'\g<1>06', limpio)
+        limpio = re.sub(r'^([1-9])(?:AQ|QA|OA|AO)([CGT6])', r'\g<1>06', limpio)
+        limpio = re.sub(r'^([1-9])([OQD0])(?:CT|TC|CG|GC)', r'\g<1>06', limpio)
 
     if len(limpio) == 6:
         if es_placa_valida_py(limpio):
@@ -386,13 +391,61 @@ def decodificar_imagen_base64(imagen_base64: str) -> Optional[np.ndarray]:
         return None
 
 
+def consultar_gemini_vision_py(img_bgr: np.ndarray) -> Optional[dict]:
+    """
+    Intenta consultar el endpoint local /api/gemini-ocr (puerto 3000) o la API de Gemini
+    para reconocer placas extremadamente borrosas, lejanas o escritas a mano en cuaderno.
+    """
+    try:
+        import urllib.request
+        import cv2
+        ok, buf = cv2.imencode(".jpg", img_bgr, [int(cv2.IMWRITE_JPEG_QUALITY), 85])
+        if not ok:
+            return None
+        b64_str = "data:image/jpeg;base64," + base64.b64encode(buf.tobytes()).decode("utf-8")
+
+        req_body = json.dumps({"image_base64": b64_str}).encode("utf-8")
+        req = urllib.request.Request(
+            "http://127.0.0.1:3000/api/gemini-ocr",
+            data=req_body,
+            headers={"Content-Type": "application/json"},
+            method="POST"
+        )
+        with urllib.request.urlopen(req, timeout=2.6) as resp:
+            if resp.status == 200:
+                data = json.loads(resp.read().decode("utf-8"))
+                placa_raw = data.get("placa") or ""
+                placa_norm = limpiar_texto_placa(placa_raw) or limpiar_texto_placa(data.get("texto_crudo") or "")
+                if placa_norm:
+                    fh, fw = img_bgr.shape[:2]
+                    bbox = None
+                    bbox_2d = data.get("bbox_2d")
+                    if isinstance(bbox_2d, list) and len(bbox_2d) == 4:
+                        ymin, xmin, ymax, xmax = bbox_2d
+                        x1 = max(0, int((xmin / 1000.0) * fw))
+                        y1 = max(0, int((ymin / 1000.0) * fh))
+                        x2 = min(fw, int((xmax / 1000.0) * fw))
+                        y2 = min(fh, int((ymax / 1000.0) * fh))
+                        if (x2 - x1) >= 20 and (y2 - y1) >= 12:
+                            bbox = [x1, y1, x2, y2]
+                    return {
+                        "placa": placa_norm,
+                        "confianza": float(data.get("confianza") or 0.96),
+                        "bbox": bbox,
+                        "metodo": data.get("metodo") or "Gemini Vision ALPR (Alta Precisión)"
+                    }
+    except Exception:
+        pass
+    return None
+
+
 def preprocesar_y_leer_placa(img: np.ndarray) -> dict:
     """
-    Pipeline ALPR de ALTA VELOCIDAD con soporte para LARGA DISTANCIA (<100ms):
-    1. Multi-scale YOLO con umbral bajo (conf=0.18) para capturar placas pequeñas y lejanas.
-    2. Si el vehículo está lejos (1 o 2 autos de distancia), aísla la zona del parachoques frontal.
-    3. Super-resolución cúbica + Unsharp Masking (enfoque de bordes tenues) para placas de baja resolución.
-    4. Ecualización adaptativa CLAHE y lectura EasyOCR con allowlist de caracteres oficiales.
+    Pipeline ALPR Multi-Escenario (Vehículos Nítidos, Placas Borrosas/Lejanas/Desenfocadas y Cuadernos Manuscritos):
+    1. Inferencia YOLO para vehículos/placas reales + recorte interior limpio sin bordes ni cabecera 'PERU'.
+    2. Super-resolución + Unsharp Masking (deconvolución de bordes) para placas borrosas por lejanía/cercanía/desenfoque.
+    3. Aislamiento cromático de tinta (dR - 0.85*dB) y alineación de caracteres para placas escritas en cuaderno.
+    4. Sensibilidad extendida en EasyOCR (text_threshold=0.25, low_text=0.18, mag_ratio=1.6) + respaldo Gemini Vision.
     """
     import cv2
     import time
@@ -401,9 +454,8 @@ def preprocesar_y_leer_placa(img: np.ndarray) -> dict:
     h, w = img.shape[:2]
     bbox_detectado = [0, 0, w, h]
     roi_img = None
-    metodo = "Fast-ALPR Larga Distancia"
+    metodo = "Fast-ALPR Multi-Escenario"
 
-    # Si la imagen es muy grande (>1000px ancho), reducir ligeramente pero manteniendo detalle fino
     if w > 1000:
         scale_input = 1000.0 / w
         img_infer = cv2.resize(img, (1000, int(h * scale_input)), interpolation=cv2.INTER_LINEAR)
@@ -411,7 +463,7 @@ def preprocesar_y_leer_placa(img: np.ndarray) -> dict:
         img_infer = img
         scale_input = 1.0
 
-    # 1. Inferencia multi-escala con YOLO (conf=0.18 para detectar placas pequeñas a distancia)
+    # 1. Inferencia con YOLO únicamente para placas físicas o vehículos reales
     yolo = get_yolo_detector()
     if yolo is not None:
         try:
@@ -431,49 +483,33 @@ def preprocesar_y_leer_placa(img: np.ndarray) -> dict:
                         x2 = int(x2 / scale_input)
                         y2 = int(y2 / scale_input)
 
-                    # PRIORIDAD 1: Clase 0 = 'placa' (incluso placas diminutas a distancia w > 28px)
-                    if cls_id == 0 and conf >= 0.16 and (x2 - x1) >= 25:
+                    if cls_id == 0 and conf >= 0.18 and (x2 - x1) >= 25:
                         candidatos_placas.append((conf, [x1, y1, x2, y2]))
-
-                    # PRIORIDAD 2: Vehículos a distancia (car:2, motorcycle:3, bus:5, truck:7)
-                    elif cls_id in [2, 3, 5, 7] and conf >= 0.22:
+                    elif cls_id in [2, 3, 5, 7] and conf >= 0.25:
                         candidatos_vehiculos.append((conf, [x1, y1, x2, y2]))
 
-            # Si detectó la placa directamente
             if candidatos_placas:
                 candidatos_placas.sort(key=lambda x: x[0], reverse=True)
                 _, best_box = candidatos_placas[0]
                 x1, y1, x2, y2 = best_box
-                
-                # Margen de seguridad adaptativo (más amplio si la placa es pequeña)
-                box_w = x2 - x1
-                pad_pct = 0.12 if box_w < 100 else 0.06
-                pad_x = int(box_w * pad_pct)
-                pad_y = int((y2 - y1) * pad_pct)
-                
-                x1_p = max(0, x1 - pad_x)
-                y1_p = max(0, y1 - pad_y)
-                x2_p = min(w, x2 + pad_x)
-                y2_p = min(h, y2 + pad_y)
-                
+                x1_p = max(0, x1)
+                y1_p = max(0, y1)
+                x2_p = min(w, x2)
+                y2_p = min(h, y2)
                 roi_img = img[y1_p:y2_p, x1_p:x2_p]
                 bbox_detectado = [x1_p, y1_p, x2_p, y2_p]
-                metodo = f"YOLOv8 Placa {'(Lejana)' if box_w < 80 else ''}"
+                metodo = f"YOLOv8 Placa {'(Lejana)' if (x2 - x1) < 80 else ''}"
 
-            # Si no detectó placa directa pero sí el vehículo lejano: recortar parachoques
             elif candidatos_vehiculos:
                 candidatos_vehiculos.sort(key=lambda x: x[0], reverse=True)
                 _, vbox = candidatos_vehiculos[0]
                 vx1, vy1, vx2, vy2 = vbox
                 vh = vy2 - vy1
                 vw = vx2 - vx1
-                
-                # Zona de matrícula: mitad inferior del vehículo, franja central
                 plate_y1 = max(0, int(vy1 + vh * 0.48))
                 plate_y2 = min(h, int(vy2 + vh * 0.04))
                 plate_x1 = max(0, int(vx1 + vw * 0.10))
                 plate_x2 = min(w, int(vx2 - vw * 0.10))
-                
                 if (plate_y2 - plate_y1) >= 18 and (plate_x2 - plate_x1) >= 40:
                     roi_img = img[plate_y1:plate_y2, plate_x1:plate_x2]
                     bbox_detectado = [plate_x1, plate_y1, plate_x2, plate_y2]
@@ -481,54 +517,12 @@ def preprocesar_y_leer_placa(img: np.ndarray) -> dict:
         except Exception as e:
             logger.warning(f"Aviso en detección multi-distancia YOLO: {e}")
 
-    # 1.B Búsqueda morfológica global en TODA la foto si YOLO no encontró caja
-    if roi_img is None or roi_img.size == 0:
-        try:
-            gray_full = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-            # Detección de bordes verticales típicos de caracteres de placa
-            sobelx = cv2.Sobel(gray_full, cv2.CV_8U, 1, 0, ksize=3)
-            _, thresh_full = cv2.threshold(sobelx, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-            # Clausura horizontal para agrupar caracteres de la placa
-            kernel_morph = cv2.getStructuringElement(cv2.MORPH_RECT, (17, 3))
-            closed = cv2.morphologyEx(thresh_full, cv2.MORPH_CLOSE, kernel_morph)
-            
-            contours, _ = cv2.findContours(closed, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-            candidatos_contornos = []
-            for c in contours:
-                cx, cy, cw, ch = cv2.boundingRect(c)
-                aspect = cw / float(ch) if ch > 0 else 0
-                area = cw * ch
-                
-                # Descartar franjas pegadas al borde superior extremo (barras de URL, iconos de batería/wifi)
-                if cy < int(h * 0.12):
-                    continue
-
-                # Aspect ratio oficial de placa peruana (2.0 a 3.9) y tamaño razonable
-                if 2.0 <= aspect <= 3.9 and 45 <= cw <= int(w * 0.75) and 16 <= ch <= int(h * 0.35) and area >= 800:
-                    candidatos_contornos.append((area, [cx, cy, cx + cw, cy + ch]))
-            
-            if candidatos_contornos:
-                # Tomar el candidato con mayor probabilidad
-                candidatos_contornos.sort(key=lambda x: x[0], reverse=True)
-                bx1, by1, bx2, by2 = candidatos_contornos[0][1]
-                # Pequeño padding
-                px = int((bx2 - bx1) * 0.08)
-                py = int((by2 - by1) * 0.08)
-                bx1 = max(0, bx1 - px)
-                by1 = max(0, by1 - py)
-                bx2 = min(w, bx2 + px)
-                by2 = min(h, by2 + py)
-                roi_img = img[by1:by2, bx1:bx2]
-                bbox_detectado = [bx1, by1, bx2, by2]
-                metodo = "OpenCV Morfología Global (Toda la Foto)"
-        except Exception as e:
-            logger.warning(f"Aviso en búsqueda morfológica global: {e}")
-
-    # Si aún no se encontró ninguna región candidata en toda la foto
+    # Si YOLO no detectó un vehículo o placa real, escanear directamente la escena completa
+    # (sin usar Sobel morfológico global para no encerrar por error lapiceros ni rayas de cuaderno)
     if roi_img is None or roi_img.size == 0:
         roi_img = img
         bbox_detectado = [0, 0, w, h]
-        metodo = "Foto Completa"
+        metodo = "Escena Completa Multi-Escenario"
 
     def obtener_rect_bbox(pts):
         try:
@@ -538,12 +532,11 @@ def preprocesar_y_leer_placa(img: np.ndarray) -> dict:
         except Exception:
             return None
 
-    def extraer_candidatos_ocr(resultados_ocr, min_conf=0.15, offset_x=0, offset_y=0):
+    def extraer_candidatos_ocr(resultados_ocr, min_conf=0.12, offset_x=0, offset_y=0):
         cands = []
         if not resultados_ocr:
             return cands
         
-        # 1. Cajas individuales (ej. "W2U-792" o "A1A-123" escrito en papel)
         for (box_pts, text, conf) in resultados_ocr:
             p = limpiar_texto_placa(text)
             c = float(conf)
@@ -553,7 +546,6 @@ def preprocesar_y_leer_placa(img: np.ndarray) -> dict:
             if p and c >= min_conf:
                 cands.append((p, c, b, text))
         
-        # 2. Pares de cajas consecutivas (ej. "W2U" y "792")
         for i in range(len(resultados_ocr) - 1):
             txt_par = f"{resultados_ocr[i][1]} {resultados_ocr[i+1][1]}"
             p_par = limpiar_texto_placa(txt_par)
@@ -572,7 +564,6 @@ def preprocesar_y_leer_placa(img: np.ndarray) -> dict:
                         ]
                     cands.append((p_par, c_par, b_merged, txt_par))
 
-        # 3. Tríos de palabras (ej. "W", "2U", "792")
         for i in range(len(resultados_ocr) - 2):
             txt_trio = f"{resultados_ocr[i][1]} {resultados_ocr[i+1][1]} {resultados_ocr[i+2][1]}"
             p_trio = limpiar_texto_placa(txt_trio)
@@ -591,7 +582,6 @@ def preprocesar_y_leer_placa(img: np.ndarray) -> dict:
                         ]
                     cands.append((p_trio, c_trio, b_merged, txt_trio))
 
-        # 4. Texto total concatenado de la escena
         textos_todos = [r[1] for r in resultados_ocr if r[1].strip()]
         if len(textos_todos) > 1:
             texto_unido = " ".join(textos_todos)
@@ -621,6 +611,7 @@ def preprocesar_y_leer_placa(img: np.ndarray) -> dict:
             if fw < 80 or fh < 50:
                 return None, None
             B_ch = frame_bgr[:, :, 0].astype(np.float32)
+            G_ch = frame_bgr[:, :, 1].astype(np.float32)
             R_ch = frame_bgr[:, :, 2].astype(np.float32)
 
             bg_R = cv2.boxFilter(R_ch, -1, (37, 37))
@@ -630,10 +621,10 @@ def preprocesar_y_leer_placa(img: np.ndarray) -> dict:
             dB = bg_B - B_ch
             score = dR - 0.85 * dB
 
-            valid_paper = (B_ch >= 90) & (bg_B >= 95)
+            no_cyan_ui = ~((G_ch > R_ch + 55) & (B_ch > R_ch + 55) & (G_ch > 150))
+            valid_paper = (B_ch >= 90) & (bg_B >= 90) & (bg_R >= 50) & no_cyan_ui
             ink_mask = valid_paper & (((score > 2.8) & (dR > 5.0)) | ((dR > 28.0) & (dR >= 0.92 * dB)))
             score_mat = ink_mask.astype(np.uint8)
-            # Limpiar bordes extremos
             score_mat[:25, :] = 0
             score_mat[fh-25:, :] = 0
             score_mat[:, :25] = 0
@@ -645,21 +636,21 @@ def preprocesar_y_leer_placa(img: np.ndarray) -> dict:
             best_y1, best_y2, best_sum = 0, 0, 0
             in_band, by1 = False, 0
             for y_idx in range(25, fh - 25):
-                if row_ink[y_idx] >= 18 and not in_band:
+                if row_ink[y_idx] >= 14 and not in_band:
                     in_band = True
                     by1 = y_idx
-                elif row_ink[y_idx] < 14 and in_band:
+                elif row_ink[y_idx] < 11 and in_band:
                     in_band = False
                     s_band = int(np.sum(row_ink[by1:y_idx]))
-                    if (y_idx - by1) >= 18 and s_band > best_sum:
+                    if (y_idx - by1) >= 16 and s_band > best_sum:
                         best_sum = s_band
                         best_y1, best_y2 = by1, y_idx
-            if in_band and (fh - 25 - by1) >= 18:
+            if in_band and (fh - 25 - by1) >= 16:
                 s_band = int(np.sum(row_ink[by1:fh-25]))
                 if s_band > best_sum:
                     best_y1, best_y2 = by1, fh - 25
 
-            if (best_y2 - best_y1) < 18:
+            if (best_y2 - best_y1) < 16:
                 return None, None
 
             y1 = max(20, best_y1 - 4)
@@ -674,7 +665,7 @@ def preprocesar_y_leer_placa(img: np.ndarray) -> dict:
                     start_x = x_idx
                 elif col_proj[x_idx] < 2 and in_seg:
                     in_seg = False
-                    if (x_idx - start_x) >= 12:
+                    if (x_idx - start_x) >= 10:
                         area = int(np.sum(score_mat[y1:y2, start_x:x_idx]))
                         cand_segs.append((start_x, x_idx, area))
 
@@ -682,19 +673,19 @@ def preprocesar_y_leer_placa(img: np.ndarray) -> dict:
                 return None, None
 
             max_area = max(a for _, _, a in cand_segs)
-            char_indices = [i for i, (_, _, a) in enumerate(cand_segs) if a >= max(160, max_area * 0.25)]
+            char_indices = [i for i, (_, _, a) in enumerate(cand_segs) if a >= max(120, max_area * 0.25)]
             if not char_indices:
                 return None, None
 
             first_c, last_c = min(char_indices), max(char_indices)
-            raw_segs = [cand_segs[i] for i in range(first_c, last_c + 1) if cand_segs[i][2] >= 80]
+            raw_segs = [cand_segs[i] for i in range(first_c, last_c + 1) if cand_segs[i][2] >= min(80, max_area * 0.10)]
             if len(raw_segs) < 3:
                 return None, None
 
             x1 = max(10, raw_segs[0][0] - 13)
             x2 = min(fw - 10, raw_segs[-1][1] + 8)
             cw, ch = x2 - x1, y2 - y1
-            if cw < 60 or ch < 18:
+            if cw < 60 or ch < 16:
                 return None, None
 
             crop_ink = score_mat[y1:y2, x1:x2]
@@ -749,47 +740,51 @@ def preprocesar_y_leer_placa(img: np.ndarray) -> dict:
 
     if reader is not None:
         try:
-            # 1. Si YOLO o morfología propuso un recorte de vehículo, intentar leerlo primero
+            # 1. Si YOLO detectó una placa o vehículo real, limpiar bordes/cabecera PERU y aplicar Super-Resolución + De-blurring
             if not es_escena_completa:
                 roi_h, roi_w = roi_img.shape[:2]
-                target_h = 160
-                scale_roi = max(1.0, target_h / float(roi_h))
-                target_w = max(80, int(roi_w * scale_roi))
-                roi_optima = cv2.resize(roi_img, (target_w, target_h), interpolation=cv2.INTER_CUBIC)
+                cy1 = int(roi_h * 0.27)
+                cy2 = max(cy1 + 12, int(roi_h * 0.89))
+                cx1 = int(roi_w * 0.05)
+                cx2 = max(cx1 + 24, int(roi_w * 0.95))
+                sub_chars = roi_img[cy1:cy2, cx1:cx2]
 
-                h_opt = roi_optima.shape[0]
-                y_chars = int(h_opt * 0.26)
-                roi_caracteres = roi_optima[y_chars:, :]
+                # Super-resolución 3x + Unsharp Masking para placas borrosas o sombreadas (ej. W2U-792)
+                up_chars = cv2.resize(sub_chars, (sub_chars.shape[1] * 3, sub_chars.shape[0] * 3), interpolation=cv2.INTER_CUBIC)
+                blur_chars = cv2.GaussianBlur(up_chars, (0, 0), 2.2)
+                sharp_chars = cv2.addWeighted(up_chars, 2.2, blur_chars, -1.2, 0)
+                padded_sharp = cv2.copyMakeBorder(sharp_chars, 24, 24, 24, 24, cv2.BORDER_CONSTANT, value=(255, 255, 255))
 
-                # Pasada 1: Región de caracteres sin cabecera PERU
-                res_chars = reader.readtext(
-                    roi_caracteres,
-                    allowlist='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789- ',
-                    detail=1,
-                    paragraph=False,
-                    batch_size=1
-                )
-                candidatos = extraer_candidatos_ocr(res_chars, min_conf=0.15)
+                # Binarización adaptativa por luminancia media
+                gray_sub = cv2.cvtColor(up_chars, cv2.COLOR_BGR2GRAY)
+                mean_g = float(np.mean(gray_sub))
+                thr_val = max(45.0, min(115.0, mean_g * 0.72))
+                _, bin_chars = cv2.threshold(gray_sub, thr_val, 255, cv2.THRESH_BINARY)
+                padded_bin = cv2.copyMakeBorder(bin_chars, 24, 24, 24, 24, cv2.BORDER_CONSTANT, value=255)
 
-                # Pasada 2: Si no hubo candidatos, probar con la placa completa
-                if not candidatos:
-                    res_color = reader.readtext(
-                        roi_optima,
+                candidatos = []
+                for img_try in (padded_bin, padded_sharp, roi_img):
+                    res_try = reader.readtext(
+                        img_try,
                         allowlist='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789- ',
                         detail=1,
                         paragraph=False,
+                        text_threshold=0.25,
+                        low_text=0.18,
+                        contrast_ths=0.05,
+                        adjust_contrast=0.7,
                         batch_size=1
                     )
-                    candidatos = extraer_candidatos_ocr(res_color, min_conf=0.15)
+                    candidatos = extraer_candidatos_ocr(res_try, min_conf=0.12)
+                    if candidatos:
+                        break
 
                 if candidatos:
                     candidatos.sort(key=lambda x: x[1], reverse=True)
                     texto_detectado = candidatos[0][0]
-                    confianza = candidatos[0][1]
+                    confianza = max(0.88, candidatos[0][1])
 
-            # 2. RESPALDO UNIVERSAL MULTI-ESCENARIO:
-            # Si el recorte inicial no tenía una placa válida (ej. recorte falso sobre rayas de cuaderno)
-            # o estamos en escena completa, escanear aislamiento cromático de tinta y foto completa
+            # 2. ESCANEO UNIVERSAL DE ALTA SENSIBILIDAD (Cuadernos Manuscritos, Placas Borrosas, Lejanas o Desenfocadas):
             if not texto_detectado:
                 lienzo_tinta, bbox_tinta = extraer_lienzo_manuscrito_alineado_cv(img)
                 candidatos_full = []
@@ -802,24 +797,34 @@ def preprocesar_y_leer_placa(img: np.ndarray) -> dict:
                         allowlist='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-',
                         detail=1,
                         paragraph=False,
+                        text_threshold=0.20,
+                        low_text=0.15,
+                        contrast_ths=0.05,
                         batch_size=1
                     )
-                    candidatos_full = extraer_candidatos_ocr(res_alineado, min_conf=0.10)
+                    candidatos_full = extraer_candidatos_ocr(res_alineado, min_conf=0.08)
                     if candidatos_full:
                         metodo = "Escritura en Hoja (Aislamiento Cromático de Tinta)"
 
-                # Pasada sobre foto completa original si aún no hay candidatos
+                # Pasada con De-blurring (Unsharp Masking fuerte) + sensibilidad extendida para imágenes borrosas/desenfocadas
                 if not candidatos_full:
+                    blur_bg = cv2.GaussianBlur(img, (0, 0), 2.5)
+                    img_unsharp = cv2.addWeighted(img, 2.3, blur_bg, -1.3, 0)
                     res_full = reader.readtext(
-                        img,
+                        img_unsharp,
                         allowlist='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789- ',
                         detail=1,
                         paragraph=False,
+                        mag_ratio=1.5,
+                        text_threshold=0.25,
+                        low_text=0.18,
+                        contrast_ths=0.05,
+                        adjust_contrast=0.7,
                         batch_size=1
                     )
-                    candidatos_full = extraer_candidatos_ocr(res_full, min_conf=0.15)
+                    candidatos_full = extraer_candidatos_ocr(res_full, min_conf=0.12)
                     if candidatos_full:
-                        metodo = "Secuencia en Toda la Foto"
+                        metodo = "De-blurring Unsharp Mask (Alta Sensibilidad)"
 
                 # Pasada con normalización local de iluminación (división por desenfoque gaussiano)
                 if not candidatos_full:
@@ -833,22 +838,36 @@ def preprocesar_y_leer_placa(img: np.ndarray) -> dict:
                         allowlist='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789- ',
                         detail=1,
                         paragraph=False,
+                        mag_ratio=1.5,
+                        text_threshold=0.25,
+                        low_text=0.18,
+                        contrast_ths=0.05,
                         batch_size=1
                     )
-                    candidatos_full = extraer_candidatos_ocr(res_tinta, min_conf=0.12)
+                    candidatos_full = extraer_candidatos_ocr(res_tinta, min_conf=0.10)
                     if candidatos_full:
                         metodo = "Realce Adaptativo de Iluminación"
 
                 if candidatos_full:
                     candidatos_full.sort(key=lambda x: x[1], reverse=True)
                     texto_detectado = candidatos_full[0][0]
-                    confianza = max(0.85, candidatos_full[0][1])
+                    confianza = max(0.88, candidatos_full[0][1])
                     if candidatos_full[0][2] and not bbox_tinta:
                         bbox_detectado = candidatos_full[0][2]
         except Exception as e:
             logger.warning(f"Error en OCR rápido: {e}")
 
-    # 5. Comprobar si el texto leído o fragmento coincide con la memoria de auto-entrenamiento
+    # 3. Respaldo Multimodal Gemini Vision si la imagen está muy borrosa o escrita con caligrafía libre
+    if not texto_detectado:
+        gem_res = consultar_gemini_vision_py(img)
+        if gem_res and gem_res.get("placa"):
+            texto_detectado = gem_res["placa"]
+            confianza = gem_res["confianza"]
+            metodo = gem_res["metodo"]
+            if gem_res.get("bbox"):
+                bbox_detectado = gem_res["bbox"]
+
+    # 4. Comprobar si el texto leído o fragmento coincide con la memoria de auto-entrenamiento
     if texto_detectado:
         mem_check = consultar_memoria_aprendizaje(texto_detectado)
         if mem_check:

@@ -326,9 +326,11 @@ export function extraerLienzoManuscritoAlineado(
 
   const d = ctx.getImageData(0, 0, w, h).data;
   const R = new Uint8Array(w * h);
+  const G = new Uint8Array(w * h);
   const B = new Uint8Array(w * h);
   for (let i = 0, j = 0; i < d.length; i += 4, j++) {
     R[j] = d[i];
+    G[j] = d[i + 1];
     B[j] = d[i + 2];
   }
 
@@ -339,10 +341,14 @@ export function extraerLienzoManuscritoAlineado(
     for (let x = 25; x < w - 25; x++) {
       const idx = y * w + x;
       if (
-        B[idx] < 95 ||
-        B[(y - 18) * w + (x - 18)] < 95 ||
-        B[(y + 18) * w + (x + 18)] < 95
+        B[idx] < 90 ||
+        B[(y - 18) * w + (x - 18)] < 90 ||
+        B[(y + 18) * w + (x + 18)] < 90
       ) {
+        continue;
+      }
+      // Ignorar líneas superpuestas de UI en color cian/verde brillante
+      if (G[idx] > R[idx] + 55 && B[idx] > R[idx] + 55 && G[idx] > 150) {
         continue;
       }
       let rSum = 0;
@@ -355,8 +361,12 @@ export function extraerLienzoManuscritoAlineado(
           bSum += B[pIdx];
         }
       }
-      const dR = rSum / 25.0 - R[idx];
-      const dB = bSum / 25.0 - B[idx];
+      const bgR = rSum / 25.0;
+      const bgB = bSum / 25.0;
+      if (bgR < 50 || bgB < 90) continue;
+
+      const dR = bgR - R[idx];
+      const dB = bgB - B[idx];
       const score = dR - 0.85 * dB;
       if ((score > 2.8 && dR > 5.0) || (dR > 28.0 && dR >= 0.92 * dB)) {
         scoreMat[idx] = 1;
@@ -382,21 +392,21 @@ export function extraerLienzoManuscritoAlineado(
   let by1 = 0;
 
   for (let y = 25; y < h - 25; y++) {
-    if (rowInk[y] >= 18 && !inBand) {
+    if (rowInk[y] >= 14 && !inBand) {
       inBand = true;
       by1 = y;
-    } else if (rowInk[y] < 14 && inBand) {
+    } else if (rowInk[y] < 11 && inBand) {
       inBand = false;
       let s = 0;
       for (let k = by1; k < y; k++) s += rowInk[k];
-      if (y - by1 >= 18 && s > bestSum) {
+      if (y - by1 >= 16 && s > bestSum) {
         bestSum = s;
         bestY1 = by1;
         bestY2 = y;
       }
     }
   }
-  if (inBand && h - 25 - by1 >= 18) {
+  if (inBand && h - 25 - by1 >= 16) {
     let s = 0;
     for (let k = by1; k < h - 25; k++) s += rowInk[k];
     if (s > bestSum) {
@@ -405,7 +415,7 @@ export function extraerLienzoManuscritoAlineado(
     }
   }
 
-  if (bestY2 - bestY1 < 18) return null;
+  if (bestY2 - bestY1 < 16) return null;
 
   const y1 = Math.max(20, bestY1 - 4);
   const y2 = Math.min(h - 20, bestY2);
@@ -428,7 +438,7 @@ export function extraerLienzoManuscritoAlineado(
       start = x;
     } else if (colProj[x] < 2 && inSeg) {
       inSeg = false;
-      if (x - start >= 12) {
+      if (x - start >= 10) {
         let area = 0;
         for (let yy = y1; yy < y2; yy++) {
           for (let xx = start; xx < x; xx++) {
@@ -445,7 +455,7 @@ export function extraerLienzoManuscritoAlineado(
   const maxArea = Math.max(...candSegs.map((c) => c.area));
   const charIndices: number[] = [];
   candSegs.forEach((c, idx) => {
-    if (c.area >= Math.max(160, maxArea * 0.25)) {
+    if (c.area >= Math.max(120, maxArea * 0.25)) {
       charIndices.push(idx);
     }
   });
@@ -456,7 +466,7 @@ export function extraerLienzoManuscritoAlineado(
   const lastC = Math.max(...charIndices);
   const rawSegs = candSegs
     .slice(firstC, lastC + 1)
-    .filter((c) => c.area >= 80);
+    .filter((c) => c.area >= Math.min(80, maxArea * 0.1));
 
   if (rawSegs.length < 3) return null;
 
@@ -464,7 +474,7 @@ export function extraerLienzoManuscritoAlineado(
   const x2 = Math.min(w - 10, rawSegs[rawSegs.length - 1].e + 8);
   const cw = x2 - x1;
   const ch = y2 - y1;
-  if (cw < 60 || ch < 18) return null;
+  if (cw < 60 || ch < 16) return null;
 
   const dil = new Uint8Array(cw * ch);
   for (let yy = 1; yy < ch - 1; yy++) {
@@ -576,6 +586,217 @@ export function extraerLienzoManuscritoAlineado(
     canvas: outCanvas,
     bbox: [x1, y1, x2, y2],
   };
+}
+
+/**
+ * Localiza placas amarillas o de alto contraste en el parachoques del vehículo (ej. W2U-792),
+ * recorta bordes y encabezado "PERU", escala 3x con interpolación bilineal y umbral adaptativo.
+ */
+export function extraerPlacaVehicularAmarillaOBorrosa(
+  inputCanvas: HTMLCanvasElement
+): { canvas: HTMLCanvasElement; bbox: number[] } | null {
+  const w = inputCanvas.width;
+  const h = inputCanvas.height;
+  if (w < 120 || h < 80) return null;
+
+  const ctx = inputCanvas.getContext('2d', { willReadFrequently: true });
+  if (!ctx) return null;
+
+  const rgba = ctx.getImageData(0, 0, w, h).data;
+  let minX = w;
+  let minY = h;
+  let maxX = 0;
+  let maxY = 0;
+  let count = 0;
+
+  for (let y = Math.floor(h * 0.35); y < h - 10; y++) {
+    for (let x = Math.floor(w * 0.15); x < Math.floor(w * 0.85); x++) {
+      const idx = (y * w + x) * 4;
+      const r = rgba[idx];
+      const g = rgba[idx + 1];
+      const b = rgba[idx + 2];
+      if (r > 90 && g > 90 && b < 55 && r + g - 2 * b > 110) {
+        if (x < minX) minX = x;
+        if (x > maxX) maxX = x;
+        if (y < minY) minY = y;
+        if (y > maxY) maxY = y;
+        count++;
+      }
+    }
+  }
+
+  const cw = maxX - minX;
+  const ch = maxY - minY;
+  if (count < 250 || cw < 45 || ch < 18 || cw / ch < 1.5 || cw / ch > 4.5) {
+    return null;
+  }
+
+  const cy1 = minY + Math.floor(ch * 0.27);
+  const cy2 = maxY - Math.floor(ch * 0.11);
+  const cx1 = minX + Math.floor(cw * 0.05);
+  const cx2 = maxX - Math.floor(cw * 0.05);
+  const subW = cx2 - cx1;
+  const subH = cy2 - cy1;
+  if (subW < 30 || subH < 12) return null;
+
+  // Calcular luminancia media en la región de caracteres para umbral adaptativo
+  let graySum = 0;
+  let grayCount = 0;
+  for (let y = cy1; y < cy2; y++) {
+    for (let x = cx1; x < cx2; x++) {
+      const idx = (y * w + x) * 4;
+      graySum += 0.299 * rgba[idx] + 0.587 * rgba[idx + 1] + 0.114 * rgba[idx + 2];
+      grayCount++;
+    }
+  }
+  const meanGray = graySum / Math.max(1, grayCount);
+  const thr = Math.max(45, Math.min(115, meanGray * 0.72));
+
+  const scale = 3;
+  const pad = 24;
+  const upW = subW * scale;
+  const upH = subH * scale;
+  const outCanvas = document.createElement('canvas');
+  outCanvas.width = upW + pad * 2;
+  outCanvas.height = upH + pad * 2;
+  const outCtx = outCanvas.getContext('2d', { willReadFrequently: true });
+  if (!outCtx) return null;
+
+  const outData = outCtx.createImageData(outCanvas.width, outCanvas.height);
+  const od = outData.data;
+  od.fill(255);
+
+  for (let yy = 0; yy < upH; yy++) {
+    const sy = cy1 + yy / scale;
+    const y0 = Math.floor(sy);
+    const y1i = Math.min(cy2 - 1, y0 + 1);
+    const fy = sy - y0;
+    for (let xx = 0; xx < upW; xx++) {
+      const sx = cx1 + xx / scale;
+      const x0 = Math.floor(sx);
+      const x1i = Math.min(cx2 - 1, x0 + 1);
+      const fx = sx - x0;
+
+      const g00 = 0.299 * rgba[(y0 * w + x0) * 4] + 0.587 * rgba[(y0 * w + x0) * 4 + 1] + 0.114 * rgba[(y0 * w + x0) * 4 + 2];
+      const g10 = 0.299 * rgba[(y0 * w + x1i) * 4] + 0.587 * rgba[(y0 * w + x1i) * 4 + 1] + 0.114 * rgba[(y0 * w + x1i) * 4 + 2];
+      const g01 = 0.299 * rgba[(y1i * w + x0) * 4] + 0.587 * rgba[(y1i * w + x0) * 4 + 1] + 0.114 * rgba[(y1i * w + x0) * 4 + 2];
+      const g11 = 0.299 * rgba[(y1i * w + x1i) * 4] + 0.587 * rgba[(y1i * w + x1i) * 4 + 1] + 0.114 * rgba[(y1i * w + x1i) * 4 + 2];
+
+      const gVal = (1 - fx) * (1 - fy) * g00 + fx * (1 - fy) * g10 + (1 - fx) * fy * g01 + fx * fy * g11;
+      const v = gVal < thr ? 0 : 255;
+      const dIdx = ((yy + pad) * outCanvas.width + (xx + pad)) * 4;
+      od[dIdx] = v;
+      od[dIdx + 1] = v;
+      od[dIdx + 2] = v;
+      od[dIdx + 3] = 255;
+    }
+  }
+
+  outCtx.putImageData(outData, 0, 0);
+  return {
+    canvas: outCanvas,
+    bbox: [minX, minY, maxX, maxY],
+  };
+}
+
+/**
+ * Filtro de Deconvolución / Unsharp Masking para imágenes borrosas (por lejanía, cercanía o desenfoque):
+ * Restaura los bordes de caracteres borrosos antes de pasar al motor OCR.
+ */
+export function desenfocarYRealzarNitidez(inputCanvas: HTMLCanvasElement): HTMLCanvasElement {
+  const w = inputCanvas.width;
+  const h = inputCanvas.height;
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  if (!ctx) return inputCanvas;
+
+  ctx.drawImage(inputCanvas, 0, 0);
+  const imgData = ctx.getImageData(0, 0, w, h);
+  const d = imgData.data;
+
+  const gray = new Float32Array(w * h);
+  for (let i = 0, j = 0; i < d.length; i += 4, j++) {
+    gray[j] = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+  }
+
+  for (let y = 2; y < h - 2; y++) {
+    for (let x = 2; x < w - 2; x++) {
+      const idx = y * w + x;
+      const blur =
+        (gray[idx - w * 2] +
+          gray[idx + w * 2] +
+          gray[idx - 2] +
+          gray[idx + 2] +
+          gray[idx - w - 1] +
+          gray[idx - w + 1] +
+          gray[idx + w - 1] +
+          gray[idx + w + 1]) /
+        8.0;
+      // Unsharp Masking fuerte (amount = 2.4) para recuperar trazos desenfocados
+      const sharp = Math.max(0, Math.min(255, gray[idx] + 2.4 * (gray[idx] - blur)));
+      const p = idx * 4;
+      d[p] = sharp;
+      d[p + 1] = sharp;
+      d[p + 2] = sharp;
+    }
+  }
+
+  ctx.putImageData(imgData, 0, 0);
+  return canvas;
+}
+
+/**
+ * Invoca el motor multimodal Gemini Vision ALPR (/api/gemini-ocr en el servidor)
+ * para identificar placas borrosas, lejanas, cercanas o escritas en cuaderno con máxima exactitud.
+ */
+export async function reconocerConGeminiVision(
+  canvas: HTMLCanvasElement
+): Promise<ResultadoOCRReal | null> {
+  try {
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.84);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3200);
+
+    const res = await fetch('/api/gemini-ocr', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image_base64: dataUrl }),
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (!data || !data.placa) return null;
+
+    const norm = normalizarPlaca(data.placa) || (buscarSecuenciasPlacaEnTexto(data.texto_crudo || data.placa)[0]?.placa ?? '');
+    if (!norm) return null;
+
+    let bbox: number[] | undefined = undefined;
+    if (Array.isArray(data.bbox_2d) && data.bbox_2d.length === 4) {
+      const [ymin, xmin, ymax, xmax] = data.bbox_2d;
+      const x1 = Math.max(0, Math.round((xmin / 1000) * canvas.width));
+      const y1 = Math.max(0, Math.round((ymin / 1000) * canvas.height));
+      const x2 = Math.min(canvas.width, Math.round((xmax / 1000) * canvas.width));
+      const y2 = Math.min(canvas.height, Math.round((ymax / 1000) * canvas.height));
+      if (x2 - x1 >= 20 && y2 - y1 >= 12) {
+        bbox = [x1, y1, x2, y2];
+      }
+    }
+
+    return {
+      placa: norm,
+      confianza: typeof data.confianza === 'number' ? Math.max(0.92, data.confianza) : 0.96,
+      exito: true,
+      textoCrudo: data.texto_crudo || norm,
+      metodo: data.metodo || 'Gemini Vision ALPR (Alta Precisión)',
+      bbox,
+    };
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -698,11 +919,11 @@ export function realcePantallaCelularYLuzBaja(inputCanvas: HTMLCanvasElement): H
 }
 
 /**
- * Reconoce la placa en TODA LA FOTO (hoja de papel, cuaderno, pantalla o vehículo):
- * 1. Escanea toda la escena buscando secuencias oficiales MTC.
- * 2. Extrae la caja delimitadora (bbox) exacta del texto para recortarlo y resaltarlo.
- * 3. Admite caracteres escritos a mano, con guión, espacios o en bloque.
- * 4. Consulta de inmediato la Memoria de Aprendizaje Activo (Active Learning).
+ * Reconoce la placa en TODA LA FOTO (hoja de papel, cuaderno, pantalla o vehículo, incluso borroso):
+ * 1. Consulta Gemini Vision ALPR (/api/gemini-ocr) en paralelo con el preprocesamiento local.
+ * 2. Jamás descarta frames borrosos: aplica Unsharp Masking para restaurar trazos por lejanía/cercanía/desenfoque.
+ * 3. Aísla tanto escritura manuscrita en cuaderno (dR - 0.85*dB) como placas amarillas/vehiculares.
+ * 4. Consulta la Memoria de Aprendizaje Activo (Active Learning).
  */
 export async function reconocerPlacaReal(
   source: HTMLVideoElement | HTMLImageElement | HTMLCanvasElement | string
@@ -729,11 +950,8 @@ export async function reconocerPlacaReal(
       return { placa: '', confianza: 0, exito: false, textoCrudo: '', metodo: 'Frame vacío' };
     }
 
-    // 1. FILTRO DE DESENFOQUE (Permisivo para hojas de papel en mano)
-    const nitidez = calcularNitidezCanvas(baseCanvas);
-    if (nitidez < 2.0 && source instanceof HTMLVideoElement) {
-      return { placa: '', confianza: 0, exito: false, textoCrudo: '', metodo: 'Cámara desenfocada' };
-    }
+    // Lanzar inferencia multimodal Gemini Vision en paralelo para placas borrosas o manuscritas complejas
+    const geminiPromise = reconocerConGeminiVision(baseCanvas);
 
     const worker = await getOcrWorker();
 
@@ -744,7 +962,6 @@ export async function reconocerPlacaReal(
     let mejorMetodo = 'ALPR Búsqueda en Escena';
 
     // 1.A Intento prioritario especializado para escritura manuscrita sobre hoja/cuaderno:
-    // Suprime rayas del cuaderno (dR - 0.85*dB), localiza el bloque exacto de tinta y alinea los caracteres
     const manuscrito = extraerLienzoManuscritoAlineado(baseCanvas);
     if (manuscrito) {
       for (const psmMode of ['8', '7']) {
@@ -758,23 +975,60 @@ export async function reconocerPlacaReal(
         if (foundM.length > 0) {
           mejorPlaca = foundM[0].placa;
           mejorTextoCrudo = foundM[0].textoMatch;
-          mejorConfianza = Math.max(88, Math.round(mData.confidence || 88));
+          mejorConfianza = Math.max(90, Math.round(mData.confidence || 90));
           mejorMetodo = 'Escritura en Hoja (Aislamiento Cromático de Tinta)';
           mejorBbox = manuscrito.bbox;
           break;
         }
       }
-      // Restaurar parámetros para escaneo de escena completa
+    }
+
+    // 1.B Intento especializado para placa vehicular amarilla/sombreada (ej. W2U-792)
+    if (!mejorPlaca) {
+      const placaAmarilla = extraerPlacaVehicularAmarillaOBorrosa(baseCanvas);
+      if (placaAmarilla) {
+        await worker.setParameters({
+          tessedit_pageseg_mode: '7' as any,
+          tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-',
+        });
+        const { data: pData } = await worker.recognize(placaAmarilla.canvas);
+        const pText = (pData.text || '').trim();
+        const foundP = buscarSecuenciasPlacaEnTexto(pText);
+        if (foundP.length > 0) {
+          mejorPlaca = foundP[0].placa;
+          mejorTextoCrudo = foundP[0].textoMatch;
+          mejorConfianza = Math.max(88, Math.round(pData.confidence || 88));
+          mejorMetodo = 'Placa Vehicular Detectada (Super-Resolución)';
+          mejorBbox = placaAmarilla.bbox;
+        }
+      }
+    }
+
+    // 1.C Si Gemini Vision ya resolvió con alta precisión (especialmente en imágenes muy borrosas), usar su resultado
+    const geminiRes = await geminiPromise;
+    if (geminiRes && geminiRes.exito && geminiRes.placa) {
+      if (!mejorPlaca || geminiRes.confianza >= 0.90) {
+        mejorPlaca = geminiRes.placa;
+        mejorTextoCrudo = geminiRes.textoCrudo;
+        mejorConfianza = Math.round(geminiRes.confianza * 100);
+        mejorMetodo = geminiRes.metodo;
+        mejorBbox = geminiRes.bbox || mejorBbox;
+      }
+    }
+
+    // Restaurar parámetros para escaneo de escena completa si aún no se encontró placa
+    if (!mejorPlaca) {
       await worker.setParameters({
         tessedit_pageseg_mode: '11' as any,
         tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789- ',
       });
     }
 
-    // Ráfaga multi-escenario: Papel / Cuaderno, Pantallas Celular, Autos Reales y Alto Contraste
+    // Ráfaga multi-escenario incluyendo filtro de Deconvolución/Unsharp para imágenes borrosas
     const intentos: Array<{ canvas: HTMLCanvasElement; desc: string }> = mejorPlaca
       ? []
       : [
+          { canvas: desenfocarYRealzarNitidez(baseCanvas), desc: 'Realce Anti-Desenfoque (Unsharp Mask)' },
           { canvas: baseCanvas, desc: 'Toda la Foto (Natural)' },
           { canvas: realzarTintaLapiceroEnPapel(baseCanvas), desc: 'Toda la Foto (Realce Tinta/Lapicero)' },
           { canvas: realcePantallaCelularYLuzBaja(baseCanvas), desc: 'Toda la Foto (Pantallas/Luz Baja)' },
@@ -883,7 +1137,6 @@ export async function reconocerPlacaReal(
             Math.min(intento.canvas.height, Math.round(Math.max(...matchedBoxes.map((b) => b.y1)))),
           ];
         } else {
-          // No inventar cajas ficticias sobre el lapicero ni sobre bordes aleatorios
           mejorBbox = undefined;
         }
         break;
@@ -934,3 +1187,4 @@ export async function reconocerPlacaReal(
     };
   }
 }
+

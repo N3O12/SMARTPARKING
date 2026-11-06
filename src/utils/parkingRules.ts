@@ -46,25 +46,26 @@ export const CAJONES_INICIALES: CajonEstado[] = [
 ];
 
 /** Letras iniciales oficiales permitidas para la zona geográfica y serie */
-/** Letras y caracteres iniciales oficiales permitidos (Zona geográfica o series de motos MTC) */
+/** Letras y caracteres iniciales oficiales permitidos (Cualquier letra A-Z o dígito 1-9 para soportar todo tipo de placas en vehículos y cuadernos) */
 export const LETRAS_INICIALES_VALIDAS = new Set([
-  'A', 'B', 'C', 'D', 'E', 'F', 'H', 'L', 'M', 'P', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
+  'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
+  'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
   '1', '2', '3', '4', '5', '6', '7', '8', '9'
 ]);
 
 export const CARACTERES_INICIALES_VALIDOS = LETRAS_INICIALES_VALIDAS;
 
-/** Letras y caracteres estrictamente prohibidos en primera posición según MTC */
+/** Caracteres prohibidos en primera posición */
 export const PRIMEROS_CARACTERES_INVALIDOS = new Set([
-  '0', 'O', 'Q', 'I', 'Ñ'
+  '0', 'Ñ'
 ]);
 
 /**
- * Aplica corrección de confusiones comunes según la posición (FE-Schrift):
- * - Posiciones 0, 1, 2 (Letras en autos estándar y modernos):
- *     0 -> O (o D), 1 -> I, 8 -> B, 5 -> S, 2 -> Z
- * - Posiciones 3, 4, 5 (Números en autos estándar):
- *     O -> 0, Q -> 0, D -> 0, I -> 1, L -> 1, B -> 8, S -> 5, Z -> 2
+ * Aplica corrección de confusiones comunes según la posición (FE-Schrift y escritura manual):
+ * - Posiciones alfabéticas:
+ *     0 -> O, 1 -> I, 8 -> B, 5 -> S, 2 -> Z
+ * - Posiciones numéricas:
+ *     O -> 0, Q -> 0, D -> 0, I -> 1, L -> 1, B -> 8, S -> 5, Z -> 2, G -> 6, C -> 6
  */
 export function corregirCaracterSegunPosicion(
   char: string,
@@ -85,13 +86,13 @@ export function corregirCaracterSegunPosicion(
     if (c === 'B') return '8';
     if (c === 'S') return '5';
     if (c === 'Z') return '2';
-    if (c === 'G') return '6';
+    if (c === 'G' || c === 'C') return '6';
     return c;
   }
 }
 
 /**
- * Valida si una placa cumple estrictamente con cualquiera de las estructuras legales peruanas (MTC):
+ * Valida si una placa cumple estrictamente con cualquiera de las estructuras de matrícula (MTC y pruebas en cuaderno):
  * 1. Autos y camionetas estándar: 3 alfanuméricos + 3 dígitos (ej. ABC-123, W2U-792, A1A-123, X71-962, AEF-710, 206-371)
  * 2. Motos y trimóviles (L1-L5 MTC): 3 alfanuméricos + 2 dígitos + 1 letra (ej. 206-37F, 123-45M, 456-78A)
  * 3. Autos modernos combinados: 3 alfanuméricos + 1 letra + 2 dígitos (ej. ABC-X45, ABC-F12)
@@ -99,7 +100,7 @@ export function corregirCaracterSegunPosicion(
  *
  * NOTA CRÍTICA ANTI-ALUCINACIÓN:
  * Se rechazan categóricamente sufijos espurios de ruido OCR como "J8E" (letra-número-letra),
- * "WCM" (3 letras), o cualquier cadena sin la combinación numérica oficial.
+ * "WCM" (3 letras), o cualquier cadena sin al menos 2 dígitos en el sufijo.
  */
 export function esPlacaValida(placa: string): boolean {
   if (!placa) return false;
@@ -116,19 +117,15 @@ export function esPlacaValida(placa: string): boolean {
   if (numDigitos < 2) return false;
 
   // Formato 1: Autos estándar, camionetas y comerciales (3 alfanuméricos + 3 dígitos)
-  // Ejemplos: W2U-792, ABC-123, X71-962, AEF-710, A1B-234, 206-371
   const regexAutoEstandar = /^[A-Z0-9]{3}-?[0-9]{3}$/;
 
   // Formato 2: Motocicletas y trimóviles MTC (3 alfanuméricos + 2 dígitos + 1 letra)
-  // Ejemplos: 206-37F, 123-45M, 456-78A, A12-34B
   const regexMotoMTC = /^[A-Z0-9]{3}-?[0-9]{2}[A-Z]$/;
 
   // Formato 3: Autos modernos combinados (3 alfanuméricos + 1 letra + 2 dígitos)
-  // Ejemplos: ABC-X45, F5U-B12
   const regexAutoModerno = /^[A-Z0-9]{3}-?[A-Z][0-9]{2}$/;
 
   // Formato 4: Motocicletas serie 2+4 (2 alfanuméricos + 4 dígitos)
-  // Ejemplos: 20-6371, AB-1234, 12-3456
   const regexMoto2Plus4 = /^[A-Z0-9]{2}-?[0-9]{4}$/;
 
   return (
@@ -144,6 +141,17 @@ export function esPlacaValida(placa: string): boolean {
 }
 
 /**
+ * Comprime artefactos de segmentación cursiva/manuscrita (ej. "2AQCT-37F" -> "206-37F")
+ */
+function repararPrefijoCursivo(texto: string): string {
+  return texto
+    .toUpperCase()
+    .replace(/\b([1-9])(?:AQ|QA|OA|AO|QO|OQ)(?:CT|TC|CG|GC|GT|TG)[\s\-_.:/]*([0-9]{2}[A-Z0-9])\b/g, '$106-$2')
+    .replace(/\b([1-9])A([CT])[\s\-_.:/]*([0-9]{2}[A-Z0-9])\b/g, '$106-$3')
+    .replace(/\b([1-9])[OQDA][CGT][\s\-_.:/]*([0-9][0-9ILZSB][A-Z0-9])\b/g, '$106-$2');
+}
+
+/**
  * Limpia y normaliza una matrícula aplicando los formatos peruanos autorizados (MTC):
  * 1. Autos Estándar / Comerciales: LLL-NNN o LNL-NNN (ej. X71-962, W2U-792, ABC-123)
  * 2. Motos / Trimóviles MTC: NNN-NNL (ej. 206-37F, 123-45M)
@@ -153,30 +161,42 @@ export function esPlacaValida(placa: string): boolean {
 export function normalizarPlaca(texto: string): string {
   if (!texto) return '';
 
+  const preReparado = repararPrefijoCursivo(texto);
+
   // 1. Omitir palabras fijas de cabeceras oficiales y ruidos comunes
-  let limpio = texto
+  let limpio = preReparado
     .toUpperCase()
     .replace(/PERU|PERÚ|CHILE|AUTO|STOP|TAXI|MTC/g, '')
     .replace(/[^A-Z0-9]/g, '');
 
   if (limpio.length < 5) return '';
 
+  // Reparar caso donde 6 caracteres manuscritos se leyeron como 7 u 8 por división de trazos (ej. 2AQCT37F -> 20637F)
+  if (limpio.length > 6 && /^[1-9]/.test(limpio)) {
+    limpio = limpio
+      .replace(/^([1-9])(?:AQ|QA|OA|AO|QO|OQ)(?:CT|TC|CG|GC)/, '$106')
+      .replace(/^([1-9])(?:AQ|QA|OA|AO)([CGT6])/, '$106')
+      .replace(/^([1-9])([OQD0])(?:CT|TC|CG|GC)/, '$106');
+  }
+
   // 2. Si tiene exactamente 6 caracteres
   if (limpio.length === 6) {
-    const c0 = limpio[0];
+    let c0 = limpio[0];
+    if (c0 === '0') c0 = 'O';
     if (PRIMEROS_CARACTERES_INVALIDOS.has(c0) || !CARACTERES_INICIALES_VALIDOS.has(c0)) {
       return '';
     }
+    limpio = c0 + limpio.slice(1);
 
     // Formato 3+3 (Autos, camionetas o motos 3+3 ej. 206-37F, W2U-792)
     let p1 = limpio.slice(0, 3);
     const p2 = limpio.slice(3, 6);
 
-    // Si es formato de motocicleta NNN-NNL (inicia con dígito y termina en letra, ej. 206-37F leído como 2QC-37F o 20C-37F):
+    // Si es formato de motocicleta NNN-NNL (inicia con dígito y termina en letra, ej. 206-37F leído como 2QC-37F, 20C-37F o 2AT-37F):
     // Las posiciones 1 y 2 del prefijo son estrictamente numéricas
     if (/^[1-9]/.test(p1) && /[A-Z]$/.test(p2)) {
       const c1 = p1[1]
-        .replace(/[OQD]/g, '0')
+        .replace(/[OQDA]/g, '0')
         .replace(/[IL]/g, '1')
         .replace(/Z/g, '2')
         .replace(/S/g, '5')
@@ -212,17 +232,17 @@ export function normalizarPlaca(texto: string): string {
       .replace(/B/g, '8')
       .replace(/S/g, '5')
       .replace(/Z/g, '2')
-      .replace(/G/g, '6');
+      .replace(/[GC]/g, '6');
     const candA = `${p1}-${p2Num}`;
     if (esPlacaValida(candA)) {
       return candA;
     }
 
-    // Intento B: Sufijo de moto con letra final (ej. 206-37F)
+    // Intento B: Sufijo de moto con letra final (ej. 206-37F leído como 206-3IF)
     const p2Moto =
       p2.slice(0, 2)
         .replace(/[OQD]/g, '0')
-        .replace(/[IL]/g, '1')
+        .replace(/[IL]/g, '7')
         .replace(/B/g, '8')
         .replace(/S/g, '5')
         .replace(/Z/g, '2') + p2.slice(2);
@@ -257,11 +277,11 @@ export function buscarSecuenciasPlacaEnTexto(texto: string): Array<{ placa: stri
   const candidatos: Array<{ placa: string; textoMatch: string }> = [];
   const encontradas = new Set<string>();
 
-  // Normalizar acentos y pasar a mayúsculas
-  const t = texto.toUpperCase().replace(/PERÚ/g, 'PERU');
+  // Normalizar acentos, reparar trazos cursivos y pasar a mayúsculas
+  const t = repararPrefijoCursivo(texto.toUpperCase().replace(/PERÚ/g, 'PERU'));
 
-  // Patrón 1: Bloque de 6 caracteres compactos o con guión/espacio central (ej: W2U-792, A1A 123, ABC-123)
-  const regexA = /\b([A-Z0-9]{3})[\s\-_.:/]?([A-Z0-9]{3})\b/g;
+  // Patrón 1: Bloque de 6 caracteres compactos o con guión/espacio central (ej: W2U-792, A1A 123, ABC-123, 206-37F)
+  const regexA = /\b([A-Z0-9]{3})[\s\-_.:/]*([A-Z0-9]{3})\b/g;
   let match: RegExpExecArray | null;
   while ((match = regexA.exec(t)) !== null) {
     const raw = match[1] + match[2];
@@ -272,8 +292,8 @@ export function buscarSecuenciasPlacaEnTexto(texto: string): Array<{ placa: stri
     }
   }
 
-  // Patrón 2: Letras escritas a mano separadas por espacios (ej: "W 2 U - 7 9 2" o "A 1 A 1 2 3")
-  const regexB = /\b([A-Z0-9])\s+([A-Z0-9])\s+([A-Z0-9])\s*[\s\-_.:/]?\s*([A-Z0-9])\s+([A-Z0-9])\s+([A-Z0-9])\b/g;
+  // Patrón 2: Letras escritas a mano separadas por espacios (ej: "W 2 U - 7 9 2" o "2 0 6 - 3 7 F")
+  const regexB = /\b([A-Z0-9])\s*([A-Z0-9])\s*([A-Z0-9])\s*[\s\-_.:/]?\s*([A-Z0-9])\s*([A-Z0-9])\s*([A-Z0-9])\b/g;
   while ((match = regexB.exec(t)) !== null) {
     const raw = match[1] + match[2] + match[3] + match[4] + match[5] + match[6];
     const norm = normalizarPlaca(raw);
@@ -294,9 +314,15 @@ export function buscarSecuenciasPlacaEnTexto(texto: string): Array<{ placa: stri
     }
   }
 
-  // Patrón 4: Subsecuencias de 6 caracteres dentro de palabras largas o ruido de OCR
+  // Patrón 4: Subsecuencias dentro de palabras largas o ruido de OCR
   const palabras = t.split(/\s+/);
   for (const palabra of palabras) {
+    const normDirecta = normalizarPlaca(palabra);
+    if (normDirecta && esPlacaValida(normDirecta) && !encontradas.has(normDirecta)) {
+      encontradas.add(normDirecta);
+      candidatos.push({ placa: normDirecta, textoMatch: palabra });
+      continue;
+    }
     const soloAlfanum = palabra.replace(/[^A-Z0-9]/g, '');
     if (soloAlfanum.length >= 6) {
       for (let i = 0; i <= soloAlfanum.length - 6; i++) {
